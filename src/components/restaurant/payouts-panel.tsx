@@ -84,7 +84,7 @@ export function PayoutsPanel({ ctx, stripeReturn }: { ctx: Ctx; stripeReturn: bo
           ) : (
             <>
               <p className="text-sm text-ink-2">
-                BiteBack pays restaurants through <b>Stripe Connect</b>. Stripe verifies your business and bank account; BiteBack never sees your full bank
+                Rescue Bites pays restaurants through <b>Stripe Connect</b>. Stripe verifies your business and bank account; Rescue Bites never sees your full bank
                 details. It takes about 5 minutes.
               </p>
               {acct?.stripe_account_id && <Alert tone="warn" className="mb-3">Your Stripe setup isn&apos;t finished yet. Continue where you left off.</Alert>}

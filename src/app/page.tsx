@@ -33,7 +33,7 @@ export default function LandingPage() {
               <span className="grad-text">Save up to 70%.</span>
             </h1>
             <p className="mb-7 max-w-[40ch] text-[1.18rem] text-ink-2">
-              Wrong orders, late deliveries, meals nobody picked up. Local restaurants post them on BiteBack at a discount, and you grab them
+              Wrong orders, late deliveries, meals nobody picked up. Local restaurants post them on Rescue Bites at a discount, and you grab them
               before they go to waste.
             </p>
             <div className="flex flex-wrap gap-3">
@@ -118,7 +118,7 @@ export default function LandingPage() {
         <div className="container-page">
           <div className="mb-6 text-center">
             <span className="inline-flex rounded-full bg-primary-soft px-3 py-1.5 text-[0.8rem] font-bold text-primary-ink">▶ See it in action</span>
-            <h2 className="mt-3.5 text-[clamp(1.4rem,2.6vw,2rem)] font-extrabold">Watch BiteBack in about a minute</h2>
+            <h2 className="mt-3.5 text-[clamp(1.4rem,2.6vw,2rem)] font-extrabold">Watch Rescue Bites in about a minute</h2>
             <p className="m-0 text-muted">A quick narrated tour of ordering a meal, and of the restaurant side. Turn your sound on.</p>
           </div>
           <DemoVideoShowcase />

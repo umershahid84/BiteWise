@@ -1,4 +1,4 @@
-// Records the "See BiteBack in action" tours (public/videos/), timed to the spoken narration.
+// Records the "See Rescue Bites in action" tours (public/videos/), timed to the spoken narration.
 // Full steps are in scripts/demo-video/README.md. This step needs the app running on fresh demo data
 // and .video-tmp/voice/durations.json from voice.py; it writes .video-tmp/<tour>-raw.webm and <tour>-cues.json.
 //
@@ -93,7 +93,7 @@ function narrator(tour) {
   };
 }
 
-// End screen: fades in over the last page, pops in the BiteBack logo piece by piece and says goodbye.
+// End screen: fades in over the last page, pops in the Rescue Bites logo piece by piece and says goodbye.
 const OUTRO = {
   customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join · Greater Seattle' },
   restaurant: { headline: 'Happy selling!', line: 'Less waste. More revenue.', pill: 'Free to join · Paid through Stripe' },
@@ -110,7 +110,7 @@ async function showOutro(p, n, tour) {
         animation: o-fade .7s ease-out both; }
       @keyframes o-fade { from { opacity: 0 } to { opacity: 1 } }
       #bb-outro .stage { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
-      #bb-outro .logo { position: relative; width: 600px; animation: o-bob 3s ease-in-out 2.4s infinite; }
+      #bb-outro .logo { position: relative; width: 680px; animation: o-bob 3s ease-in-out 2.4s infinite; }
       #bb-outro .logo svg { display: block; width: 100%; height: auto; overflow: visible; }
       #bb-outro svg > rect, #bb-outro svg > g, #bb-outro svg > path, #bb-outro svg g > path { transform-box: fill-box; }
       #bb-outro svg > rect { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
@@ -127,11 +127,11 @@ async function showOutro(p, n, tour) {
       @keyframes o-slide { from { transform: translateX(-40px); opacity: 0 } to { transform: none; opacity: 1 } }
       @keyframes o-fadein { from { opacity: 0 } to { opacity: 1 } }
       @keyframes o-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
-      #bb-outro .shine { position: absolute; left: 0; top: 0; width: 176px; height: 176px; border-radius: 46px; overflow: hidden; pointer-events: none; }
+      #bb-outro .shine { position: absolute; left: 0; top: 0; width: 164px; height: 164px; border-radius: 43px; overflow: hidden; pointer-events: none; }
       #bb-outro .shine::after { content: ''; position: absolute; inset: -40%; transform: translateX(-120%) rotate(25deg);
         background: linear-gradient(90deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); animation: o-shine 1.1s ease-in-out 1.9s both; }
       @keyframes o-shine { from { transform: translateX(-120%) rotate(25deg) } to { transform: translateX(120%) rotate(25deg) } }
-      #bb-outro .burst i { position: absolute; left: 88px; top: 88px; width: 10px; height: 10px; margin: -5px; border-radius: 50%;
+      #bb-outro .burst i { position: absolute; left: 82px; top: 82px; width: 10px; height: 10px; margin: -5px; border-radius: 50%;
         opacity: 0; animation: o-burst .9s ease-out .55s both; }
       @keyframes o-burst { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1) }
         100% { opacity: 0; transform: rotate(var(--a)) translateX(150px) scale(.4) } }

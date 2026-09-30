@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/export
     const file =
       kind === 'orders' ? await admin.ordersCsv(p)
         : kind === 'tax' ? await admin.taxCsv(p)
-          : kind === 'payouts' ? { name: 'BiteBack-payouts.csv', csv: await admin.payoutsCsv() }
+          : kind === 'payouts' ? { name: 'RescueBites-payouts.csv', csv: await admin.payoutsCsv() }
             : null;
     if (!file) throw new AppError(404, 'Not found.');
     return new NextResponse(file.csv, {

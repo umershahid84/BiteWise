@@ -34,7 +34,7 @@ export default async function LegalPage({ params }: PageProps<'/legal/[doc]'>) {
       <Paper>
         <div className="mb-5 flex items-start justify-between gap-4 border-b border-[#e3eae6] pb-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo.svg" alt="BiteBack" className="h-11" />
+          <img src="/assets/logo.svg" alt="Rescue Bites" className="h-11" />
           <div className="text-right">
             <h1 className="m-0 text-2xl font-extrabold">{doc.title}</h1>
             <div className="text-sm text-[#6b7b73]">Effective {doc.effective} · Version {doc.version}</div>

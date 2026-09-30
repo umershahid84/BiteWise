@@ -37,8 +37,8 @@ const plexMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: 'BiteBack: Rescue good food, save money', template: '%s · BiteBack' },
-  description: 'BiteBack: rescue good restaurant food at a discount around greater Seattle.',
+  title: { default: 'Rescue Bites: Rescue good food, save money', template: '%s · Rescue Bites' },
+  description: 'Rescue Bites: rescue good restaurant food at a discount around greater Seattle.',
 };
 
 export const viewport: Viewport = { themeColor: '#07110d' };

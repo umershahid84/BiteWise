@@ -115,12 +115,12 @@ function RefundForm({ order: o, onDone }: { order: AdminOrder; onDone: () => voi
         <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
           <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'original'} onChange={() => setMethod('original')} />
           <span><b>Original form of payment</b> · {originalLabel}
-            <span className="block text-xs text-muted">{card > 0 && `${money(card)} back to ${o.card}`}{card > 0 && creditBack > 0 && ' + '}{creditBack > 0 && `${money(creditBack)} back to their credit balance`}. The restaurant and BiteBack both give up their share.</span></span>
+            <span className="block text-xs text-muted">{card > 0 && `${money(card)} back to ${o.card}`}{card > 0 && creditBack > 0 && ' + '}{creditBack > 0 && `${money(creditBack)} back to their credit balance`}. The restaurant and Rescue Bites both give up their share.</span></span>
         </label>
         <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
           <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'credit'} onChange={() => setMethod('credit')} />
-          <span><b>BiteBack platform credit</b>
-            <span className="block text-xs text-muted">{money(cents)} added to their credit for future orders. Paid by BiteBack; the restaurant keeps its full payment.</span></span>
+          <span><b>Rescue Bites platform credit</b>
+            <span className="block text-xs text-muted">{money(cents)} added to their credit for future orders. Paid by Rescue Bites; the restaurant keeps its full payment.</span></span>
         </label>
       </div>
       <Field label="Reason" htmlFor="r-reason" className="mt-4"><Input id="r-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Food was cold at pickup" /></Field>

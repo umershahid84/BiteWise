@@ -1,23 +1,23 @@
 {
-  "voice": "af_heart",
-  "speed": 1.0,
+  "voice": { "af_heart": 0.6, "af_sarah": 0.4 },
+  "speed": 1.03,
   "pronounce": { "ZIP": "zip", "PINs": "pins", "PIN": "pin" },
   "customer": [
-    { "id": "welcome", "text": "Welcome to BiteBack! Local restaurants post their surplus food, like wrong orders and end-of-day extras, at up to seventy percent off." },
+    { "id": "welcome", "text": "Hi there, and welcome to Rescue Bites! Local restaurants post their surplus food, like wrong orders and end-of-day extras, at up to seventy percent off." },
     { "id": "login", "text": "Create a free account, then log in with your email or user name." },
     { "id": "deals", "text": "You'll see live deals near you, with a countdown showing how long each one is available." },
     { "id": "search", "text": "Search by dish, restaurant, city, or ZIP code." },
     { "id": "quantity", "text": "Pick a deal, and choose how many you want." },
     { "id": "total", "text": "You see the full total before you order: the food, a small service fee, and any applicable taxes." },
-    { "id": "payment", "text": "Use your BiteBack credit, and pay the rest with a saved or new card." },
+    { "id": "payment", "text": "Use your Rescue Bites credit, and pay the rest with a saved or new card." },
     { "id": "hold", "text": "Your card is only held for now. It's charged when you pick up your food." },
     { "id": "pin", "text": "Done! You get a four-digit PIN. Show it at the counter when you pick up." },
     { "id": "orders", "text": "Your orders and PINs are always under My orders." },
     { "id": "receipt", "text": "And every order comes with a receipt you can print or download." },
-    { "id": "end", "text": "That's BiteBack. Rescue great food, and save money. Happy rescuing!" }
+    { "id": "end", "text": "That's Rescue Bites. Rescue great food, and save money. Happy rescuing!" }
   ],
   "restaurant": [
-    { "id": "welcome", "text": "BiteBack helps restaurants turn surplus food into revenue, in under a minute." },
+    { "id": "welcome", "text": "Hi there! Rescue Bites helps restaurants turn surplus food into revenue, in under a minute." },
     { "id": "login", "text": "Log in to your restaurant dashboard." },
     { "id": "dashboard", "text": "It shows your pickups, offers, menu, orders, and payouts." },
     { "id": "post", "text": "To post surplus food, pick a dish from your menu, say why it's available, and choose your discount." },
@@ -28,6 +28,6 @@
     { "id": "handover", "text": "Check the order and hand over the food. The customer's card is charged, and your share is paid to your Stripe account." },
     { "id": "payouts", "text": "The Payouts tab lists every payment, with its invoice number and transaction ID." },
     { "id": "report", "text": "And the daily report shows your sales, with print, PDF, and CSV downloads." },
-    { "id": "end", "text": "That's BiteBack. Less waste, and more revenue. Happy selling!" }
+    { "id": "end", "text": "That's Rescue Bites. Less waste, and more revenue. Happy selling!" }
   ]
 }

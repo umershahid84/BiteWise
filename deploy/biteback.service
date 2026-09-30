@@ -1,7 +1,7 @@
-# systemd service for BiteBack. Install it with: sudo bash scripts/server/install-service.sh
+# systemd service for Rescue Bites. Install it with: sudo bash scripts/server/install-service.sh
 # (the installer fills in the @...@ values). Then: sudo systemctl start biteback
 [Unit]
-Description=BiteBack (Next.js)
+Description=Rescue Bites (Next.js)
 Documentation=file://@APP_DIR@/README.md
 After=network-online.target
 Wants=network-online.target

@@ -1,12 +1,12 @@
-<p align="center"><img src="public/assets/logo.svg" alt="BiteBack" width="420"></p>
+<p align="center"><img src="public/assets/logo.svg" alt="Rescue Bites" width="420"></p>
 
-# BiteBack: Reduce Food Waste
+# Rescue Bites: Reduce Food Waste
 
-BiteBack is a marketplace where restaurants in greater Seattle sell food that would otherwise be thrown away (wrong orders, delayed deliveries, orders nobody picked up, end-of-day surplus) at a discount they choose. Customers reserve it online, pay with a card hold, and pick it up with a 4-digit PIN. The card is charged only when the restaurant enters the PIN.
+Rescue Bites is a marketplace where restaurants in greater Seattle sell food that would otherwise be thrown away (wrong orders, delayed deliveries, orders nobody picked up, end-of-day surplus) at a discount they choose. Customers reserve it online, pay with a card hold, and pick it up with a 4-digit PIN. The card is charged only when the restaurant enters the PIN.
 
 ## Tech stack
 
-| Area | What BiteBack uses |
+| Area | What Rescue Bites uses |
 |---|---|
 | **Framework** | Next.js 16 (App Router, Server Components, Server Actions, Route Handlers, `proxy.ts`), TypeScript (strict) |
 | **Styling & UI** | Tailwind CSS v4, Lucide icons, shadcn-style primitives built on Radix UI (`src/components/ui`) |
@@ -23,7 +23,7 @@ BiteBack is a marketplace where restaurants in greater Seattle sell food that wo
 1. Sign up free with an **email, user name and password**, after reading and accepting the Customer Terms and Privacy Policy. **Declining creates no account.**
 2. Browse deals as a **list** or on an **interactive map**, updated live. Search any city or ZIP code in King, Pierce, Thurston, Snohomish and Kitsap counties (Seattle, Des Moines, Kent, Federal Way, Tacoma, Fife, Olympia and more) or use your location, and filter by diet and distance.
 3. Choose a quantity (never more than the restaurant made available) and see the total before ordering: **food price + 5% service fee + WA sales tax**.
-4. Pay with a saved or new card, optionally using **BiteBack platform credit** (the card covers the rest, at least $0.50).
+4. Pay with a saved or new card, optionally using **Rescue Bites platform credit** (the card covers the rest, at least $0.50).
 5. A confetti screen shows the **4-digit PIN**. A hold is placed on the card; **it is charged only at pickup**. Cancel any time before pickup at no charge.
 6. Every order has a **point-of-sale receipt** (web, print and PDF).
 
@@ -41,14 +41,14 @@ BiteBack is a marketplace where restaurants in greater Seattle sell food that wo
 
 ## Money flow
 
-| | Customer pays | Restaurant receives | BiteBack keeps |
+| | Customer pays | Restaurant receives | Rescue Bites keeps |
 |---|---|---|---|
 | **Normal order** | food + 5% fee + tax (charged at pickup) | the food subtotal (Stripe transfer at pickup) | service fee + sales tax (which it remits as marketplace facilitator) |
-| **Paid partly with platform credit** | the rest by card | still the **full** food subtotal (BiteBack tops up from its balance) | pays for the credit |
+| **Paid partly with platform credit** | the rest by card | still the **full** food subtotal (Rescue Bites tops up from its balance) | pays for the credit |
 | **Refund to original payment** | money back to their card (credit part back to their balance) | gives up its share (the transfer is partially reversed) | gives up its fee share |
 | **Refund as platform credit** | credit for future orders | keeps its full payment | pays for the credit |
 
-With Stripe Connect, card holds are **destination charges** (`transfer_data.destination`) when the restaurant's Stripe account is ready. At capture BiteBack sets an **application fee** (service fee + tax), so Stripe moves the food subtotal to the restaurant. Restaurants that haven't connected Stripe yet are charged on the platform and paid later from the owner console.
+With Stripe Connect, card holds are **destination charges** (`transfer_data.destination`) when the restaurant's Stripe account is ready. At capture Rescue Bites sets an **application fee** (service fee + tax), so Stripe moves the food subtotal to the restaurant. Restaurants that haven't connected Stripe yet are charged on the platform and paid later from the owner console.
 
 ## Project layout
 
@@ -100,7 +100,7 @@ Other commands: `npm run lint`, `npm run typecheck`, `npm test` (unit + integrat
 
 ## Keep it running on your own server (systemd)
 
-`npm start` stops when the terminal that started it closes (for example when you close VS Code). On a Linux server, install BiteBack as a **systemd service** instead: it keeps running after you log out, restarts itself if it crashes, and starts when the server boots.
+`npm start` stops when the terminal that started it closes (for example when you close VS Code). On a Linux server, install Rescue Bites as a **systemd service** instead: it keeps running after you log out, restarts itself if it crashes, and starts when the server boots.
 
 **One-time setup** (from the app folder, as your normal user, with `.env.local` filled in):
 

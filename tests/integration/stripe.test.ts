@@ -23,7 +23,7 @@ describe.skipIf(!running)('Stripe Connect requests (stripe-mock)', () => {
   it('authorizes destination charges with manual capture', async () => {
     try {
       const res = await stripe.authorize({
-        amountCents: 978, customerId: 'cus_123', paymentRef: 'pm_card_visa', attached: true, description: 'BiteBack order #1',
+        amountCents: 978, customerId: 'cus_123', paymentRef: 'pm_card_visa', attached: true, description: 'Rescue Bites order #1',
         metadata: { order_id: '1' }, destinationAccount: 'acct_123', idempotencyKey: `authorize-test-${Date.now()}`,
       });
       expect(res.ref).toMatch(/^pi_/);

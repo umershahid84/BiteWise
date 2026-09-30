@@ -68,7 +68,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
           <Link
             href="/account#credit"
             onClick={close}
-            title="Your BiteBack platform credit"
+            title="Your Rescue Bites platform credit"
             className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3.5 py-2 text-sm font-bold text-accent-ink no-underline"
           >
             <Gift className="size-4" /> {money(viewer.creditCents)} credit
@@ -80,9 +80,9 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   return (
     <header className="no-print sticky top-0 z-[500] border-b border-line/70 bg-bg/75 backdrop-blur-md backdrop-saturate-150">
       <div className="container-page flex h-[72px] items-center gap-4">
-        <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="BiteBack home" className="shrink-0">
+        <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="Rescue Bites home" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo-dark.svg" alt="BiteBack" className="block h-[38px]" />
+          <img src="/assets/logo-dark.svg" alt="Rescue Bites" className="block h-[38px]" />
         </Link>
         <button
           className="ml-auto rounded-xl border border-line bg-surface p-2 md:hidden"

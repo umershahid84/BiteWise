@@ -37,7 +37,7 @@ export function LoginForm({ next }: { next: string | null }) {
         <Button block type="submit" disabled={pending}>{pending ? 'Please wait…' : 'Log in'}</Button>
       </form>
       <p className="mt-4 text-center text-sm text-muted">
-        New to BiteBack? <Link href="/signup">Create a free account</Link>
+        New to Rescue Bites? <Link href="/signup">Create a free account</Link>
       </p>
     </>
   );

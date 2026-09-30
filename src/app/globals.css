@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* BiteBack design tokens: dark emerald surfaces with amber accents. */
+/* Rescue Bites design tokens: dark emerald surfaces with amber accents. */
 @theme {
   --color-bg: #07110d;
   --color-bg-2: #0b1813;

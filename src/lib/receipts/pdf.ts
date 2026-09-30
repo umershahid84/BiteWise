@@ -18,7 +18,7 @@ const FONTS = {
   monoBold: 'IBMPlexMono-Bold.woff',
 };
 const LOGO = path.join(process.cwd(), 'public', 'assets', 'logo.png');
-const LOGO_RATIO = 400 / 1366;
+const LOGO_RATIO = 400 / 1654;
 const GREEN = '#047857';
 const INK = '#0b1b14';
 const MUTED = '#6b7b73';
@@ -177,7 +177,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   center('THANK YOU FOR RESCUING FOOD!', 'monoBold', 8, { after: 4 });
   small('Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. '
     + 'Orders not picked up are released without charge. Times in Pacific Time.', { align: 'center', size: 6.2, after: 3 });
-  center('support@biteback.app', 'mono', 6.6, { after: 0 });
+  center('support@rescuebites.app', 'mono', 6.6, { after: 0 });
   return y;
 }
 
@@ -187,7 +187,7 @@ export function receiptPdf(rc: Receipt) {
   const probe = new PDFDocument({ size: [ROLL_WIDTH, 5000], margin: 0 });
   fonts(probe);
   const height = Math.ceil(drawPosReceipt(probe, rc) + ROLL_MARGIN);
-  const doc = new PDFDocument({ size: [ROLL_WIDTH, height], margin: 0, info: { Title: `BiteBack receipt ${rc.receiptNumber}`, Author: 'BiteBack' } });
+  const doc = new PDFDocument({ size: [ROLL_WIDTH, height], margin: 0, info: { Title: `Rescue Bites receipt ${rc.receiptNumber}`, Author: 'Rescue Bites' } });
   fonts(doc);
   drawPosReceipt(doc, rc);
   return finish(doc);
@@ -204,7 +204,7 @@ function rule(doc: Doc, x1: number, x2: number, y: number) {
 }
 
 export function reportPdf(rep: Report) {
-  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `BiteBack daily report ${rep.date}`, Author: 'BiteBack' } });
+  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `Rescue Bites daily report ${rep.date}`, Author: 'Rescue Bites' } });
   fonts(doc);
   const L = 40;
   const R = doc.page.width - 40;
@@ -228,7 +228,7 @@ export function reportPdf(rep: Report) {
     doc.font('head').fontSize(15).fillColor(i === 0 ? GREEN : INK).text(v, x + 10, 131, { width: cw - 16 });
   });
   doc.font('regular').fontSize(9).fillColor(MUTED).text(
-    `Menu value ${money(s.menuValueCents)} · BiteBack service fees paid by customers ${money(s.serviceFeesCents)} · `
+    `Menu value ${money(s.menuValueCents)} · Rescue Bites service fees paid by customers ${money(s.serviceFeesCents)} · `
       + `Awaiting pickup ${s.awaitingPickup} · Cancelled ${s.cancelled} · Not picked up ${s.notPickedUp}`,
     L, 168, { width: W },
   );
