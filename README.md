@@ -190,6 +190,18 @@ To keep the app running in the background on Windows instead, use WSL 2 with sys
 
 Use a commercial map tile provider in production (`NEXT_PUBLIC_MAP_TILE_URL`). OpenStreetMap's public tiles are for light use only.
 
+## Branded emails
+
+The "confirm your email" message sent after sign-up comes from **Supabase Auth**, not from the app. Rescue Bites replaces Supabase's plain default with a branded one: `supabase/templates/confirmation.html` (logo, a welcome with the user's name, and different wording for customers and restaurants). The local stack (`npm run db:start`) uses it automatically through `supabase/config.toml`.
+
+For a project on supabase.com:
+
+1. Run `npm run email:template`. It uploads the logo to a public `brand` storage bucket in your project (email apps need a public web address for images) and writes `confirm-signup-email.html`.
+2. In the dashboard, open **Authentication → Emails → Confirm signup**. Set the subject to `Confirm your email for Rescue Bites 🥡`, switch the body to its source view, replace everything with the contents of `confirm-signup-email.html`, and save.
+3. Keep **Authentication → URL Configuration → Site URL** set to your site's address: the button links to `<Site URL>/auth/confirm`.
+
+**Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Rescue Bites <hello@your-domain>`. The template stays the same.
+
 ## Legal documents
 
 Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-09-29.1`, updated for Stripe Connect payouts and Supabase) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
