@@ -49,9 +49,9 @@ export default function LandingPage() {
           </div>
 
           <div className="relative mx-auto w-full max-w-[380px]" aria-hidden>
-            <div className="-rotate-2 overflow-hidden rounded-[28px] border border-line bg-surface shadow-pop">
+            <div className="group -rotate-2 overflow-hidden rounded-[28px] border border-line bg-surface shadow-pop transition duration-300 hover:-translate-y-1 hover:rotate-0">
               <div className="relative grid h-[150px] place-items-center text-[72px]" style={{ background: 'linear-gradient(135deg, hsl(28 35% 18%), hsl(68 40% 14%))' }}>
-                <span className="drop-shadow-lg">🍜</span>
+                <span className="drop-shadow-lg transition duration-300 group-hover:scale-110 group-hover:-rotate-6">🍜</span>
                 <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-[#111]">-50%</span>
                 <span className="absolute top-3 right-3 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-[#1c1203]">2 left</span>
               </div>
