@@ -9,8 +9,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 // Owner/admin console data. Callers must check that the user is an admin first (see requireActor('admin')).
 //
 // refunded_cents = refunds to the customer's ORIGINAL payment: the restaurant gives up its share of the
-// food subtotal and BiteBack gives up its fee share. credited_cents = refunds issued as PLATFORM CREDIT,
-// funded by BiteBack; the restaurant keeps its full food sales.
+// food subtotal and Rescue Bites gives up its fee share. credited_cents = refunds issued as PLATFORM CREDIT,
+// funded by Rescue Bites; the restaurant keeps its full food sales.
 
 type Order = Database['public']['Tables']['orders']['Row'];
 const db = () => supabaseAdmin();
@@ -215,7 +215,7 @@ export async function orderRefunds(orderId: number) {
 export async function ordersCsv(params: URLSearchParams) {
   const { r, rows } = await ordersInRange(params);
   return {
-    name: `BiteBack-orders-${r.from}-to-${r.to}.csv`,
+    name: `RescueBites-orders-${r.from}-to-${r.to}.csv`,
     csv: toCsv([
       ['Order #', 'Created', 'Picked up', 'Status', 'Customer', 'Restaurant', 'Item', 'Qty', 'Original unit', 'Discount %', 'Unit price', 'Food subtotal',
         'Service fee', 'Sales tax', 'Total', 'Credit applied', 'Refunded to original payment', 'Refunded as platform credit', 'Card', 'Transaction ID'],
@@ -305,7 +305,7 @@ export async function tax(params: URLSearchParams) {
 export async function taxCsv(params: URLSearchParams) {
   const t = await tax(params);
   return {
-    name: `BiteBack-sales-tax-${t.range.from}-to-${t.range.to}.csv`,
+    name: `RescueBites-sales-tax-${t.range.from}-to-${t.range.to}.csv`,
     csv: toCsv([
       ['City', 'ZIP', 'Rate %', 'Orders', 'Taxable sales', 'Sales tax collected'],
       ...t.rows.map((x) => [x.city, x.zip, (x.rateBps / 100).toFixed(2), x.orders, dollars(x.taxableCents), dollars(x.taxCents)]),

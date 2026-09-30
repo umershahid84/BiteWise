@@ -95,14 +95,14 @@ export async function signIn(input: unknown) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.status === 429) throw new AppError(429, 'Too many attempts. Please wait a few minutes and try again.');
-      if (/banned/i.test(error.message)) throw new AppError(403, 'This account has been suspended. Contact BiteBack support for help.');
+      if (/banned/i.test(error.message)) throw new AppError(403, 'This account has been suspended. Contact Rescue Bites support for help.');
       if (/not confirmed/i.test(error.message)) throw new AppError(403, 'Please confirm your email address first. Check your inbox for the link.');
       throw new AppError(401, 'Email/user name or password is incorrect.');
     }
     const { data: profile } = await supabase.from('profiles').select('role, status').eq('id', data.user.id).single();
     if (!profile || profile.status !== 'active') {
       await supabase.auth.signOut();
-      throw new AppError(403, 'This account has been suspended. Contact BiteBack support for help.');
+      throw new AppError(403, 'This account has been suspended. Contact Rescue Bites support for help.');
     }
     return { next: homeFor(profile.role) };
   });

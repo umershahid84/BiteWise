@@ -29,7 +29,7 @@ export function PayoutsPanel() {
   return (
     <>
       <Alert tone="info" className="mb-4">
-        Restaurants connected to <b>Stripe Connect</b> are paid automatically at each pickup (destination charges with BiteBack&apos;s application fee).
+        Restaurants connected to <b>Stripe Connect</b> are paid automatically at each pickup (destination charges with Rescue Bites&apos; application fee).
         Anything still owed, for example orders completed before a restaurant connected Stripe, shows below: send it through Stripe, or record a payment made another way.
       </Alert>
       <div className="mb-3 flex items-center">
@@ -93,10 +93,10 @@ function PayForm({ b, onDone }: { b: Balance; onDone: () => void }) {
     setResult(res.data);
     onDone();
   };
-  const bank = result?.bankDetails ?? (manual ? 'Paid outside Stripe (recorded by BiteBack)' : `Stripe Connect ${b.stripeAccount}${b.bank ? ` · ${b.bank}` : ''}`);
+  const bank = result?.bankDetails ?? (manual ? 'Paid outside Stripe (recorded by Rescue Bites)' : `Stripe Connect ${b.stripeAccount}${b.bank ? ` · ${b.bank}` : ''}`);
   return (
     <DialogContent title={manual ? `Record payout to ${b.name}` : `Send payout to ${b.name}`}
-      description={manual ? 'This restaurant has not connected Stripe. Record a payment you made another way (e.g. bank transfer).' : `Transfers ${money(b.balanceCents)} owed from BiteBack's Stripe balance to the restaurant's Stripe account.`}>
+      description={manual ? 'This restaurant has not connected Stripe. Record a payment you made another way (e.g. bank transfer).' : `Transfers ${money(b.balanceCents)} owed from Rescue Bites' Stripe balance to the restaurant's Stripe account.`}>
       <Field label="Amount ($)" htmlFor="p-amt"><Input id="p-amt" inputMode="decimal" value={amount} disabled={!!result} onChange={(e) => setAmount(e.target.value)} /></Field>
       <Field label={<span className="inline-flex items-center gap-1.5"><Lock className="size-3.5" /> Invoice Number</span>} hint="Assigned by the system when the payout is saved. It can't be changed.">
         <Input readOnly value={result?.invoiceNumber ?? `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-… (assigned on save)`} className="font-mono text-sm" />

@@ -13,7 +13,7 @@ const script = JSON.parse(fs.readFileSync(new URL('./narration.json', import.met
 const durations = JSON.parse(fs.readFileSync(path.join(TMP, 'voice/durations.json'), 'utf8'));
 // Poster frame: shortly after this line starts.
 const POSTER = { customer: 'pin', restaurant: 'bell' };
-const MUSIC_GAIN = 0.11; // background music level before ducking
+const MUSIC_GAIN = 0.16; // background music level before ducking
 const LOUDNESS = 'I=-16:TP=-1.5:LRA=11';
 
 const ffmpeg = (args) => execFileSync(FFMPEG, ['-v', 'error', '-y', ...args], { stdio: 'inherit' });

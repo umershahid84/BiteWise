@@ -44,7 +44,7 @@ describe('Pacific time days', () => {
 });
 
 describe('legal documents', () => {
-  const company = { entity: 'BiteBack <LLC>', email: 'help@example.com', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10 };
+  const company = { entity: 'Rescue Bites <LLC>', email: 'help@example.com', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10 };
   it('lists what each role must accept', () => {
     expect(requiredDocuments('customer').map((d) => d.id)).toEqual(['customer-terms', 'privacy']);
     expect(requiredDocuments('restaurant').map((d) => d.id)).toEqual(['restaurant-agreement', 'privacy']);
@@ -52,7 +52,7 @@ describe('legal documents', () => {
   it('renders with escaped company details and the live service fee', () => {
     const doc = renderDocument('customer-terms', company)!;
     expect(doc.version).toBe(LEGAL_VERSION);
-    expect(doc.html).toContain('BiteBack &lt;LLC&gt;');
+    expect(doc.html).toContain('Rescue Bites &lt;LLC&gt;');
     expect(doc.html).toContain('currently 5% of the food subtotal');
     expect(renderDocument('restaurant-agreement', company)!.html).toContain('Stripe Connect');
     expect(renderDocument('nope', company)).toBeNull();

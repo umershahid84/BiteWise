@@ -134,7 +134,7 @@ function OfferForm({ ctx, menu, existing, preselect, onClose, onSaved, onGoToMen
         </div>
         <Alert tone="info" className="mb-4">
           {disc >= 1 && disc <= 90 ? (
-            <>Customers pay <b>{money(discountedUnitPrice(item.price_cents, disc))}</b> <span className="line-through opacity-70">{money(item.price_cents)}</span> per item, plus {pct(ctx.serviceFeeBps)} BiteBack service fee and {pct(ctx.restaurant.tax_rate_bps)} sales tax.</>
+            <>Customers pay <b>{money(discountedUnitPrice(item.price_cents, disc))}</b> <span className="line-through opacity-70">{money(item.price_cents)}</span> per item, plus {pct(ctx.serviceFeeBps)} Rescue Bites service fee and {pct(ctx.restaurant.tax_rate_bps)} sales tax.</>
           ) : 'Enter a discount from 1% to 90%.'}
         </Alert>
         <Field label="⏳ Discard timer">

@@ -37,7 +37,7 @@ export async function setUserStatus(input: unknown) {
   });
 }
 
-// Goodwill platform credit, funded by BiteBack.
+// Goodwill platform credit, funded by Rescue Bites.
 export async function issueCredit(input: unknown) {
   return action(async () => {
     const me = await requireActor('admin');

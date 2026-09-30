@@ -35,7 +35,7 @@ export function AdminConsole({ adminId }: { adminId: string }) {
   return (
     <main className="container-page py-8">
       <h1 className="text-3xl font-extrabold">Owner console</h1>
-      <p className="-mt-1 mb-5 text-muted">Everything about BiteBack in one place: revenue, restaurants, customers, orders, refunds, payouts and taxes.</p>
+      <p className="-mt-1 mb-5 text-muted">Everything about Rescue Bites in one place: revenue, restaurants, customers, orders, refunds, payouts and taxes.</p>
       <Tabs value={tab} onValueChange={go}>
         <TabsList>
           {TABS.map(([k, label, Icon]) => <TabsTrigger key={k} value={k}><Icon /> {label}</TabsTrigger>)}

@@ -80,7 +80,7 @@ export async function receiptData(order: Order) {
       amountCents: f.amount_cents,
       to:
         f.method === 'credit'
-          ? 'BiteBack platform credit'
+          ? 'Rescue Bites platform credit'
           : [f.card_cents && `${order.card_label} (${money(f.card_cents)})`, f.credit_cents && `platform credit (${money(f.credit_cents)})`]
               .filter(Boolean).join(' + '),
       reason: f.reason,
@@ -171,7 +171,7 @@ export function reportCsv(rep: Report) {
     ['Discounts given', dollars(s.discountsCents)],
     ['Food sales', dollars(s.foodSalesCents)],
     ['Sales tax collected', dollars(s.salesTaxCents)],
-    ['BiteBack service fees (paid by customers)', dollars(s.serviceFeesCents)],
+    ['Rescue Bites service fees (paid by customers)', dollars(s.serviceFeesCents)],
     ['Total charged to customers', dollars(s.totalChargedCents)],
     ['Awaiting pickup', s.awaitingPickup],
     ['Cancelled', s.cancelled],

@@ -16,7 +16,7 @@ export function TermsGate({ role }: { role: 'customer' | 'restaurant' }) {
       open={open}
       role={role}
       title="Our terms have been updated"
-      intro="Please review and accept the updated terms to keep using BiteBack. If you decline, you will be signed out."
+      intro="Please review and accept the updated terms to keep using Rescue Bites. If you decline, you will be signed out."
       acceptLabel="Accept & continue"
       declineLabel="Decline & sign out"
       busy={busy}

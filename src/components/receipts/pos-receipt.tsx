@@ -27,7 +27,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
       <article className="pos" aria-label={`Receipt ${r.receiptNumber}`}>
         <header className="pos-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="pos-logo" src="/assets/logo.svg" alt="BiteBack" />
+          <img className="pos-logo" src="/assets/logo.svg" alt="Rescue Bites" />
           <div className="pos-tag">Rescued food · Greater Seattle</div>
           <div className="pos-store">{rest.name}</div>
           <div>{rest.address}<br />{rest.city}, WA {rest.zip}{rest.phone && <><br />Tel {rest.phone}</>}</div>
@@ -96,7 +96,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
             Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. Orders not picked up are
             released without charge. Times in Pacific Time.
           </p>
-          <div className="small-print">support@biteback.app</div>
+          <div className="small-print">support@rescuebites.app</div>
         </div>
       </article>
     </div>

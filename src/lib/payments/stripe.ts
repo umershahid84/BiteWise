@@ -6,7 +6,7 @@ import { PaymentError, type ConnectStatus, type PaymentProvider } from './types'
 // and captured when the restaurant verifies the pickup PIN.
 // `api` points the client at another Stripe-compatible host (tests use stripe-mock).
 export function createStripeProvider(secretKey: string, api?: { host: string; port: number; protocol: 'http' | 'https' }): PaymentProvider {
-  const stripe = new Stripe(secretKey, { appInfo: { name: 'BiteBack' }, ...api });
+  const stripe = new Stripe(secretKey, { appInfo: { name: 'Rescue Bites' }, ...api });
 
   const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
     try {
@@ -30,7 +30,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
 
     async ensureCustomer({ email, username, existingId }) {
       if (existingId) return existingId;
-      const customer = await stripe.customers.create({ email, name: username, metadata: { app: 'biteback' } });
+      const customer = await stripe.customers.create({ email, name: username, metadata: { app: 'rescuebites' } });
       return customer.id;
     },
 
@@ -114,7 +114,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
       const account = await stripe.accounts.create({
         country: 'US',
         email,
-        business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through BiteBack' },
+        business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through Rescue Bites' },
         capabilities: { transfers: { requested: true } },
         controller: {
           stripe_dashboard: { type: 'express' },
@@ -122,7 +122,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
           losses: { payments: 'application' },
           requirement_collection: 'stripe',
         },
-        metadata: { restaurant_id: String(restaurantId), app: 'biteback' },
+        metadata: { restaurant_id: String(restaurantId), app: 'rescuebites' },
       });
       return account.id;
     },

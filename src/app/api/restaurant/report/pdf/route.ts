@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const rep = await restaurantReport(req.nextUrl.searchParams.get('date'));
     const disposition = req.nextUrl.searchParams.has('inline') ? 'inline' : 'attachment';
     return new NextResponse(new Uint8Array(await reportPdf(rep)), {
-      headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `${disposition}; filename="BiteBack-report-${rep.date}.pdf"`, 'Cache-Control': 'private, no-store' },
+      headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `${disposition}; filename="RescueBites-report-${rep.date}.pdf"`, 'Cache-Control': 'private, no-store' },
     });
   } catch (err) {
     const e = err instanceof AppError ? err : new AppError(500, 'Could not create the report.');

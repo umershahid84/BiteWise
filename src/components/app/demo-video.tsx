@@ -9,14 +9,14 @@ import { cn } from '@/lib/utils';
 // Short narrated screen recordings of the app (public/videos, made with scripts/demo-video; see its README).
 export const TOURS = {
   customer: {
-    title: 'How BiteBack works for customers',
-    length: '1:05',
+    title: 'How Rescue Bites works for customers',
+    length: '1:09',
     src: '/videos/customer-tour',
     steps: ['Browse live deals near you', 'See the full total before you order', 'Your card is held, not charged', 'Show your 4-digit PIN at pickup'],
   },
   restaurant: {
-    title: 'How BiteBack works for restaurants',
-    length: '1:05',
+    title: 'How Rescue Bites works for restaurants',
+    length: '1:06',
     src: '/videos/restaurant-tour',
     steps: ['Post surplus food in under a minute', 'A bell rings when someone orders', 'Type the PIN and hand over the food', 'Get paid through Stripe, with reports'],
   },

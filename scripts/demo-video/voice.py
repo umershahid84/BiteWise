@@ -40,14 +40,24 @@ def spoken(text, pronounce):
     return text
 
 
+def voice_style(kokoro, voice):
+    """narration.json's "voice" is one Kokoro voice ("af_heart") or a blend of several, weighted
+    ({"af_heart": 0.6, "af_sarah": 0.4}): here, the natural af_heart with the livelier af_sarah."""
+    if isinstance(voice, str):
+        return voice
+    total = sum(voice.values())
+    return sum(kokoro.get_voice_style(name) * weight / total for name, weight in voice.items())
+
+
 def main(model, voices):
     script = json.loads((HERE / 'narration.json').read_text())
     OUT.mkdir(parents=True, exist_ok=True)
     kokoro = Kokoro(model, voices)
+    voice = voice_style(kokoro, script['voice'])
     durations = {}
     for tour in ('customer', 'restaurant'):
         for line in script[tour]:
-            samples, rate = kokoro.create(spoken(line['text'], script.get('pronounce', {})), voice=script['voice'], speed=script['speed'], lang='en-us')
+            samples, rate = kokoro.create(spoken(line['text'], script.get('pronounce', {})), voice=voice, speed=script['speed'], lang='en-us')
             sf.write(OUT / f"{tour}-{line['id']}.wav", samples, rate)
             durations[f"{tour}-{line['id']}"] = round(len(samples) / rate, 3)
             print(f"{tour}-{line['id']}: {durations[tour + '-' + line['id']]}s")

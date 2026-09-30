@@ -24,8 +24,8 @@ export const serverEnv = {
   cronSecret: process.env.CRON_SECRET ?? '',
   timeZone: process.env.TIME_ZONE || 'America/Los_Angeles',
   legal: {
-    entity: process.env.LEGAL_ENTITY_NAME || 'BiteBack',
-    email: process.env.SUPPORT_EMAIL || 'support@biteback.app',
+    entity: process.env.LEGAL_ENTITY_NAME || 'Rescue Bites',
+    email: process.env.SUPPORT_EMAIL || 'support@rescuebites.app',
     address: process.env.LEGAL_ADDRESS || 'Seattle, Washington',
   },
   // Orders not picked up are released (never charged) this long after the discard timer ends.
