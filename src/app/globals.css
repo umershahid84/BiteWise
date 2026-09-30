@@ -133,7 +133,7 @@
     conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--zz) 51% repeat-x; }
 .pos .b { font-weight: 700; }
 .pos .pos-center { text-align: center; }
-.pos .pos-logo { height: 44px; display: block; margin: 0 auto 4px; }
+.pos .pos-logo { height: 54px; display: block; margin: 0 auto 4px; }
 .pos .pos-tag { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
 .pos .pos-store { font-weight: 700; font-size: 15px; text-transform: uppercase; }
 .pos hr { border: 0; margin: 9px 0; }

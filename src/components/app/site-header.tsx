@@ -82,7 +82,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
       <div className="container-page flex h-[72px] items-center gap-4">
         <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="Rescue Bites home" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo-dark.svg" alt="Rescue Bites" className="block h-[38px]" />
+          <img src="/assets/logo-dark-compact.svg" alt="Rescue Bites" className="block h-[46px] md:h-[54px]" />
         </Link>
         <button
           className="ml-auto rounded-xl border border-line bg-surface p-2 md:hidden"

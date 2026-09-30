@@ -1,29 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Rescue Bites">
   <defs>
     <linearGradient id="m-tile" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#34D399"/>
-      <stop offset=".55" stop-color="#059669"/>
-      <stop offset="1" stop-color="#065F46"/>
+      <stop offset="0" stop-color="#FDBA74"/><stop offset=".5" stop-color="#F97316"/><stop offset="1" stop-color="#C2410C"/>
     </linearGradient>
-    <linearGradient id="m-leaf" x1="100" y1="16" x2="150" y2="62" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FDE047"/>
-      <stop offset="1" stop-color="#F59E0B"/>
-    </linearGradient>
-    <linearGradient id="m-band" x1="40" y1="56" x2="156" y2="172" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FB7185"/>
-      <stop offset="1" stop-color="#E11D48"/>
-    </linearGradient>
-    <mask id="m-ring" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
-      <rect width="200" height="200" fill="#000"/>
-      <circle cx="98" cy="114" r="58" fill="#fff"/>
-      <circle cx="98" cy="114" r="25" fill="#000"/>
-      <circle cx="157" cy="86" r="18" fill="#000"/>
-      <circle cx="167" cy="113" r="15" fill="#000"/>
-      <circle cx="162" cy="138" r="11" fill="#000"/>
+    <mask id="m-bite" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="#fff"/><circle cx="160" cy="116" r="14" fill="#000"/><circle cx="153" cy="141" r="12" fill="#000"/>
     </mask>
   </defs>
-  <rect width="200" height="200" rx="52" fill="url(#m-tile)"/>
-  <g><rect width="200" height="200" fill="#fff" mask="url(#m-ring)"/><g mask="url(#m-ring)"><rect x="85" y="52" width="26" height="41" fill="url(#m-band)" transform="rotate(45 98 114)"/><rect x="85" y="52" width="26" height="41" fill="url(#m-band)" transform="rotate(135 98 114)"/><rect x="85" y="52" width="26" height="41" fill="url(#m-band)" transform="rotate(225 98 114)"/><rect x="85" y="52" width="26" height="41" fill="url(#m-band)" transform="rotate(315 98 114)"/></g>
-  <path d="M102 58 C 102 38, 118 20, 146 16 C 148 42, 128 60, 102 58 Z" fill="url(#m-leaf)"/>
-  <path d="M108 52 C 118 42, 128 32, 138 24" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/></g>
+  <rect class="tile" width="200" height="200" rx="56" fill="url(#m-tile)"/>
+  <g class="mark">
+    <path class="handle" d="M72 76 C 74 38, 126 38, 128 76" fill="none" stroke="#7C2D12" stroke-width="6" stroke-linecap="round"/>
+    <path class="leaf" d="M100 48 C 104 30, 120 22, 138 22 C 134 40, 120 48, 100 48 Z" fill="#22C55E"/>
+    <g class="box" mask="url(#m-bite)">
+      <path d="M40 94 L160 94 L148 162 Q147 170 139 170 L61 170 Q53 170 52 162 Z" fill="#fff"/>
+      <path d="M40 94 L56 66 L100 78 L144 66 L160 94 Z" fill="#FFEDD5"/>
+      <path d="M100 78 L100 94" stroke="#FDBA74" stroke-width="3"/>
+    </g>
+    <g transform="translate(-32 -18) scale(1.32)"><path class="heart" d="M100 124 C 84 112, 82 100, 90 96 C 95 93, 99 96, 100 99 C 101 96, 105 93, 110 96 C 118 100, 116 112, 100 124 Z" fill="#059669"/></g>
+  </g>
 </svg>

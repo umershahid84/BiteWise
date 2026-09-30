@@ -39,7 +39,7 @@ export function ReportView({ report: rep, today }: { report: Report; today: stri
       <Paper className="p-8">
         <div className="mb-5 flex items-start justify-between gap-4 border-b border-[#e3eae6] pb-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo.svg" alt="Rescue Bites" className="h-11" />
+          <img src="/assets/logo.svg" alt="Rescue Bites" className="h-14" />
           <div className="text-right">
             <h1 className="m-0 text-2xl font-extrabold">Daily sales report</h1>
             <div className="text-sm text-[#6b7b73]">{rep.restaurant.name} · {rep.dateText}</div>

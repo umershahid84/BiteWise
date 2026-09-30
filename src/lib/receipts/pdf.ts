@@ -18,7 +18,7 @@ const FONTS = {
   monoBold: 'IBMPlexMono-Bold.woff',
 };
 const LOGO = path.join(process.cwd(), 'public', 'assets', 'logo.png');
-const LOGO_RATIO = 400 / 1654;
+const LOGO_RATIO = 400 / 1706;
 const GREEN = '#047857';
 const INK = '#0b1b14';
 const MUTED = '#6b7b73';
@@ -88,7 +88,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   };
 
   // Header: logo, restaurant, address.
-  const logoW = 118;
+  const logoW = 140;
   doc.image(LOGO, L + (W - logoW) / 2, y, { width: logoW });
   y += logoW * LOGO_RATIO + 4;
   center('RESCUED FOOD · GREATER SEATTLE', 'mono', 6.2, { spacing: 0.4, after: 7 });

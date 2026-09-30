@@ -110,16 +110,18 @@ async function showOutro(p, n, tour) {
         animation: o-fade .7s ease-out both; }
       @keyframes o-fade { from { opacity: 0 } to { opacity: 1 } }
       #rb-outro .stage { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
-      #rb-outro .logo { position: relative; width: 680px; animation: o-bob 3s ease-in-out 2.4s infinite; }
+      #rb-outro .logo { position: relative; width: 700px; animation: o-bob 3s ease-in-out 2.4s infinite; }
       #rb-outro .logo svg { display: block; width: 100%; height: auto; overflow: visible; }
-      #rb-outro svg > rect, #rb-outro svg > g, #rb-outro svg > path, #rb-outro svg g > path { transform-box: fill-box; }
-      #rb-outro svg > rect { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
-      #rb-outro svg > g { transform-origin: center; animation: o-in .5s ease-out .75s both; }
-      #rb-outro svg g > path:nth-of-type(1) { transform-origin: 0% 100%; animation: o-leaf 1.1s cubic-bezier(.34,1.56,.64,1) 1s both; }
-      #rb-outro svg g > path:nth-of-type(2) { animation: o-fadein .4s ease-out 1.5s both; }
-      #rb-outro svg > path:nth-of-type(1) { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) .95s both; }
-      #rb-outro svg > path:nth-of-type(2) { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) 1.1s both; }
-      #rb-outro svg > path:nth-of-type(3) { animation: o-fadein .6s ease-out 1.45s both; }
+      #rb-outro svg .tile, #rb-outro svg .mark, #rb-outro svg .mark > *, #rb-outro svg > path { transform-box: fill-box; }
+      #rb-outro svg .tile { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
+      #rb-outro svg .box { transform-origin: 50% 100%; animation: o-in .5s ease-out .75s both; }
+      #rb-outro svg .handle { animation: o-fadein .4s ease-out .9s both; }
+      #rb-outro svg .leaf { transform-origin: 0% 100%; animation: o-leaf 1.1s cubic-bezier(.34,1.56,.64,1) 1s both; }
+      #rb-outro svg .heart { transform-origin: center; animation: o-beat 1s cubic-bezier(.34,1.56,.64,1) 1.2s both; }
+      #rb-outro svg .word1 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) .95s both; }
+      #rb-outro svg .word2 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) 1.1s both; }
+      #rb-outro svg .tagline { animation: o-fadein .6s ease-out 1.45s both; }
+      @keyframes o-beat { 0% { transform: scale(0) } 50% { transform: scale(1.25) } 70% { transform: scale(.92) } 100% { transform: scale(1) } }
       @keyframes o-pop { from { transform: scale(0) rotate(-30deg); opacity: 0 } 60% { opacity: 1 } to { transform: scale(1) rotate(0); opacity: 1 } }
       @keyframes o-in { from { transform: scale(.4); opacity: 0 } to { transform: scale(1); opacity: 1 } }
       @keyframes o-leaf { 0% { transform: scale(0) rotate(-40deg) } 55% { transform: scale(1.12) rotate(10deg) }
@@ -127,7 +129,7 @@ async function showOutro(p, n, tour) {
       @keyframes o-slide { from { transform: translateX(-40px); opacity: 0 } to { transform: none; opacity: 1 } }
       @keyframes o-fadein { from { opacity: 0 } to { opacity: 1 } }
       @keyframes o-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
-      #rb-outro .shine { position: absolute; left: 0; top: 0; width: 164px; height: 164px; border-radius: 43px; overflow: hidden; pointer-events: none; }
+      #rb-outro .shine { position: absolute; left: 0; top: 0; width: 164px; height: 164px; border-radius: 46px; overflow: hidden; pointer-events: none; }
       #rb-outro .shine::after { content: ''; position: absolute; inset: -40%; transform: translateX(-120%) rotate(25deg);
         background: linear-gradient(90deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); animation: o-shine 1.1s ease-in-out 1.9s both; }
       @keyframes o-shine { from { transform: translateX(-120%) rotate(25deg) } to { transform: translateX(120%) rotate(25deg) } }
@@ -151,7 +153,7 @@ async function showOutro(p, n, tour) {
     const foods = ['🍜', '🥐', '🌮', '🍕', '🍣', '🥗', '🍱', '🌱', '🥟', '🍩', '🌱', '🥖', '🍛', '🌿'];
     // Down both sides, clear of the logo and text in the middle.
     const floats = foods.map((f, i) => `<span class="float" style="left:${i % 2 ? 80 + ((i * 5) % 17) : 2 + ((i * 5) % 17)}%;--s:${26 + ((i * 7) % 18)}px;--d:${6 + (i % 4)}s;--w:${(i * 0.37) % 2.2}s;--r:${i % 2 ? 40 : -40}deg">${f}</span>`).join('');
-    const colors = ['#34d399', '#fde047', '#6ee7b7', '#f59e0b'];
+    const colors = ['#fb923c', '#fde047', '#34d399', '#f97316'];
     const burst = Array.from({ length: 12 }, (_, i) => `<i style="--a:${i * 30}deg;background:${colors[i % 4]}"></i>`).join('');
     el.innerHTML = `<style>${css}</style>${floats}<div class="stage"><div class="logo">${logo}<div class="shine"></div><div class="burst">${burst}</div></div>
       <h2>${text.headline}</h2><p>${text.line}</p><div class="pill">${text.pill}</div></div>`;
