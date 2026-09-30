@@ -112,7 +112,7 @@ async function showOutro(p, n, tour) {
       #rb-outro .stage { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
       #rb-outro .logo { position: relative; width: 700px; animation: o-bob 3s ease-in-out 2.4s infinite; }
       #rb-outro .logo svg { display: block; width: 100%; height: auto; overflow: visible; }
-      #rb-outro svg .tile, #rb-outro svg .mark, #rb-outro svg .mark > *, #rb-outro svg > path { transform-box: fill-box; }
+      #rb-outro svg :is(.tile, .box, .handle, .leaf, .heart, .word1, .word2, .tagline) { transform-box: fill-box; }
       #rb-outro svg .tile { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
       #rb-outro svg .box { transform-origin: 50% 100%; animation: o-in .5s ease-out .75s both; }
       #rb-outro svg .handle { animation: o-fadein .4s ease-out .9s both; }

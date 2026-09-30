@@ -1,6 +1,6 @@
 {
-  "voice": { "af_heart": 0.6, "af_sarah": 0.4 },
-  "speed": 1.03,
+  "voice": "af_jessica",
+  "speed": 1.05,
   "pronounce": { "ZIP": "zip", "PINs": "pins", "PIN": "pin" },
   "customer": [
     { "id": "welcome", "text": "Hi there, and welcome to Rescue Bites! Local restaurants post their surplus food, like wrong orders and end-of-day extras, at up to seventy percent off." },
