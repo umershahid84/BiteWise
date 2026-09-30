@@ -1,4 +1,9 @@
-<p align="center"><img src="public/assets/logo.svg" alt="Rescue Bites" width="420"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/assets/logo-dark.svg">
+    <img src="public/assets/logo.svg" alt="Rescue Bites" width="460">
+  </picture>
+</p>
 
 # Rescue Bites: Reduce Food Waste
 
@@ -35,7 +40,7 @@ Rescue Bites is a marketplace where restaurants in greater Seattle sell food tha
 5. **Payouts tab:** connect Stripe (Express onboarding), see earnings and every transfer with its system-assigned **invoice number** and Stripe transaction ID.
 6. **Daily report:** sales, meals rescued, discounts, tax and every order for any day, with print, PDF and CSV.
 
-**Demo videos:** short narrated walkthroughs (voice-over and light background music, with optional subtitles) for customers and restaurants play on the home page ("See it in action"), behind **How it works** on the deals page and **Watch the tour** on the restaurant dashboard. They live in `public/videos/`; see `scripts/demo-video/README.md` to change the narration or re-record them.
+**Demo videos:** short narrated walkthroughs (a friendly voice-over and upbeat background music, with optional subtitles) for customers and restaurants play on the home page ("See it in action"), behind **How it works** on the deals page and **Watch the tour** on the restaurant dashboard. They live in `public/videos/`; see `scripts/demo-video/README.md` to change the narration or re-record them.
 
 **Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals and suspensions, customers (suspend, issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval) and an audit log of every admin action.
 
@@ -76,7 +81,43 @@ legacy/                  The previous Express + SQLite version, kept for referen
 
 ## Run it locally
 
-Requirements: Node.js 20.9+, Docker (for the local Supabase stack).
+Requirements: Node.js 20.9+ and a Supabase database. Use a free project on supabase.com (nothing else to install) or run Supabase on your computer with Docker.
+
+### Option A: free Supabase project (no Docker)
+
+1. **Create the project.** Sign up at [supabase.com](https://supabase.com) and click **New project**. Choose a name, a database password (keep it) and the region nearest you. When it's ready, open **Database → Extensions** and turn on **pg_cron** (the app's every-minute cleanup).
+2. **Create the tables.** In a terminal (PowerShell on Windows) in the app folder:
+
+   ```bash
+   npm install
+   npx supabase login                               # opens your browser to sign in
+   npx supabase link --project-ref YOUR_PROJECT_REF # asks for the database password from step 1
+   npx supabase db push                             # applies supabase/migrations
+   ```
+
+   `YOUR_PROJECT_REF` is the ID in the project's dashboard address: `https://supabase.com/dashboard/project/<ref>`.
+3. **Fill in `.env.local`.** Copy `.env.example` to `.env.local` (`copy .env.example .env.local` in PowerShell, `cp` elsewhere) and set these from **Project Settings → API Keys** and the project URL:
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   SUPABASE_SECRET_KEY=sb_secret_...
+   ```
+
+   Leave the Stripe keys empty to use the built-in test payments. Keep the secret key private; `.env.local` is never committed.
+4. **Send login emails back to your computer.** In **Authentication → URL Configuration**, set **Site URL** to `http://localhost:3000` and add `http://localhost:3000/auth/confirm` to **Redirect URLs**.
+5. **Load demo data and start:**
+
+   ```bash
+   npm run seed              # demo accounts, menus, live offers and two weeks of orders
+   npm run dev               # http://localhost:3000
+   ```
+
+When an update adds files to `supabase/migrations`, run `npx supabase db push` again.
+
+### Option B: Supabase on your computer (needs Docker)
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (on Windows, with WSL 2) and keep it running, then:
 
 ```bash
 npm install
@@ -85,6 +126,10 @@ cp .env.example .env.local   # then paste the URL, publishable key and secret ke
 npm run seed              # demo accounts, menus, live offers and two weeks of orders
 npm run dev               # http://localhost:3000
 ```
+
+`npm run db:start` fails with "docker: command not found" if Docker isn't installed or running; use Option A instead. The integration tests (`npm test`) and `npm run db:reset` need this local setup.
+
+### Using the app
 
 Opening the app through a tunnel or proxy (e.g. VS Code port forwarding, `*.devtunnels.ms`)? Add `TRUSTED_ORIGINS=*.devtunnels.ms,localhost:3000` to `.env.local` and restart (rebuild first if you use `npm start`); otherwise Next.js blocks log-in and other forms as cross-site requests.
 
