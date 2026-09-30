@@ -12,7 +12,7 @@ const { createLegal } = require('./legal/documents');
 const { quote } = require('./pricing');
 const { createCipher } = require('./secure');
 
-const DEMO_PASSWORD = 'BiteBack123';
+const DEMO_PASSWORD = 'RescueBites123';
 
 const RESTAURANTS = [
   { user: 'harborpho', name: 'Harbor Pho House', cuisine: 'Vietnamese', address: '1410 2nd Ave', city: 'Seattle', zip: '98101', lat: 47.6087, lng: -122.3385, tax: 1035 },
@@ -133,11 +133,11 @@ function main() {
   };
 
   transaction(db, () => {
-    userId('demo@biteback.test', 'demo', 'customer');
-    userId('admin@biteback.test', 'admin', 'admin'); // demo owner account for the admin console
+    userId('demo@rescuebites.test', 'demo', 'customer');
+    userId('admin@rescuebites.test', 'admin', 'admin'); // demo owner account for the admin console
     const ids = {};
     for (const r of RESTAURANTS) {
-      const uid = userId(`${r.user}@biteback.test`, r.user, 'restaurant');
+      const uid = userId(`${r.user}@rescuebites.test`, r.user, 'restaurant');
       const existing = db.prepare('SELECT id FROM restaurants WHERE owner_user_id = ?').get(uid);
       ids[r.user] = existing ? existing.id : Number(db.prepare(`
         INSERT INTO restaurants (owner_user_id, name, cuisine, description, address, city, zip, phone, lat, lng, tax_rate_bps)
@@ -165,7 +165,7 @@ function main() {
     }
 
     REGIONAL.forEach(([user, name, cuisine, address, city, zip], i) => {
-      const uid = userId(`${user}@biteback.test`, user, 'restaurant');
+      const uid = userId(`${user}@rescuebites.test`, user, 'restaurant');
       let rid = db.prepare('SELECT id FROM restaurants WHERE owner_user_id = ?').get(uid)?.id;
       if (!rid) {
         const z = lookupZip(zip);

@@ -1,8 +1,8 @@
 {
-  "name": "biteback",
+  "name": "rescuebites",
   "version": "0.1.0",
   "private": true,
-  "description": "BiteBack - discounted surplus restaurant food marketplace",
+  "description": "Rescue Bites - discounted surplus restaurant food marketplace",
   "main": "server/index.js",
   "engines": {
     "node": ">=22.13"

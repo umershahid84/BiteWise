@@ -1,5 +1,5 @@
--- The business is now called Rescue Bites: the suspended-restaurant message names it.
--- Same functions as in 20260929000300_functions.sql; only that message changed.
+-- The business is now called Rescue Bites: the suspended-restaurant message names it, and the
+-- every-minute cleanup job is renamed. The functions are as in 20260929000300_functions.sql; only that message changed.
 
 -- Creates (p_offer_id null) or edits an offer from one of the restaurant's menu items.
 -- p_expires_in_minutes starts the discard timer now (5 min to 3 days); null keeps the current timer.
@@ -116,5 +116,17 @@ begin
   end if;
   update public.offers set status = p_status where id = v.id returning * into v;
   return v;
+end;
+$$;
+
+-- Databases set up before the rename have the cleanup job as biteback-sweep.
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'biteback-sweep';
+    perform cron.schedule('rescuebites-sweep', '* * * * *', 'select public.sweep()');
+  end if;
+exception when others then
+  raise notice 'Could not rename the cleanup job (%); schedule /api/cron/sweep instead.', sqlerrm;
 end;
 $$;

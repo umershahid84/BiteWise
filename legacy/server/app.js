@@ -70,7 +70,7 @@ function createApp({ db, config, payments }) {
   // CSRF protection: state-changing API calls must carry a custom header, which browsers
   // only allow from same-origin scripts.
   app.use('/api', (req, _res, next) => {
-    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Requested-With') !== 'BiteBack') {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Requested-With') !== 'Rescue Bites') {
       return next(new HttpError(403, 'Request blocked.'));
     }
     next();

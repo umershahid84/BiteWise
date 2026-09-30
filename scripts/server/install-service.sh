@@ -4,16 +4,26 @@
 #
 #   sudo bash scripts/server/install-service.sh [--port 3000] [--host 0.0.0.0] [--user NAME] [--node /path/to/node]
 #
-# Then: sudo systemctl start biteback   (status: systemctl status biteback, logs: sudo journalctl -u biteback -f)
+# Then: sudo systemctl start rescuebites   (status: systemctl status rescuebites, logs: sudo journalctl -u rescuebites -f)
+#
+# On a server still running the old "biteback" service (from before the rename to Rescue Bites), it takes over that
+# service's port, address, user and Node.js, removes it, and starts rescuebites in its place.
 set -euo pipefail
 
-SERVICE=biteback
+SERVICE=rescuebites
 UNIT=/etc/systemd/system/$SERVICE.service
 APP_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 PORT=3000
 HOST=0.0.0.0
 APP_USER=${SUDO_USER:-}
 NODE_BIN=
+OLD_UNIT=/etc/systemd/system/biteback.service
+if [ -f "$OLD_UNIT" ]; then
+  PORT=$(sed -n 's/^Environment=PORT=//p' "$OLD_UNIT" | head -n 1); PORT=${PORT:-3000}
+  HOST=$(sed -n 's/.* --hostname \([^ ]*\).*/\1/p' "$OLD_UNIT" | head -n 1); HOST=${HOST:-0.0.0.0}
+  OLD_USER=$(sed -n 's/^User=//p' "$OLD_UNIT" | head -n 1); APP_USER=${OLD_USER:-$APP_USER}
+  NODE_BIN=$(sed -n 's/^ExecStart=\([^ ]*\) .*/\1/p' "$OLD_UNIT" | head -n 1)
+fi
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -61,10 +71,19 @@ fi
 
 sed -e "s|@APP_DIR@|$APP_DIR|g" -e "s|@APP_USER@|$APP_USER|g" -e "s|@APP_GROUP@|$APP_GROUP|g" \
     -e "s|@NODE_BIN@|$NODE_BIN|g" -e "s|@NODE_DIR@|$NODE_DIR|g" -e "s|@PORT@|$PORT|g" -e "s|@HOST@|$HOST|g" \
-    deploy/biteback.service > "$UNIT"
+    deploy/rescuebites.service > "$UNIT"
 chmod 644 "$UNIT"
 systemctl daemon-reload
 systemctl enable "$SERVICE" >/dev/null 2>&1
+
+if [ -f "$OLD_UNIT" ]; then
+  echo "Replacing the old biteback service with $SERVICE..."
+  systemctl disable --now biteback >/dev/null 2>&1 || true
+  rm -f "$OLD_UNIT"
+  systemctl daemon-reload
+  systemctl start "$SERVICE"
+  echo "The old biteback service is removed and $SERVICE is running."
+fi
 
 cat <<MSG
 

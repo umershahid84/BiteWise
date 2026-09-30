@@ -64,7 +64,7 @@ $('#add-card-btn').addEventListener('click', async () => {
 
 load();
 
-const KIND = { refund: 'Refund issued as credit', goodwill: 'Credit from BiteBack', redeem: 'Used on order', restore: 'Returned to your credit', adjustment: 'Adjustment' };
+const KIND = { refund: 'Refund issued as credit', goodwill: 'Credit from Rescue Bites', redeem: 'Used on order', restore: 'Returned to your credit', adjustment: 'Adjustment' };
 api('/credit').then(({ balanceCents, history }) => {
   $('#credit-balance').textContent = money(balanceCents);
   $('#credit-history').innerHTML = history.length ? `<table class="data" style="margin-top:12px"><tbody>${history.map((h) => `<tr>

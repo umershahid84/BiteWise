@@ -1,4 +1,4 @@
-// Accept/decline dialog for BiteBack's legal documents.
+// Accept/decline dialog for Rescue Bites' legal documents.
 import { api, $, esc, openModal } from './common.js';
 
 // Shows the documents. Resolves to { docId: version } when accepted, or null when declined/closed.

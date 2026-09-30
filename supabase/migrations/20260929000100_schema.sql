@@ -1,4 +1,4 @@
--- BiteBack schema: accounts, restaurants, menus, offers, orders, payments, credit, payouts, legal.
+-- Rescue Bites schema: accounts, restaurants, menus, offers, orders, payments, credit, payouts, legal.
 -- Money is stored in integer cents; rates in basis points (1 bp = 0.01%).
 
 create extension if not exists postgis with schema extensions;
@@ -197,8 +197,8 @@ create table public.orders (
   capture_started_at timestamptz,
   -- Set when an order is released but its card hold still has to be voided with the payment provider.
   needs_void boolean not null default false,
-  -- Refunds: refunded_cents = back to the ORIGINAL payment (the restaurant and BiteBack give up that share);
-  -- credited_cents = issued as BiteBack PLATFORM CREDIT (funded by BiteBack, restaurant keeps its money).
+  -- Refunds: refunded_cents = back to the ORIGINAL payment (the restaurant and Rescue Bites give up that share);
+  -- credited_cents = issued as Rescue Bites PLATFORM CREDIT (funded by Rescue Bites, restaurant keeps its money).
   refunded_cents integer not null default 0,
   card_refunded_cents integer not null default 0,
   credited_cents integer not null default 0,

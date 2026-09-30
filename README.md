@@ -1,4 +1,9 @@
-<p align="center"><img src="public/assets/logo.svg" alt="Rescue Bites" width="420"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/assets/logo-dark.svg">
+    <img src="public/assets/logo.svg" alt="Rescue Bites" width="460">
+  </picture>
+</p>
 
 # Rescue Bites: Reduce Food Waste
 
@@ -35,7 +40,7 @@ Rescue Bites is a marketplace where restaurants in greater Seattle sell food tha
 5. **Payouts tab:** connect Stripe (Express onboarding), see earnings and every transfer with its system-assigned **invoice number** and Stripe transaction ID.
 6. **Daily report:** sales, meals rescued, discounts, tax and every order for any day, with print, PDF and CSV.
 
-**Demo videos:** short narrated walkthroughs (voice-over and light background music, with optional subtitles) for customers and restaurants play on the home page ("See it in action"), behind **How it works** on the deals page and **Watch the tour** on the restaurant dashboard. They live in `public/videos/`; see `scripts/demo-video/README.md` to change the narration or re-record them.
+**Demo videos:** short narrated walkthroughs (a friendly voice-over and upbeat background music, with optional subtitles) for customers and restaurants play on the home page ("See it in action"), behind **How it works** on the deals page and **Watch the tour** on the restaurant dashboard. They live in `public/videos/`; see `scripts/demo-video/README.md` to change the narration or re-record them.
 
 **Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals and suspensions, customers (suspend, issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval) and an audit log of every admin action.
 
@@ -76,7 +81,43 @@ legacy/                  The previous Express + SQLite version, kept for referen
 
 ## Run it locally
 
-Requirements: Node.js 20.9+, Docker (for the local Supabase stack).
+Requirements: Node.js 20.9+ and a Supabase database. Use a free project on supabase.com (nothing else to install) or run Supabase on your computer with Docker.
+
+### Option A: free Supabase project (no Docker)
+
+1. **Create the project.** Sign up at [supabase.com](https://supabase.com) and click **New project**. Choose a name, a database password (keep it) and the region nearest you. When it's ready, open **Database → Extensions** and turn on **pg_cron** (the app's every-minute cleanup).
+2. **Create the tables.** In a terminal (PowerShell on Windows) in the app folder:
+
+   ```bash
+   npm install
+   npx supabase login                               # opens your browser to sign in
+   npx supabase link --project-ref YOUR_PROJECT_REF # asks for the database password from step 1
+   npx supabase db push                             # applies supabase/migrations
+   ```
+
+   `YOUR_PROJECT_REF` is the ID in the project's dashboard address: `https://supabase.com/dashboard/project/<ref>`.
+3. **Fill in `.env.local`.** Copy `.env.example` to `.env.local` (`copy .env.example .env.local` in PowerShell, `cp` elsewhere) and set these from **Project Settings → API Keys** and the project URL:
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   SUPABASE_SECRET_KEY=sb_secret_...
+   ```
+
+   Leave the Stripe keys empty to use the built-in test payments. Keep the secret key private; `.env.local` is never committed.
+4. **Send login emails back to your computer.** In **Authentication → URL Configuration**, set **Site URL** to `http://localhost:3000` and add `http://localhost:3000/auth/confirm` to **Redirect URLs**.
+5. **Load demo data and start:**
+
+   ```bash
+   npm run seed              # demo accounts, menus, live offers and two weeks of orders
+   npm run dev               # http://localhost:3000
+   ```
+
+When an update adds files to `supabase/migrations`, run `npx supabase db push` again.
+
+### Option B: Supabase on your computer (needs Docker)
+
+Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (on Windows, with WSL 2) and keep it running, then:
 
 ```bash
 npm install
@@ -86,9 +127,13 @@ npm run seed              # demo accounts, menus, live offers and two weeks of o
 npm run dev               # http://localhost:3000
 ```
 
+`npm run db:start` fails with "docker: command not found" if Docker isn't installed or running; use Option A instead. The integration tests (`npm test`) and `npm run db:reset` need this local setup.
+
+### Using the app
+
 Opening the app through a tunnel or proxy (e.g. VS Code port forwarding, `*.devtunnels.ms`)? Add `TRUSTED_ORIGINS=*.devtunnels.ms,localhost:3000` to `.env.local` and restart (rebuild first if you use `npm start`); otherwise Next.js blocks log-in and other forms as cross-site requests.
 
-Demo logins (password `BiteBack123`): customer `demo`, owner `admin`, restaurants `harborpho`, `ballardbread`, `caphilltacos`, `fremontpizza`, `bellevuecurry`, `redmondpoke`, `kirklandsushi` (Stripe connected) and 22 more around the region (`tacomathai`, `olympiacafe`, `desmoinesfish`, ...). Test cards (mock mode): `4242 4242 4242 4242` works; `4000 0000 0000 0002` is declined.
+Demo logins (password `RescueBites123`): customer `demo`, owner `admin`, restaurants `harborpho`, `ballardbread`, `caphilltacos`, `fremontpizza`, `bellevuecurry`, `redmondpoke`, `kirklandsushi` (Stripe connected) and 22 more around the region (`tacomathai`, `olympiacafe`, `desmoinesfish`, ...). Test cards (mock mode): `4242 4242 4242 4242` works; `4000 0000 0000 0002` is declined.
 
 Create your real owner account (admins can't sign up on the website):
 
@@ -106,20 +151,22 @@ Other commands: `npm run lint`, `npm run typecheck`, `npm test` (unit + integrat
 
 ```bash
 npm run service:install        # asks for your sudo password; builds the app the first time
-sudo systemctl start biteback
+sudo systemctl start rescuebites
 ```
 
 The installer uses your user account and your Node.js (nvm works), and serves on port 3000. Change it with `npm run service:install -- --port 8080`; running the installer again updates the service.
 
 | To... | Run |
 |---|---|
-| Start / stop / restart | `sudo systemctl start biteback` / `stop` / `restart` |
-| See if it's running | `systemctl status biteback` |
-| Follow the logs | `sudo journalctl -u biteback -f` |
-| Turn off starting at boot | `sudo systemctl disable biteback` |
+| Start / stop / restart | `sudo systemctl start rescuebites` / `stop` / `restart` |
+| See if it's running | `systemctl status rescuebites` |
+| Follow the logs | `sudo journalctl -u rescuebites -f` |
+| Turn off starting at boot | `sudo systemctl disable rescuebites` |
 | **Deploy the latest code** | `npm run update` |
 
 **`npm run update`** pulls the latest code, runs `npm ci` if packages changed, and builds the new version **while the site keeps running**. Then it swaps the new build in and restarts, so the site is down for about a second. If the new version doesn't answer, the previous one is put back automatically. If nothing new was pushed, it says so and does nothing. When an update includes database migrations, it reminds you to run `npx supabase db push`.
+
+**Upgrading a server from before the rename to Rescue Bites** (when the service was called `biteback`): run `npm run update` twice. The first run deploys the new code on the old service; the second replaces the `biteback` service with `rescuebites`, keeping its port and settings (or run `npm run service:install` once to switch straight away). Then run `npx supabase db push`, which also renames the database's cleanup job, and `npm run seed` if the server has the demo data: it moves the demo accounts to `@rescuebites.test` emails and the `RescueBites123` password. In `.env.local`, change `LEGAL_ENTITY_NAME` and `SUPPORT_EMAIL` if they still say BiteBack.
 
 Don't run `npm start` or `npm run build` in the same folder while the service is running: that would replace the build it is serving. Use `npm run dev` for development, `npm run update` to deploy.
 

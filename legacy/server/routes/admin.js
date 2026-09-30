@@ -11,8 +11,8 @@ const toCsv = (rows) => `${rows.map((r) => r.map(csvEscape).join(',')).join('\n'
 const dollars = (c) => (c / 100).toFixed(2);
 
 // refunded_cents = refunds to the customer's ORIGINAL payment (card and/or credit they used): the refunded
-// share comes out of the restaurant's food sales and BiteBack's fee. Refunds issued as PLATFORM CREDIT
-// (credited_cents) are funded by BiteBack; the restaurant keeps its full food sales.
+// share comes out of the restaurant's food sales and Rescue Bites' fee. Refunds issued as PLATFORM CREDIT
+// (credited_cents) are funded by Rescue Bites; the restaurant keeps its full food sales.
 // Portion of an original-payment refund that comes out of the restaurant's food sales (the rest is fee and tax).
 const foodRefund = (o) => (o.refunded_cents && o.total_cents ? Math.round((o.refunded_cents * o.subtotal_cents) / o.total_cents) : 0);
 const feeRefund = (o) => (o.refunded_cents && o.total_cents ? Math.round((o.refunded_cents * o.service_fee_cents) / o.total_cents) : 0);
@@ -153,7 +153,7 @@ module.exports = function adminRoutes({ db, config, payments, orders, receipts, 
     res.json({ ok: true });
   });
 
-  // Goodwill platform credit (funded by BiteBack).
+  // Goodwill platform credit (funded by Rescue Bites).
   router.post('/users/:id/credit', (req, res) => {
     const u = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'customer'").get(Number(req.params.id));
     if (!u) throw new HttpError(404, 'Customer not found.');
@@ -260,7 +260,7 @@ module.exports = function adminRoutes({ db, config, payments, orders, receipts, 
   router.get('/orders/:id/receipt.pdf', async (req, res) => {
     const rc = receipts.receiptData(getOrder(req));
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="BiteBack-receipt-${rc.receiptNumber}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="RescueBites-receipt-${rc.receiptNumber}.pdf"`);
     res.send(await receipts.receiptPdf(rc));
   });
 
@@ -359,7 +359,7 @@ module.exports = function adminRoutes({ db, config, payments, orders, receipts, 
   router.get('/payouts.csv', (req, res) => {
     const rows = payoutRows();
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="BiteBack-payouts.csv"');
+    res.setHeader('Content-Disposition', 'attachment; filename="RescueBites-payouts.csv"');
     const history = db.prepare(`SELECT p.*, r.name AS restaurant_name FROM payouts p JOIN restaurants r ON r.id = p.restaurant_id ORDER BY p.paid_at`).all();
     res.send(toCsv([['Restaurant', 'City', 'Owner email', 'Completed orders', 'Earned', 'Paid', 'Balance owed', 'Last paid'],
       ...rows.map((x) => [x.name, x.city, x.email, x.orders, dollars(x.earnedCents), dollars(x.paidCents), dollars(x.balanceCents), x.lastPaidAt || '']),
@@ -396,7 +396,7 @@ module.exports = function adminRoutes({ db, config, payments, orders, receipts, 
   router.get('/tax.csv', (req, res) => {
     const r = range(req, 30);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="BiteBack-sales-tax-${r.from}-to-${r.to}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="RescueBites-sales-tax-${r.from}-to-${r.to}.csv"`);
     res.send(toCsv([['City', 'ZIP', 'Rate %', 'Orders', 'Taxable sales', 'Sales tax collected'],
       ...taxRows(r).map((x) => [x.city, x.zip, (x.rateBps / 100).toFixed(2), x.orders, dollars(x.taxableCents), dollars(x.taxCents)])]));
   });
@@ -405,7 +405,7 @@ module.exports = function adminRoutes({ db, config, payments, orders, receipts, 
     const r = range(req, 30);
     const rows = db.prepare(`${orderQuery} WHERE o.created_at >= ? AND o.created_at < ? AND o.status != 'failed' ORDER BY o.created_at`).all(r.start, r.end);
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="BiteBack-orders-${r.from}-to-${r.to}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="RescueBites-orders-${r.from}-to-${r.to}.csv"`);
     res.send(toCsv([['Order #', 'Created', 'Picked up', 'Status', 'Customer', 'Restaurant', 'Item', 'Qty', 'Original unit', 'Discount %',
       'Unit price', 'Food subtotal', 'Service fee', 'Sales tax', 'Total', 'Credit applied', 'Refunded to original payment', 'Refunded as platform credit', 'Card', 'Transaction ID'],
     ...rows.map((o) => [o.id, o.created_at, o.picked_up_at || '', o.status, o.username, o.restaurant_name, o.item_title, o.quantity,

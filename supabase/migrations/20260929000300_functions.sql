@@ -91,7 +91,7 @@ language sql stable security definer set search_path = public as $$
   select public.credit_balance(auth.uid());
 $$;
 
--- Goodwill credit issued by an admin (funded by BiteBack).
+-- Goodwill credit issued by an admin (funded by Rescue Bites).
 create function public.issue_credit(p_user uuid, p_amount_cents integer, p_note text, p_by uuid)
 returns integer
 language plpgsql security definer set search_path = public as $$
@@ -399,8 +399,8 @@ left join (
 -- Records a refund on a completed order after the server has moved the money.
 --   p_method 'original': p_card_cents back to the card (already refunded by the server), the rest
 --     (p_credit_cents) back to the credit balance the customer paid with. The restaurant gives up
---     p_restaurant_share_cents; BiteBack gives up its fee share.
---   p_method 'credit': the whole amount becomes BiteBack platform credit, funded by BiteBack.
+--     p_restaurant_share_cents; Rescue Bites gives up its fee share.
+--   p_method 'credit': the whole amount becomes Rescue Bites platform credit, funded by Rescue Bites.
 create function public.apply_refund(
   p_order_id bigint, p_amount_cents integer, p_method public.refund_method, p_card_cents integer,
   p_credit_cents integer, p_restaurant_share_cents integer, p_reason text, p_provider_ref text, p_by uuid
@@ -474,7 +474,7 @@ begin
     end if;
     committed := existing.quantity_total - existing.quantity_available;
   elsif r_status = 'suspended' then
-    raise exception 'Your restaurant is suspended, so you cannot post offers. Please contact BiteBack support.' using errcode = 'BB403';
+    raise exception 'Your restaurant is suspended, so you cannot post offers. Please contact Rescue Bites support.' using errcode = 'BB403';
   end if;
 
   select * into item from public.menu_items where id = p_menu_item_id and restaurant_id = rid and active;
@@ -578,7 +578,7 @@ begin
     end if;
     select status into r_status from public.restaurants where id = v.restaurant_id;
     if r_status = 'suspended' then
-      raise exception 'Your restaurant is suspended, so you cannot post offers. Please contact BiteBack support.' using errcode = 'BB403';
+      raise exception 'Your restaurant is suspended, so you cannot post offers. Please contact Rescue Bites support.' using errcode = 'BB403';
     end if;
   end if;
   update public.offers set status = p_status where id = v.id returning * into v;

@@ -80,7 +80,7 @@ function createReceiptService({ db, config }) {
     const ymd = `${created.getUTCFullYear()}${String(created.getUTCMonth() + 1).padStart(2, '0')}${String(created.getUTCDate()).padStart(2, '0')}`;
     const lineOriginal = order.original_unit_price_cents * order.quantity;
     return {
-      receiptNumber: `BB-${ymd}-${String(order.id).padStart(6, '0')}`,
+      receiptNumber: `RB-${ymd}-${String(order.id).padStart(6, '0')}`,
       orderId: order.id,
       status: order.status,
       statusLabel: ORDER_STATUS[order.status] || order.status,
@@ -124,7 +124,7 @@ function createReceiptService({ db, config }) {
       refunds: db.prepare('SELECT amount_cents, method, card_cents, credit_cents, reason, created_at FROM refunds WHERE order_id = ? ORDER BY id').all(order.id)
         .map((f) => ({
           amountCents: f.amount_cents,
-          to: f.method === 'credit' ? 'BiteBack platform credit'
+          to: f.method === 'credit' ? 'Rescue Bites platform credit'
             : [f.card_cents && `${order.card_label} (${money(f.card_cents)})`, f.credit_cents && `platform credit (${money(f.credit_cents)})`].filter(Boolean).join(' + '),
           reason: f.reason,
           atText: formatDateTime(f.created_at, timeZone),
@@ -134,14 +134,14 @@ function createReceiptService({ db, config }) {
       paymentRef: order.payment_ref || '',
       pin: order.status === 'reserved' ? order.pin : null,
       // Code 128 module widths (bar, space, ...) for the receipt number barcode.
-      barcode: code128(`BB-${ymd}-${String(order.id).padStart(6, '0')}`),
+      barcode: code128(`RB-${ymd}-${String(order.id).padStart(6, '0')}`),
       timeZone,
     };
   }
 
   // Point-of-sale style receipt: an 80 mm thermal roll, as tall as the content needs.
   function receiptPdf(rc) {
-    const info = { Title: `BiteBack receipt ${rc.receiptNumber}`, Author: 'BiteBack' };
+    const info = { Title: `Rescue Bites receipt ${rc.receiptNumber}`, Author: 'Rescue Bites' };
     // First pass measures the height, second pass draws on a page cut to fit.
     const probe = new PDFDocument({ size: [ROLL_WIDTH, 5000], margin: 0, autoFirstPage: true });
     fonts(probe);
@@ -221,7 +221,7 @@ function createReceiptService({ db, config }) {
       ['Discounts given', d(rep.summary.discountsCents)],
       ['Food sales', d(rep.summary.foodSalesCents)],
       ['Sales tax collected', d(rep.summary.salesTaxCents)],
-      ['BiteBack service fees (paid by customers)', d(rep.summary.serviceFeesCents)],
+      ['Rescue Bites service fees (paid by customers)', d(rep.summary.serviceFeesCents)],
       ['Total charged to customers', d(rep.summary.totalChargedCents)],
       ['Awaiting pickup', rep.summary.awaitingPickup],
       ['Cancelled', rep.summary.cancelled],
@@ -231,7 +231,7 @@ function createReceiptService({ db, config }) {
   }
 
   function reportPdf(rep) {
-    const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `BiteBack daily report ${rep.date}`, Author: 'BiteBack' } });
+    const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `Rescue Bites daily report ${rep.date}`, Author: 'Rescue Bites' } });
     fonts(doc);
     const L = 40;
     const R = doc.page.width - 40;
@@ -255,7 +255,7 @@ function createReceiptService({ db, config }) {
       doc.font('head').fontSize(15).fillColor(i === 0 ? GREEN : INK).text(v, x + 10, 131, { width: cw - 16 });
     });
     doc.font('regular').fontSize(9).fillColor(MUTED).text(
-      `Menu value ${money(s.menuValueCents)} · BiteBack service fees paid by customers ${money(s.serviceFeesCents)} · `
+      `Menu value ${money(s.menuValueCents)} · Rescue Bites service fees paid by customers ${money(s.serviceFeesCents)} · `
       + `Awaiting pickup ${s.awaitingPickup} · Cancelled ${s.cancelled} · Not picked up ${s.notPickedUp}`, L, 168, { width: W },
     );
 
@@ -456,7 +456,7 @@ function drawPosReceipt(doc, rc) {
   center('THANK YOU FOR RESCUING FOOD!', 'monoBold', 8, { after: 4 });
   small('Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. '
     + 'Orders not picked up are released without charge. Times in Pacific Time.', { align: 'center', size: 6.2, after: 3 });
-  center('support@biteback.app', 'mono', 6.6, { after: 0 });
+  center('support@rescuebites.app', 'mono', 6.6, { after: 0 });
   return y;
 }
 
