@@ -129,6 +129,20 @@ function must<T>(res: { data: T; error: { message: string } | null }, what: stri
 
 const tags = (s: string) => (s ? s.split(',') : []);
 
+async function deleteLogin(email: string) {
+  for (let page = 1; ; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(`list users: ${error.message}`);
+    const found = data.users.find((u) => u.email === email);
+    if (found) {
+      const del = await db.auth.admin.deleteUser(found.id);
+      if (del.error) throw new Error(`delete ${email}: ${del.error.message}`);
+      return;
+    }
+    if (data.users.length < 1000) return;
+  }
+}
+
 // Creates a user through Supabase Auth (the sign-up trigger creates the profile, restaurant and
 // terms-acceptance records), or returns the existing one.
 async function user(username: string, role: 'customer' | 'restaurant' | 'admin', restaurant?: Record<string, unknown>) {
@@ -145,12 +159,19 @@ async function user(username: string, role: 'customer' | 'restaurant' | 'admin',
   // Admins are created as customers and then promoted (like scripts/create-admin.ts does).
   const signupRole = role === 'admin' ? 'customer' : role;
   const accepted = Object.fromEntries(REQUIRED[signupRole].map((d) => [d, LEGAL_VERSION]));
-  const res = await db.auth.admin.createUser({
-    email: `${username}@rescuebites.test`,
+  const email = `${username}@rescuebites.test`;
+  const create = () => db.auth.admin.createUser({
+    email,
     password: DEMO_PASSWORD,
     email_confirm: true,
     user_metadata: { username, role: signupRole, accepted_terms: accepted, restaurant, ip: 'seed', user_agent: 'npm run seed' },
   });
+  let res = await create();
+  if (res.error?.code === 'email_exists') {
+    // A login without a profile, left by a seed run before the database tables existed: replace it.
+    await deleteLogin(email);
+    res = await create();
+  }
   if (res.error || !res.data.user) throw new Error(`create ${username}: ${res.error?.message}`);
   const id = res.data.user.id;
   if (role === 'admin') must(await db.from('profiles').update({ role: 'admin' }).eq('id', id).select('id'), 'promote admin');
@@ -162,6 +183,12 @@ async function restaurantId(ownerId: string) {
 }
 
 async function main() {
+  const tables = await db.from('profiles').select('id').limit(1);
+  if (tables.error?.code === 'PGRST205' || tables.error?.code === '42P01') {
+    throw new Error(`The database doesn't have the Rescue Bites tables yet (${tables.error.message}).
+Create them first with: npx supabase db push   (see "Run it locally" in README.md), then run npm run seed again.`);
+  }
+  if (tables.error) throw new Error(`Can't reach the database at ${url}: ${tables.error.message}`);
   const { data: fee } = await db.from('settings').select('value').eq('key', 'service_fee_bps').single();
   const serviceFeeBps = Number(fee?.value ?? 500);
 
