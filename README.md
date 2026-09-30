@@ -198,6 +198,8 @@ For a project on supabase.com, install it with `npm run email:template`. It uplo
 
 Keep **Authentication → URL Configuration → Site URL** set to your site's address: the button links to `<Site URL>/auth/confirm`. After signing up, people see a "Check your email" page with **Resend confirmation email** (once a minute) and **Back to login**; trying to log in before confirming offers the resend button too.
 
+**Free Supabase projects** can only change the email design after connecting their own email provider (below); until then `npm run email:template` says so.
+
 **Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Rescue Bites <hello@your-domain>`. The template stays the same.
 
 ## Legal documents

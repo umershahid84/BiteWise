@@ -55,7 +55,14 @@ async function main() {
 The button links to your Site URL (Authentication → URL Configuration), so keep that set to your site's address.`);
       return;
     }
-    console.log(`Couldn't install it automatically (${res.status}: ${(await res.text()).slice(0, 200)}).`);
+    const body = await res.text();
+    if (/custom SMTP/i.test(body)) {
+      console.log(`Supabase doesn't allow a custom email design on free projects that use its built-in email sender (which also
+only sends a few emails an hour, to your team only). Connect your own email provider first: Supabase dashboard →
+Authentication → Emails → SMTP Settings (see "Branded emails" in README.md). Then run npm run email:template again.`);
+      return;
+    }
+    console.log(`Couldn't install it automatically (${res.status}: ${body.slice(0, 200)}).`);
     if (res.status === 401) console.log('The access token is invalid or expired: run npx supabase login again, or set a new SUPABASE_ACCESS_TOKEN.');
   } else if (!ref) {
     console.log('NEXT_PUBLIC_SUPABASE_URL is not a supabase.com project, so there is nothing to install: the local stack uses supabase/config.toml.');
