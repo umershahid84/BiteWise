@@ -11,12 +11,12 @@ export const metadata: Metadata = { title: 'Log in' };
 const safeNext = (next: unknown) => (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') ? next : null);
 
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
-  const { next } = await searchParams;
+  const { next, confirmed, error } = await searchParams;
   const viewer = await getViewer();
   if (viewer) redirect(safeNext(next) ?? homeFor(viewer.role));
   return (
     <AuthCard title="Welcome back">
-      <LoginForm next={safeNext(next)} />
+      <LoginForm next={safeNext(next)} notice={confirmed ? 'confirmed' : error === 'confirmation' ? 'confirmation-failed' : null} />
     </AuthCard>
   );
 }

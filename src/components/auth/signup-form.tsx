@@ -9,6 +9,8 @@ import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
+import { AuthTitle } from './auth-card';
+import { CheckEmail } from './check-email';
 import { cn } from '@/lib/utils';
 
 type Role = 'customer' | 'restaurant';
@@ -20,6 +22,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<React.ReactNode>(null);
   const [agreementOpen, setAgreementOpen] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const values = () => {
@@ -68,7 +71,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
       setAgreementOpen(false);
       if (!res.ok) return setError(res.error);
       if (res.data.needsConfirmation) {
-        setNotice(<Alert tone="info" className="mb-4"><b>Check your email.</b> We sent you a link to confirm your address and finish creating your account.</Alert>);
+        setSentTo(values().email.trim());
         return;
       }
       router.replace(res.data.next);
@@ -76,8 +79,11 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
     });
   };
 
+  if (sentTo) return <CheckEmail email={sentTo} />;
+
   return (
     <>
+      <AuthTitle>Create your free account</AuthTitle>
       <div role="tablist" className="mb-5 grid grid-cols-2 gap-1 rounded-full border border-line bg-bg-2 p-1">
         {(['customer', 'restaurant'] as const).map((r) => (
           <button

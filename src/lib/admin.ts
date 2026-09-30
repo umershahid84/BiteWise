@@ -150,7 +150,7 @@ export async function users(params: URLSearchParams) {
   const role = (['customer', 'restaurant', 'admin'].includes(params.get('role') ?? '') ? params.get('role') : 'customer') as Database['public']['Enums']['user_role'];
   const q = (params.get('q') ?? '').trim().toLowerCase();
   const [profiles, orders, credit, terms] = await Promise.all([
-    all<Database['public']['Tables']['profiles']['Row']>((a, b) => db().from('profiles').select('*').eq('role', role).order('created_at', { ascending: false }).range(a, b)),
+    all<Database['public']['Tables']['profiles']['Row']>((a, b) => db().from('profiles').select('*').eq('role', role).neq('status', 'deleted').order('created_at', { ascending: false }).range(a, b)),
     all<{ user_id: string; status: string; total_cents: number; refunded_cents: number }>((a, b) => db().from('orders').select('user_id, status, total_cents, refunded_cents').in('status', ['picked_up', 'expired']).range(a, b)),
     all<{ user_id: string; amount_cents: number }>((a, b) => db().from('credit_ledger').select('user_id, amount_cents').range(a, b)),
     all<{ user_id: string; accepted_at: string }>((a, b) => db().from('terms_acceptances').select('user_id, accepted_at').range(a, b)),
@@ -162,7 +162,7 @@ export async function users(params: URLSearchParams) {
       const mine = orders.filter((o) => o.user_id === u.id);
       const done = mine.filter((o) => o.status === 'picked_up');
       return {
-        id: u.id, email: u.email, username: u.username, role: u.role, status: u.status, createdAt: u.created_at,
+        id: u.id, email: u.email, username: u.username, role: u.role, status: u.status, suspendedUntil: u.suspended_until, createdAt: u.created_at,
         orders: done.length, spentCents: done.reduce((n, o) => n + o.total_cents - o.refunded_cents, 0), noShows: mine.length - done.length,
         creditCents: credit.filter((c) => c.user_id === u.id).reduce((n, c) => n + c.amount_cents, 0),
         termsAcceptedAt: terms.filter((t) => t.user_id === u.id).map((t) => t.accepted_at).sort().at(-1) ?? null,
