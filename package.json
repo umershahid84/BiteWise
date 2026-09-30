@@ -18,7 +18,8 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/database.types.ts",
     "seed": "tsx scripts/seed.ts",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "create-admin": "tsx scripts/create-admin.ts",
+    "email:template": "tsx scripts/email-template.ts"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^6.12.0",

@@ -38,3 +38,6 @@ supabase/.temp
 
 # Python bytecode (demo-video scripts)
 __pycache__/
+
+# npm run email:template output (paste into the Supabase dashboard)
+/confirm-signup-email.html
