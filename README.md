@@ -88,7 +88,7 @@ npm run dev               # http://localhost:3000
 
 Opening the app through a tunnel or proxy (e.g. VS Code port forwarding, `*.devtunnels.ms`)? Add `TRUSTED_ORIGINS=*.devtunnels.ms,localhost:3000` to `.env.local` and restart (rebuild first if you use `npm start`); otherwise Next.js blocks log-in and other forms as cross-site requests.
 
-Demo logins (password `BiteBack123`): customer `demo`, owner `admin`, restaurants `harborpho`, `ballardbread`, `caphilltacos`, `fremontpizza`, `bellevuecurry`, `redmondpoke`, `kirklandsushi` (Stripe connected) and 22 more around the region (`tacomathai`, `olympiacafe`, `desmoinesfish`, ...). Test cards (mock mode): `4242 4242 4242 4242` works; `4000 0000 0000 0002` is declined.
+Demo logins (password `RescueBites123`): customer `demo`, owner `admin`, restaurants `harborpho`, `ballardbread`, `caphilltacos`, `fremontpizza`, `bellevuecurry`, `redmondpoke`, `kirklandsushi` (Stripe connected) and 22 more around the region (`tacomathai`, `olympiacafe`, `desmoinesfish`, ...). Test cards (mock mode): `4242 4242 4242 4242` works; `4000 0000 0000 0002` is declined.
 
 Create your real owner account (admins can't sign up on the website):
 
@@ -106,20 +106,22 @@ Other commands: `npm run lint`, `npm run typecheck`, `npm test` (unit + integrat
 
 ```bash
 npm run service:install        # asks for your sudo password; builds the app the first time
-sudo systemctl start biteback
+sudo systemctl start rescuebites
 ```
 
 The installer uses your user account and your Node.js (nvm works), and serves on port 3000. Change it with `npm run service:install -- --port 8080`; running the installer again updates the service.
 
 | To... | Run |
 |---|---|
-| Start / stop / restart | `sudo systemctl start biteback` / `stop` / `restart` |
-| See if it's running | `systemctl status biteback` |
-| Follow the logs | `sudo journalctl -u biteback -f` |
-| Turn off starting at boot | `sudo systemctl disable biteback` |
+| Start / stop / restart | `sudo systemctl start rescuebites` / `stop` / `restart` |
+| See if it's running | `systemctl status rescuebites` |
+| Follow the logs | `sudo journalctl -u rescuebites -f` |
+| Turn off starting at boot | `sudo systemctl disable rescuebites` |
 | **Deploy the latest code** | `npm run update` |
 
 **`npm run update`** pulls the latest code, runs `npm ci` if packages changed, and builds the new version **while the site keeps running**. Then it swaps the new build in and restarts, so the site is down for about a second. If the new version doesn't answer, the previous one is put back automatically. If nothing new was pushed, it says so and does nothing. When an update includes database migrations, it reminds you to run `npx supabase db push`.
+
+**Upgrading a server from before the rename to Rescue Bites** (when the service was called `biteback`): run `npm run update` twice. The first run deploys the new code on the old service; the second replaces the `biteback` service with `rescuebites`, keeping its port and settings (or run `npm run service:install` once to switch straight away). Then run `npx supabase db push`, which also renames the database's cleanup job, and `npm run seed` if the server has the demo data: it moves the demo accounts to `@rescuebites.test` emails and the `RescueBites123` password. In `.env.local`, change `LEGAL_ENTITY_NAME` and `SUPPORT_EMAIL` if they still say BiteBack.
 
 Don't run `npm start` or `npm run build` in the same folder while the service is running: that would replace the build it is serving. Use `npm run dev` for development, `npm run update` to deploy.
 

@@ -22,7 +22,7 @@ const PAYMENT_STATUS: Record<Order['status'], string> = {
 export const receiptNumber = (order: { id: number; created_at: string }) => {
   const d = new Date(order.created_at);
   const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
-  return `BB-${ymd}-${String(order.id).padStart(6, '0')}`;
+  return `RB-${ymd}-${String(order.id).padStart(6, '0')}`;
 };
 
 export type Receipt = Awaited<ReturnType<typeof receiptData>>;

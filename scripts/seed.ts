@@ -15,7 +15,7 @@ const key = process.env.SUPABASE_SECRET_KEY;
 if (!url || !key) throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (see .env.example).');
 const db = createClient<Database>(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
-const DEMO_PASSWORD = 'BiteBack123';
+const DEMO_PASSWORD = 'RescueBites123';
 type Reason = Database['public']['Enums']['offer_reason'];
 
 const RESTAURANTS = [
@@ -133,12 +133,20 @@ const tags = (s: string) => (s ? s.split(',') : []);
 // terms-acceptance records), or returns the existing one.
 async function user(username: string, role: 'customer' | 'restaurant' | 'admin', restaurant?: Record<string, unknown>) {
   const existing = await db.from('profiles').select('id').eq('username', username).maybeSingle();
-  if (existing.data) return existing.data.id;
+  if (existing.data) {
+    // Demo accounts seeded before the rename to Rescue Bites move to the new email and password.
+    const { data } = await db.auth.admin.getUserById(existing.data.id);
+    if (data.user?.email?.endsWith('@biteback.test')) {
+      const res = await db.auth.admin.updateUserById(existing.data.id, { email: `${username}@rescuebites.test`, password: DEMO_PASSWORD, email_confirm: true });
+      if (res.error) throw new Error(`update ${username}: ${res.error.message}`);
+    }
+    return existing.data.id;
+  }
   // Admins are created as customers and then promoted (like scripts/create-admin.ts does).
   const signupRole = role === 'admin' ? 'customer' : role;
   const accepted = Object.fromEntries(REQUIRED[signupRole].map((d) => [d, LEGAL_VERSION]));
   const res = await db.auth.admin.createUser({
-    email: `${username}@biteback.test`,
+    email: `${username}@rescuebites.test`,
     password: DEMO_PASSWORD,
     email_confirm: true,
     user_metadata: { username, role: signupRole, accepted_terms: accepted, restaurant, ip: 'seed', user_agent: 'npm run seed' },

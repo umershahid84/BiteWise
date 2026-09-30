@@ -65,7 +65,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
     try {
       // Browser-only preference, read after hydration.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSoundOn(localStorage.getItem('bb-sound') !== 'off');
+      setSoundOn(localStorage.getItem('rb-sound') !== 'off');
     } catch {
       // storage unavailable
     }
@@ -115,7 +115,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
     const next = !soundOn;
     setSoundOn(next);
     try {
-      localStorage.setItem('bb-sound', next ? 'on' : 'off');
+      localStorage.setItem('rb-sound', next ? 'on' : 'off');
     } catch {
       // ignore
     }

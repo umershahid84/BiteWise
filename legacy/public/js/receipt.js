@@ -23,7 +23,7 @@ function barcodeSvg(bars) {
 
 try {
   const { receipt: r } = await api(`/orders/${id}/receipt`);
-  document.title = `Receipt ${r.receiptNumber} · BiteBack`;
+  document.title = `Receipt ${r.receiptNumber} · Rescue Bites`;
   const it = r.item;
   const rest = r.restaurant;
   const paidWith = r.creditAppliedCents
@@ -31,7 +31,7 @@ try {
     : r.card || 'n/a';
   $('#receipt').innerHTML = `
     <header class="pos-center">
-      <img class="pos-logo" src="/assets/logo.svg" alt="BiteBack">
+      <img class="pos-logo" src="/assets/logo.svg" alt="Rescue Bites">
       <div class="pos-tag">Rescued food · Greater Seattle</div>
       <div class="pos-store">${esc(rest.name)}</div>
       <div>${esc(rest.address)}<br>${esc(rest.city)}, WA ${esc(rest.zip)}${rest.phone ? `<br>Tel ${esc(rest.phone)}` : ''}</div>
@@ -78,7 +78,7 @@ try {
       <div class="b pos-thanks">Thank you for rescuing food!</div>
       <p class="small-print">Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN.
         Orders not picked up are released without charge. Times in Pacific Time.</p>
-      <div class="small-print">support@biteback.app</div>
+      <div class="small-print">support@rescuebites.app</div>
     </div>`;
 } catch (err) {
   showError($('#msg'), err);

@@ -272,7 +272,7 @@ module.exports = function customerRoutes({ db, payments, orders, receipts, terms
     const rc = receipts.receiptData(ownOrder(req));
     const pdf = await receipts.receiptPdf(rc);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `${req.query.inline ? 'inline' : 'attachment'}; filename="BiteBack-receipt-${rc.receiptNumber}.pdf"`);
+    res.setHeader('Content-Disposition', `${req.query.inline ? 'inline' : 'attachment'}; filename="RescueBites-receipt-${rc.receiptNumber}.pdf"`);
     res.send(pdf);
   });
 

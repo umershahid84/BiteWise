@@ -1,5 +1,5 @@
 # systemd service for Rescue Bites. Install it with: sudo bash scripts/server/install-service.sh
-# (the installer fills in the @...@ values). Then: sudo systemctl start biteback
+# (the installer fills in the @...@ values). Then: sudo systemctl start rescuebites
 [Unit]
 Description=Rescue Bites (Next.js)
 Documentation=file://@APP_DIR@/README.md
@@ -21,7 +21,7 @@ Restart=always
 RestartSec=5
 KillSignal=SIGTERM
 TimeoutStopSec=30
-SyslogIdentifier=biteback
+SyslogIdentifier=rescuebites
 # Hardening: no privilege escalation, a private /tmp, and read-only system folders.
 NoNewPrivileges=true
 PrivateTmp=true

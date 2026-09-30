@@ -157,7 +157,7 @@ module.exports = function restaurantRoutes({ db, orders, images, receipts, terms
 
   const notSuspended = (req) => {
     if (req.restaurant.status === 'suspended') {
-      throw new HttpError(403, 'Your restaurant is suspended, so you cannot post offers. Please contact BiteBack support.');
+      throw new HttpError(403, 'Your restaurant is suspended, so you cannot post offers. Please contact Rescue Bites support.');
     }
   };
 
@@ -345,14 +345,14 @@ module.exports = function restaurantRoutes({ db, orders, images, receipts, terms
   router.get('/report.csv', (req, res) => {
     const rep = receipts.reportData(req.restaurant.id, reportDate(req));
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="BiteBack-report-${rep.date}.csv"`);
+    res.setHeader('Content-Disposition', `attachment; filename="RescueBites-report-${rep.date}.csv"`);
     res.send(receipts.reportCsv(rep));
   });
 
   router.get('/report.pdf', async (req, res) => {
     const rep = receipts.reportData(req.restaurant.id, reportDate(req));
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `${req.query.inline ? 'inline' : 'attachment'}; filename="BiteBack-report-${rep.date}.pdf"`);
+    res.setHeader('Content-Disposition', `${req.query.inline ? 'inline' : 'attachment'}; filename="RescueBites-report-${rep.date}.pdf"`);
     res.send(await receipts.reportPdf(rep));
   });
 

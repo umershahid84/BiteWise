@@ -18,7 +18,7 @@ async function setup() {
   const voidFn = payments.void.bind(payments);
   payments.capture = (ref) => { captured.push(ref); return capture(ref); };
   payments.void = (ref) => { voided.push(ref); return voidFn(ref); };
-  const uploadsDir = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'bb-uploads-'));
+  const uploadsDir = require('node:fs').mkdtempSync(require('node:path').join(require('node:os').tmpdir(), 'rb-uploads-'));
   const { app, orders } = createApp({ db, config: { ...config, uploadsDir }, payments });
   const server = app.listen(0);
   await new Promise((r) => server.once('listening', r));
@@ -31,7 +31,7 @@ async function setup() {
       if (path === '/auth/signup' && body && !('acceptedTerms' in body)) body = { ...body, acceptedTerms: termsFor(body.role) };
       const res = await fetch(base + path, {
         method,
-        headers: { 'content-type': 'application/json', cookie, ...(csrf ? { 'x-requested-with': 'BiteBack' } : {}) },
+        headers: { 'content-type': 'application/json', cookie, ...(csrf ? { 'x-requested-with': 'Rescue Bites' } : {}) },
         body: body && JSON.stringify(body),
       });
       const set = res.headers.get('set-cookie');
@@ -271,7 +271,7 @@ test('restaurant gets a live event when an order is placed', async (t) => {
 
   // Open the event stream with the restaurant's session cookie.
   const login = await fetch(`${env.base}/auth/login`, {
-    method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'BiteBack' },
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'Rescue Bites' },
     body: JSON.stringify({ login: 'shop', password: 'secret123' }),
   });
   const ctrl = new AbortController();
@@ -318,7 +318,7 @@ test('receipt shows full order details; restaurant daily report as JSON, PDF and
 
   r = await c(`/orders/${order.id}/receipt`);
   const rc = r.body.receipt;
-  assert.match(rc.receiptNumber, /^BB-\d{8}-\d{6}$/);
+  assert.match(rc.receiptNumber, /^RB-\d{8}-\d{6}$/);
   assert.equal(rc.restaurant.name, 'Pho Place');
   assert.equal(rc.customer.email, 'dana@example.com');
   assert.equal(rc.item.title, 'Beef Pho');
@@ -339,13 +339,13 @@ test('receipt shows full order details; restaurant daily report as JSON, PDF and
   const base = env.base;
   const getRaw = async (client, path) => {
     // reuse the client's cookie by calling through it once, then fetch raw bytes
-    const login = await fetch(`${base}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'BiteBack' },
+    const login = await fetch(`${base}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-requested-with': 'Rescue Bites' },
       body: JSON.stringify(client) });
     return fetch(base + path, { headers: { cookie: login.headers.get('set-cookie').split(';')[0] } });
   };
   let res = await getRaw({ login: 'dana', password: 'password1' }, `/orders/${order.id}/receipt.pdf`);
   assert.equal(res.headers.get('content-type'), 'application/pdf');
-  assert.match(res.headers.get('content-disposition'), /attachment; filename="BiteBack-receipt-BB-/);
+  assert.match(res.headers.get('content-disposition'), /attachment; filename="RescueBites-receipt-RB-/);
   assert.equal(Buffer.from(await res.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
 
   res = await getRaw({ login: 'shop', password: 'secret123' }, `/orders/${order.id}/receipt.pdf`);

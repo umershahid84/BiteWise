@@ -15,7 +15,7 @@ describe('geo', () => {
 
 describe('code128', () => {
   it('encodes with start, checksum and stop symbols', () => {
-    const bars = code128('BB-20260929-000064');
+    const bars = code128('RB-20260929-000064');
     // 18 characters + start + checksum + stop; each symbol is 11 modules, the stop is 13.
     expect(bars.reduce((a, b) => a + b, 0)).toBe(20 * 11 + 13);
     expect(PATTERNS).toHaveLength(107);

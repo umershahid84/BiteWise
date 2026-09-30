@@ -13,7 +13,7 @@ alter publication supabase_realtime add table public.orders, public.offers;
 do $$
 begin
   create extension if not exists pg_cron;
-  perform cron.schedule('biteback-sweep', '* * * * *', 'select public.sweep()');
+  perform cron.schedule('rescuebites-sweep', '* * * * *', 'select public.sweep()');
 exception when others then
   raise notice 'pg_cron is not available (%); schedule /api/cron/sweep instead.', sqlerrm;
 end;

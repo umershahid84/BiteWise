@@ -14,7 +14,7 @@ sweep();
 setInterval(sweep, 60 * 1000).unref();
 
 app.listen(config.port, () => {
-  console.log(`BiteBack running at http://localhost:${config.port}`);
+  console.log(`Rescue Bites running at http://localhost:${config.port}`);
   if (payments.mode === 'mock') {
     console.log('Payments: MOCK mode (no real charges). Set STRIPE_SECRET_KEY and STRIPE_PUBLISHABLE_KEY to use Stripe.');
   } else {

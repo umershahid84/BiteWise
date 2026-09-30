@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploys the latest code to a server running the biteback systemd service:
+# Deploys the latest code to a server running the rescuebites systemd service:
 # pulls, installs packages if they changed, builds into .next-build while the live site keeps running,
 # then swaps the new build in and restarts (about a second of downtime). If the new version doesn't
 # answer, the previous build is put back.
@@ -9,7 +9,7 @@
 #     --force     rebuild and restart even if that commit is already live
 set -euo pipefail
 
-SERVICE=biteback
+SERVICE=rescuebites
 STAMP=.next/DEPLOYED_COMMIT # the commit the live build was made from
 
 fail() { echo "Error: $*" >&2; exit 1; }
@@ -37,6 +37,10 @@ main() {
   done
   cd "$(dirname "${BASH_SOURCE[0]}")/../.."
   [ "$(id -u)" != 0 ] || fail "run this as your normal user (it asks for sudo only to restart the service)."
+  if ! systemctl cat "$SERVICE" >/dev/null 2>&1 && systemctl cat biteback >/dev/null 2>&1; then
+    echo "==> Renaming the biteback service to $SERVICE (asks for your password)"
+    sudo bash scripts/server/install-service.sh
+  fi
   systemctl cat "$SERVICE" >/dev/null 2>&1 || fail "the $SERVICE service isn't installed. Run: npm run service:install"
 
   local before head base

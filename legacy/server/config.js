@@ -14,8 +14,8 @@ module.exports = {
   // Darken light map tiles to match the dark UI. Set to false if your tile provider is already dark.
   mapDarkFilter: process.env.MAP_DARK_FILTER !== 'false',
   // Company details shown in the Terms of Service, Partner Agreement and Privacy Policy.
-  legalEntityName: process.env.LEGAL_ENTITY_NAME || 'BiteBack',
-  supportEmail: process.env.SUPPORT_EMAIL || 'support@biteback.app',
+  legalEntityName: process.env.LEGAL_ENTITY_NAME || 'Rescue Bites',
+  supportEmail: process.env.SUPPORT_EMAIL || 'support@rescuebites.app',
   legalAddress: process.env.LEGAL_ADDRESS || 'Seattle, Washington',
   // New restaurants must be approved by an admin before their offers are visible.
   requireRestaurantApproval: process.env.REQUIRE_RESTAURANT_APPROVAL !== 'false',
@@ -24,7 +24,7 @@ module.exports = {
   timeZone: process.env.TIME_ZONE || 'America/Los_Angeles',
   port: int(process.env.PORT, 3000),
   uploadsDir: process.env.UPLOADS_DIR || path.join(__dirname, '..', 'data', 'uploads'),
-  databasePath: process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'biteback.db'),
+  databasePath: process.env.DATABASE_PATH || path.join(__dirname, '..', 'data', 'rescuebites.db'),
   serviceFeeBps: int(process.env.SERVICE_FEE_BPS, 500),
   defaultTaxRateBps: int(process.env.DEFAULT_TAX_RATE_BPS, 1035),
   taxServiceFee: process.env.TAX_SERVICE_FEE === 'true',

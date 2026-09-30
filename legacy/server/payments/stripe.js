@@ -28,7 +28,7 @@ module.exports = function createStripeProvider(config, PaymentError) {
 
     async ensureCustomer({ email, username, existingId }) {
       if (existingId) return existingId;
-      const customer = await stripe.customers.create({ email, name: username, metadata: { app: 'biteback' } });
+      const customer = await stripe.customers.create({ email, name: username, metadata: { app: 'rescuebites' } });
       return customer.id;
     },
 
