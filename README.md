@@ -170,7 +170,16 @@ The installer uses your user account and your Node.js (nvm works), and serves on
 
 Don't run `npm start` or `npm run build` in the same folder while the service is running: that would replace the build it is serving. Use `npm run dev` for development, `npm run update` to deploy.
 
-systemd is Linux-only. On Windows, use WSL 2 with systemd turned on, or run the app on a Linux server or VM.
+### On Windows (or any computer without the service)
+
+systemd is Linux-only, so `npm run service:install` just explains this on Windows and macOS. Run the app with `npm run build` and then `npm start`. To update it:
+
+1. Stop the app: press **Ctrl+C** in the window running `npm start`.
+2. Run `npm run update`. It pulls the latest code, installs packages if they changed, and builds. It stops with a message if the app is still running, and says so if the latest code is already built. Use `npm run update -- --force` to rebuild anyway, or `-- --no-pull` to build the code already in the folder.
+3. If it mentions database changes, run `npx supabase db push`.
+4. Start the app again with `npm start`.
+
+To keep the app running in the background on Windows instead, use WSL 2 with systemd turned on, or run it on a Linux server or VM.
 
 ## Deploy
 
