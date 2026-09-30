@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { serverEnv } from '@/lib/env';
 import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
 import { homeFor } from '@/lib/constants';
@@ -99,12 +100,43 @@ export async function signIn(input: unknown) {
       if (/not confirmed/i.test(error.message)) throw new AppError(403, 'Please confirm your email address first. Check your inbox for the link.');
       throw new AppError(401, 'Email/user name or password is incorrect.');
     }
-    const { data: profile } = await supabase.from('profiles').select('role, status').eq('id', data.user.id).single();
+    const { data: profile } = await supabase.from('profiles').select('role, status, suspended_until').eq('id', data.user.id).single();
+    if (profile?.status === 'suspended' && profile.suspended_until && new Date(profile.suspended_until) <= new Date()) {
+      // The suspension is over (the sweep job normally reactivates the account first).
+      await supabaseAdmin().from('profiles').update({ status: 'active', suspended_until: null }).eq('id', data.user.id);
+      profile.status = 'active';
+    }
     if (!profile || profile.status !== 'active') {
       await supabase.auth.signOut();
-      throw new AppError(403, 'This account has been suspended. Contact Rescue Bites support for help.');
+      const until = profile?.status === 'suspended' && profile.suspended_until
+        ? ` until ${new Date(profile.suspended_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: serverEnv.timeZone })}`
+        : '';
+      throw new AppError(403, `This account has been suspended${until}. Contact Rescue Bites support for help.`);
     }
     return { next: homeFor(profile.role) };
+  });
+}
+
+// Sends the sign-up confirmation email again. Takes an email address or a user name (from the log-in form).
+// The answer is the same whether or not the account exists, so it can't be used to look up accounts.
+export async function resendConfirmation(input: unknown) {
+  return action(async () => {
+    const { login } = parse(z.object({ login: z.string().trim().min(3, 'Enter your email or user name.').max(254) }), input);
+    let email = login.toLowerCase();
+    if (!login.includes('@')) {
+      const { data } = await supabaseAdmin().from('profiles').select('email').eq('username', login).maybeSingle();
+      if (!data) return null;
+      email = data.email;
+    }
+    const supabase = await supabaseServer();
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/confirm` },
+    });
+    if (error?.status === 429) throw new AppError(429, 'An email was sent very recently. Please wait a minute and try again.');
+    if (error) console.error('resend confirmation:', error.message);
+    return null;
   });
 }
 

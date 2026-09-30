@@ -42,7 +42,7 @@ Rescue Bites is a marketplace where restaurants in greater Seattle sell food tha
 
 **Demo videos:** short narrated walkthroughs (a friendly voice-over and upbeat background music, with optional subtitles) for customers and restaurants play on the home page ("See it in action"), behind **How it works** on the deals page and **Watch the tour** on the restaurant dashboard. They live in `public/videos/`; see `scripts/demo-video/README.md` to change the narration or re-record them.
 
-**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals and suspensions, customers (suspend, issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval) and an audit log of every admin action.
+**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals and suspensions, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval) and an audit log of every admin action.
 
 ## Money flow
 
@@ -194,11 +194,9 @@ Use a commercial map tile provider in production (`NEXT_PUBLIC_MAP_TILE_URL`). O
 
 The "confirm your email" message sent after sign-up comes from **Supabase Auth**, not from the app. Rescue Bites replaces Supabase's plain default with a branded one: `supabase/templates/confirmation.html` (logo, a welcome with the user's name, and different wording for customers and restaurants). The local stack (`npm run db:start`) uses it automatically through `supabase/config.toml`.
 
-For a project on supabase.com:
+For a project on supabase.com, install it with `npm run email:template`. It uploads the logo to a public `brand` storage bucket in your project (email apps need a public web address for images), then sets the **Confirm signup** email's subject and body through the Supabase Management API. That needs a personal access token: create one at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) and add `SUPABASE_ACCESS_TOKEN=...` to `.env.local` (or the script uses the one `npx supabase login` saved, where it can find it). Building the app doesn't change the email: it lives in Supabase. Without a token, the script writes `confirm-signup-email.html` and tells you where to paste it (**Authentication → Emails → Confirm signup**, source view).
 
-1. Run `npm run email:template`. It uploads the logo to a public `brand` storage bucket in your project (email apps need a public web address for images) and writes `confirm-signup-email.html`.
-2. In the dashboard, open **Authentication → Emails → Confirm signup**. Set the subject to `Confirm your email for Rescue Bites 🥡`, switch the body to its source view, replace everything with the contents of `confirm-signup-email.html`, and save.
-3. Keep **Authentication → URL Configuration → Site URL** set to your site's address: the button links to `<Site URL>/auth/confirm`.
+Keep **Authentication → URL Configuration → Site URL** set to your site's address: the button links to `<Site URL>/auth/confirm`. After signing up, people see a "Check your email" page with **Resend confirmation email** (once a minute) and **Back to login**; trying to log in before confirming offers the resend button too.
 
 **Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Rescue Bites <hello@your-domain>`. The template stays the same.
 

@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { issueCredit, setUserStatus } from '@/app/actions/admin';
+import { toast } from 'sonner';
+import { deleteUser, issueCredit, setUserStatus } from '@/app/actions/admin';
 import { ErrorText } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,11 +11,12 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
+import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money } from '@/lib/format';
 import { day, run, useAdmin } from './shared';
 
 type User = {
-  id: string; email: string; username: string; role: string; status: 'active' | 'suspended'; createdAt: string; orders: number; spentCents: number;
+  id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number;
   noShows: number; creditCents: number; termsAcceptedAt: string | null;
 };
 
@@ -23,11 +25,12 @@ export function UsersPanel({ adminId }: { adminId: string }) {
   const [role, setRole] = useState('customer');
   const [q, setQ] = useState('');
   const [creditFor, setCreditFor] = useState<User | null>(null);
+  const [suspendFor, setSuspendFor] = useState<User | null>(null);
+  const [deleteFor, setDeleteFor] = useState<User | null>(null);
   const { data, isLoading } = useAdmin<User[]>(['users', role, q], 'users', { role, q });
-  const toggle = async (u: User) => {
-    const next = u.status === 'active' ? 'suspended' : 'active';
-    if (next === 'suspended' && !confirm(`Suspend ${u.username}? They will be signed out and can't log in.`)) return;
-    if (await run(() => setUserStatus({ id: u.id, status: next }), `${u.username}: ${next}`)) queryClient.invalidateQueries({ queryKey: ['admin'] });
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
+  const reactivate = async (u: User) => {
+    if (await run(() => setUserStatus({ id: u.id, status: 'active' }), `${u.username} is active again`)) refresh();
   };
   return (
     <>
@@ -48,11 +51,17 @@ export function UsersPanel({ adminId }: { adminId: string }) {
                   <td>{u.orders}</td><td>{money(u.spentCents)}</td><td>{u.noShows}</td>
                   <td className="text-accent-ink">{u.creditCents ? money(u.creditCents) : '–'}</td>
                   <td className="text-xs">{day(u.termsAcceptedAt) || '–'}</td>
-                  <td><StatusBadge status={u.status} /></td>
+                  <td>
+                    <StatusBadge status={u.status} />
+                    {u.status === 'suspended' && u.suspendedUntil && <div className="mt-1 text-xs text-muted">until {day(u.suspendedUntil)}</div>}
+                  </td>
                   <td className="whitespace-nowrap">
                     <div className="flex gap-1.5">
                       {u.role === 'customer' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
-                      {u.id !== adminId && <Button size="sm" variant={u.status === 'active' ? 'danger' : 'green'} onClick={() => toggle(u)}>{u.status === 'active' ? 'Suspend' : 'Reactivate'}</Button>}
+                      {u.id !== adminId && (u.status === 'active'
+                        ? <Button size="sm" variant="danger" onClick={() => setSuspendFor(u)}>Suspend</Button>
+                        : <Button size="sm" variant="green" onClick={() => reactivate(u)}>Reactivate</Button>)}
+                      {u.id !== adminId && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(u)}>Delete</Button>}
                     </div>
                   </td>
                 </tr>
@@ -62,7 +71,13 @@ export function UsersPanel({ adminId }: { adminId: string }) {
         )}
       </Card>
       <Dialog open={!!creditFor} onOpenChange={(o) => !o && setCreditFor(null)}>
-        {creditFor && <CreditForm user={creditFor} onDone={() => { setCreditFor(null); queryClient.invalidateQueries({ queryKey: ['admin'] }); }} />}
+        {creditFor && <CreditForm user={creditFor} onDone={() => { setCreditFor(null); refresh(); }} />}
+      </Dialog>
+      <Dialog open={!!suspendFor} onOpenChange={(o) => !o && setSuspendFor(null)}>
+        {suspendFor && <SuspendForm user={suspendFor} onDone={() => { setSuspendFor(null); refresh(); }} />}
+      </Dialog>
+      <Dialog open={!!deleteFor} onOpenChange={(o) => !o && setDeleteFor(null)}>
+        {deleteFor && <DeleteForm user={deleteFor} onDone={() => { setDeleteFor(null); refresh(); }} />}
       </Dialog>
     </>
   );
@@ -82,6 +97,67 @@ function CreditForm({ user, onDone }: { user: User; onDone: () => void }) {
         if (!res.ok) return setError(res.error);
         onDone();
       }}>Issue credit</Button>
+    </DialogContent>
+  );
+}
+
+function SuspendForm({ user, onDone }: { user: User; onDone: () => void }) {
+  const [days, setDays] = useState<number>(SUSPENSION_DAYS[0]);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <DialogContent title={`Suspend ${user.username}`} description="They are signed out and can't log in until the suspension ends. The account reactivates by itself afterwards, or you can reactivate it sooner.">
+      <div className="mb-4 grid grid-cols-5 gap-2" role="radiogroup" aria-label="Suspension length">
+        {SUSPENSION_DAYS.map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={days === n}
+            onClick={() => setDays(n)}
+            className={`rounded-xl border px-2 py-3 text-center font-bold transition outline-none focus-visible:ring-2 focus-visible:ring-primary ${days === n ? 'border-danger bg-danger-soft text-danger' : 'border-line bg-surface text-ink hover:border-ink-2'}`}
+          >
+            {n}<span className="block text-xs font-semibold opacity-80">days</span>
+          </button>
+        ))}
+      </div>
+      <ErrorText error={error} />
+      <Button block variant="danger" disabled={busy} onClick={async () => {
+        setBusy(true);
+        const res = await setUserStatus({ id: user.id, status: 'suspended', days });
+        setBusy(false);
+        if (!res.ok) return setError(res.error);
+        toast.success(`${user.username} is suspended for ${days} days`);
+        onDone();
+      }}>Suspend for {days} days</Button>
+    </DialogContent>
+  );
+}
+
+function DeleteForm({ user, onDone }: { user: User; onDone: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  return (
+    <DialogContent title={`Delete ${user.username}?`} description="This can't be undone.">
+      <p className="mt-0 mb-4 text-sm text-ink-2">
+        {user.orders + user.noShows > 0
+          ? <>This account has order history, which is kept for sales and tax records. Its login, name, email and saved cards are erased and it can never be used again; past orders will show <b>Deleted user</b>.</>
+          : <>The account and everything in it (profile{user.role === 'restaurant' ? ', restaurant, menu and offers' : ''}) are removed for good.</>}
+        {user.role === 'restaurant' && ' The restaurant is taken off the site.'}
+      </p>
+      <Field label={`Type ${user.username} to confirm`} htmlFor="d-confirm">
+        <Input id="d-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" />
+      </Field>
+      <ErrorText error={error} />
+      <Button block variant="danger" disabled={busy || confirmText.trim().toLowerCase() !== user.username.toLowerCase()} onClick={async () => {
+        setBusy(true);
+        const res = await deleteUser({ id: user.id });
+        setBusy(false);
+        if (!res.ok) return setError(res.error);
+        toast.success(res.data.anonymized ? `${user.username} is deleted (order history kept anonymously)` : `${user.username} is deleted`);
+        onDone();
+      }}>Delete account</Button>
     </DialogContent>
   );
 }

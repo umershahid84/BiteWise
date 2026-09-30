@@ -12,7 +12,7 @@ export default async function SignupPage({ searchParams }: PageProps<'/signup'>)
   const viewer = await getViewer();
   if (viewer) redirect(homeFor(viewer.role));
   return (
-    <AuthCard title="Create your free account">
+    <AuthCard>
       <SignupForm initialRole={role === 'restaurant' ? 'restaurant' : 'customer'} />
     </AuthCard>
   );

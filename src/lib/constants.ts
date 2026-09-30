@@ -13,6 +13,9 @@ export const OFFER_REASONS: Record<OfferReason, string> = {
   other: 'Other',
 };
 
+// How long the owner console can suspend an account for, in days.
+export const SUSPENSION_DAYS = [5, 10, 15, 20, 30] as const;
+
 export const DIETARY_TAGS = ['vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'nut-free', 'halal', 'kosher', 'spicy'] as const;
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
