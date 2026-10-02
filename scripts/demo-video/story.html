@@ -10,7 +10,7 @@
   #bw-story .scene.active { opacity: 1; }
   #bw-story svg { display: block; width: 100%; height: 100%; }
   #bw-story .scene:not(.active) * { animation-play-state: paused !important; }
-  #bw-story * { transform-box: fill-box; }
+  #bw-story [class] { transform-box: fill-box; }
   #bw-story .step { position: absolute; left: 48px; top: 40px; display: flex; align-items: center; gap: 14px; padding: 10px 22px 10px 10px;
     border-radius: 999px; background: rgba(20, 40, 75, .92); color: #fff; font-weight: 800; font-size: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
     animation: s-pop .7s cubic-bezier(.34,1.56,.64,1) .2s both; }
@@ -26,7 +26,6 @@
 
   /* Scene 1: ordering on the phone */
   .s1 .phone { animation: s-up .8s cubic-bezier(.2,.8,.2,1) .3s both; }
-  .s1 .thumb { transform-origin: 50% 100%; animation: s-pop .5s cubic-bezier(.34,1.56,.64,1) 3s both; }
   .s1 .tap { transform-origin: center; animation: s-tap .6s ease-out 1.95s both; }
   .s1 .btn-order { animation: s-swap-out .2s linear 2.05s both; }
   .s1 .btn-done { animation: s-fade .2s linear 2.05s both; }
@@ -50,51 +49,58 @@
   @keyframes s2-cloud { from { transform: translateX(0) } to { transform: translateX(-300px) } }
 
   /* Scene 3: the pickup at the counter */
-  .s3 .cust-phone { animation: s-up .7s cubic-bezier(.2,.8,.2,1) .4s both; }
+  .s3 .cust-phone { transform-origin: 0% 100%; animation: s-pop .6s cubic-bezier(.34,1.56,.64,1) .4s both; }
+  .s3 .pos-pop { transform-origin: 50% 100%; animation: s-pop .6s cubic-bezier(.34,1.56,.64,1) 1.1s both; }
   .s3 .digit { animation: s-pop .3s cubic-bezier(.34,1.56,.64,1) both; }
   .s3 .check { transform-origin: center; animation: s-pop .5s cubic-bezier(.34,1.56,.64,1) 3.6s both; }
   .s3 .bag { animation: s3-bag 1.4s cubic-bezier(.3,.7,.3,1) 4.3s both; }
   .s3 .banner { transform-origin: center; animation: s-pop .7s cubic-bezier(.34,1.56,.64,1) 6s both; }
   .s3 .heart { animation: s-float 2.4s ease-out both; }
   .s3 .eyes { transform-origin: center; animation: s-blink 3.1s linear infinite; }
-  @keyframes s3-bag { from { transform: translateX(330px) } to { transform: translateX(0) } }
+  @keyframes s3-bag { from { transform: translateX(300px) } to { transform: translateX(0) } }
 </style>
 
 <div id="bw-story">
   <!-- 1 · Order -->
   <div class="scene s1">
     <svg viewBox="0 0 1280 720" aria-hidden="true">
-      <defs>
-        <linearGradient id="s1-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4E0"/><stop offset="1" stop-color="#FDDDB4"/></linearGradient>
-        <linearGradient id="s1-pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#059669"/></linearGradient>
-      </defs>
-      <rect width="1280" height="720" fill="url(#s1-bg)"/>
-      <circle cx="1080" cy="150" r="190" fill="#FFE8C2"/><circle cx="170" cy="640" r="230" fill="#FBD3A0" opacity=".6"/>
-      <!-- window with the city at dusk -->
-      <g transform="translate(860 150)">
-        <rect width="300" height="260" rx="14" fill="#FDBA74"/><rect x="12" y="12" width="276" height="236" rx="8" fill="#FED7AA"/>
-        <g fill="#C2410C" opacity=".55"><rect x="30" y="140" width="40" height="108"/><rect x="78" y="100" width="46" height="148"/><rect x="132" y="160" width="36" height="88"/><rect x="176" y="120" width="50" height="128"/><rect x="232" y="170" width="40" height="78"/></g>
-        <rect x="146" y="12" width="8" height="236" fill="#FDBA74"/><rect x="12" y="126" width="276" height="8" fill="#FDBA74"/>
-      </g>
-      <!-- Sam -->
+      <defs><linearGradient id="s1-pin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+      <!-- living room -->
+      <rect width="1280" height="560" fill="#ECEAE5"/><rect y="552" width="1280" height="10" fill="#FFFFFF"/>
+      <rect y="562" width="1280" height="158" fill="#BCAA97"/>
+      <g stroke="#AE9B87" stroke-width="2"><line x1="0" y1="600" x2="1280" y2="600"/><line x1="0" y1="646" x2="1280" y2="646"/><line x1="0" y1="694" x2="1280" y2="694"/></g>
+      <g><rect x="46" y="470" width="66" height="86" rx="8" fill="#9CA3AF"/>
+        <g fill="#2F6B3A"><ellipse cx="62" cy="420" rx="16" ry="44" transform="rotate(-28 62 420)"/><ellipse cx="96" cy="410" rx="16" ry="48" transform="rotate(22 96 410)"/><ellipse cx="80" cy="380" rx="15" ry="50"/></g>
+        <g fill="#3E8A4B"><ellipse cx="50" cy="450" rx="12" ry="34" transform="rotate(-50 50 450)"/><ellipse cx="110" cy="446" rx="12" ry="34" transform="rotate(48 110 446)"/></g></g>
+      <rect x="1010" y="440" width="270" height="120" rx="18" fill="#9AA3AD"/><rect x="1000" y="400" width="280" height="60" rx="18" fill="#A9B2BC"/>
+      <!-- Sam, looking at his phone -->
+      <g transform="translate(110 36) scale(.95)">
+      <ellipse cx="330" cy="696" rx="112" ry="14" fill="#000" opacity=".12"/>
       <g>
-        
-        <path d="M292 720 L302 550 Q308 484 348 474 L452 474 Q492 484 498 550 L508 720 Z" fill="#1F3A5F"/>
-        <path d="M370 474 L430 474 L400 556 Z" fill="#FFFFFF"/>
-        <path d="M393 486 L407 486 L411 570 L400 586 L389 570 Z" fill="#4E9F3D"/>
-        <path d="M370 474 L348 480 L392 596 Z M430 474 L452 480 L408 596 Z" fill="#162C49"/>
-        <rect x="385" y="424" width="30" height="54" rx="12" fill="#C68E63"/>
-        <ellipse cx="343" cy="370" rx="10" ry="16" fill="#C68E63"/><ellipse cx="457" cy="370" rx="10" ry="16" fill="#C68E63"/>
-        <ellipse cx="400" cy="362" rx="58" ry="72" fill="#D49A6A"/>
-        <path d="M340 352 Q334 282 396 278 Q458 276 462 342 Q446 312 412 310 Q372 306 356 324 Q346 334 340 352 Z" fill="#1F1A17"/>
-        <path d="M362 342 L386 338 M414 338 L438 342" stroke="#1F1A17" stroke-width="5" stroke-linecap="round"/>
-        <g class="eyes"><circle cx="375" cy="366" r="5.5" fill="#1F1A17"/><circle cx="425" cy="366" r="5.5" fill="#1F1A17"/></g>
-        <g fill="#FFFFFF" fill-opacity=".18" stroke="#111827" stroke-width="4"><circle cx="375" cy="366" r="17"/><circle cx="425" cy="366" r="17"/></g>
-        <path d="M392 364 Q400 358 408 364" fill="none" stroke="#111827" stroke-width="4"/>
-        <path d="M382 404 Q400 418 418 404" fill="none" stroke="#7A3E2B" stroke-width="5" stroke-linecap="round"/>
-        
+        <path d="M280 404 L380 404 L384 446 L330 480 L276 446 Z" fill="#3D6CA6"/>
+        <path d="M278 430 L268 658 L314 658 L330 470 Z" fill="#3D6CA6"/><path d="M382 430 L392 658 L346 658 L330 470 Z" fill="#3D6CA6"/>
+        <path d="M296 470 L292 640 M364 470 L368 640" stroke="#5B8BC4" stroke-width="3"/>
+        <path d="M262 652 L316 652 Q322 652 322 664 L322 678 Q322 686 314 686 L252 686 Q240 686 242 676 Q246 662 262 652 Z" fill="#F8FAFC" stroke="#D1D5DB" stroke-width="3"/>
+        <path d="M398 652 L344 652 Q338 652 338 664 L338 678 Q338 686 346 686 L408 686 Q420 686 418 676 Q414 662 398 652 Z" fill="#F8FAFC" stroke="#D1D5DB" stroke-width="3"/>
+        <path d="M270 226 Q330 212 390 226 L388 412 L272 412 Z" fill="#1C1C21"/>
+        <path d="M272 228 Q244 236 236 296 L270 304 Z M388 228 Q416 236 424 296 L390 304 Z" fill="#1C1C21"/>
+        <path d="M308 220 Q330 238 352 220" fill="none" stroke="#33333B" stroke-width="5"/>
+        <rect x="318" y="190" width="24" height="36" rx="8" fill="#B47A58"/>
+        <ellipse cx="292" cy="152" rx="7" ry="11" fill="#B47A58"/><ellipse cx="368" cy="152" rx="7" ry="11" fill="#B47A58"/>
+        <ellipse cx="330" cy="148" rx="38" ry="48" fill="#C98E6B"/>
+        <path d="M290 142 Q286 96 330 92 Q374 96 370 142 Q362 114 330 114 Q298 114 290 142 Z" fill="#2A1A12"/>
+        <circle cx="298" cy="108" r="14" fill="#2A1A12"/><circle cx="316" cy="96" r="15" fill="#2A1A12"/><circle cx="336" cy="92" r="15" fill="#2A1A12"/><circle cx="356" cy="100" r="14" fill="#2A1A12"/><circle cx="368" cy="118" r="11" fill="#2A1A12"/><circle cx="292" cy="124" r="11" fill="#2A1A12"/><circle cx="346" cy="110" r="10" fill="#2A1A12"/><circle cx="322" cy="110" r="9" fill="#2A1A12"/>
+        <path d="M308 138 L322 137 M338 137 L352 138" stroke="#2A1A12" stroke-width="4" stroke-linecap="round"/>
+        <g class="eyes"><path d="M310 154 Q315 158 320 154 M340 154 Q345 158 350 154" fill="none" stroke="#2A1A12" stroke-width="3.5" stroke-linecap="round"/></g>
+        <path d="M330 154 Q325 168 333 170" fill="none" stroke="#B47A58" stroke-width="3" stroke-linecap="round"/>
+        <path d="M318 178 Q330 186 342 178" fill="none" stroke="#7A3E2B" stroke-width="3.5" stroke-linecap="round"/>
+        <rect x="310" y="280" width="40" height="64" rx="8" fill="#111827"/><circle cx="330" cy="292" r="4" fill="#374151"/>
+        <path d="M254 296 Q250 350 268 354 Q292 350 312 324" fill="none" stroke="#C98E6B" stroke-width="22" stroke-linecap="round"/>
+        <path d="M406 296 Q410 350 392 354 Q368 350 348 324" fill="none" stroke="#C98E6B" stroke-width="22" stroke-linecap="round"/>
+        <circle cx="314" cy="320" r="12" fill="#C98E6B"/><circle cx="346" cy="320" r="12" fill="#C98E6B"/>
       </g>
-      <!-- phone -->
+      </g>
+      <path d="M450 320 Q530 280 604 330" fill="none" stroke="#94A3B8" stroke-width="3" stroke-dasharray="8 8"/>
       <g class="phone">
         <rect x="610" y="150" width="270" height="520" rx="38" fill="#14284B"/>
         <rect x="626" y="172" width="238" height="478" rx="26" fill="#FFFFFF"/>
@@ -105,7 +111,7 @@
         <text x="745" y="336" text-anchor="middle" font-size="64">🍜</text>
         <rect x="652" y="262" width="62" height="28" rx="14" fill="#F59E0B"/><text x="683" y="282" text-anchor="middle" font-size="16" font-weight="800" fill="#111">-50%</text>
         <text x="648" y="404" font-size="21" font-weight="800" fill="#14284B">Large Beef Pho</text>
-        <text x="648" y="430" font-size="15" fill="#64748B">Harbor Pho House · 0.4 mi</text>
+        <text x="648" y="430" font-size="15" fill="#64748B">RESTAURANT · 0.4 mi</text>
         <text x="648" y="468" font-size="26" font-weight="800" fill="#14284B">$8.48</text>
         <text x="740" y="468" font-size="17" fill="#94A3B8" text-decoration="line-through">$16.95</text>
         <g class="btn-order"><rect x="648" y="488" width="194" height="52" rx="26" fill="#4E9F3D"/><text x="745" y="522" text-anchor="middle" font-size="21" font-weight="800" fill="#fff">Order</text></g>
@@ -117,8 +123,6 @@
           <text x="745" y="624" text-anchor="middle" font-size="38" font-weight="800" fill="#06331F" letter-spacing="10">4827</text>
         </g>
       </g>
-      <!-- Sam's hands: one holds the phone, the other gives a thumbs-up -->
-      <g><path d="M488 508 Q536 640 600 616" fill="none" stroke="#1F3A5F" stroke-width="34" stroke-linecap="round"/><circle cx="602" cy="615" r="17" fill="#FFFFFF"/><circle cx="616" cy="612" r="20" fill="#D49A6A"/><ellipse cx="636" cy="594" rx="9" ry="15" transform="rotate(25 636 594)" fill="#D49A6A"/><path d="M312 508 Q262 650 330 618" fill="none" stroke="#1F3A5F" stroke-width="34" stroke-linecap="round"/><circle cx="332" cy="616" r="17" fill="#FFFFFF"/><circle cx="346" cy="610" r="20" fill="#D49A6A"/><g class="thumb"><rect x="338" y="570" width="16" height="32" rx="8" fill="#D49A6A"/></g></g>
       <g font-size="40"><text class="heart" x="930" y="520" style="animation-delay:3.2s">💚</text><text class="heart" x="990" y="580" style="animation-delay:3.6s">✨</text><text class="heart" x="560" y="250" style="animation-delay:3.4s">🎉</text></g>
     </svg>
     <div class="step"><b>1</b> Order on your phone</div>
@@ -150,7 +154,7 @@
         <rect x="840" y="250" width="420" height="290" fill="#F5E6CC"/><rect x="840" y="236" width="420" height="22" fill="#14284B"/>
         <g><rect x="850" y="300" width="400" height="56" fill="#DC2626"/><g fill="#fff"><rect x="890" y="300" width="40" height="56"/><rect x="970" y="300" width="40" height="56"/><rect x="1050" y="300" width="40" height="56"/><rect x="1130" y="300" width="40" height="56"/><rect x="1210" y="300" width="40" height="56"/></g></g>
         <rect x="900" y="252" width="300" height="44" rx="10" fill="#14284B"/>
-        <text x="1050" y="283" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">🍜 Harbor Pho House</text>
+        <text x="1050" y="283" text-anchor="middle" font-size="24" font-weight="800" fill="#fff">RESTAURANT</text>
         <rect x="880" y="380" width="170" height="130" rx="8" fill="#BAE6FD"/><rect x="1090" y="380" width="110" height="160" rx="8" fill="#7C4A1E"/><circle cx="1106" cy="462" r="6" fill="#FDE68A"/>
         <g class="pin"><rect x="940" y="168" width="220" height="48" rx="24" fill="#4E9F3D"/><path d="M1040 214 L1060 214 L1050 230 Z" fill="#4E9F3D"/>
           <text x="1050" y="200" text-anchor="middle" font-size="21" font-weight="800" fill="#fff">📍 Pickup 5–8 PM</text></g>
@@ -161,7 +165,7 @@
       <g class="car">
         <path d="M360 590 L360 540 Q362 520 384 516 L450 508 L500 462 Q512 452 530 452 L650 452 Q672 452 684 466 L726 512 L780 520 Q804 524 806 548 L806 590 Q806 600 796 600 L370 600 Q360 600 360 590 Z" fill="#14284B"/>
         <path d="M512 470 Q520 464 532 464 L590 464 L590 510 L470 512 Z" fill="#BFE6FF"/><path d="M604 464 L648 464 Q664 464 674 476 L708 512 L604 512 Z" fill="#BFE6FF"/>
-        <circle cx="560" cy="490" r="14" fill="#D49A6A"/><path d="M546 488 Q545 473 560 472 Q575 472 575 486 Q568 479 558 480 Q550 481 546 488 Z" fill="#1F1A17"/><circle cx="555" cy="490" r="5" fill="none" stroke="#111827" stroke-width="2"/><circle cx="566" cy="490" r="5" fill="none" stroke="#111827" stroke-width="2"/>
+        <circle cx="560" cy="490" r="14" fill="#C98E6B"/><circle cx="551" cy="477" r="7" fill="#2A1A12"/><circle cx="560" cy="473" r="7" fill="#2A1A12"/><circle cx="569" cy="477" r="7" fill="#2A1A12"/><circle cx="547" cy="485" r="5" fill="#2A1A12"/><circle cx="573" cy="485" r="5" fill="#2A1A12"/>
         <rect x="770" y="538" width="30" height="14" rx="5" fill="#FDE68A"/><rect x="362" y="540" width="16" height="12" rx="4" fill="#F87171"/>
         <path d="M600 528 L640 528" stroke="#0B1730" stroke-width="5" stroke-linecap="round"/>
         <g class="wheel"><circle cx="450" cy="600" r="40" fill="#1F2937"/><circle cx="450" cy="600" r="18" fill="#CBD5E1"/><rect x="446" y="566" width="8" height="68" fill="#94A3B8"/><rect x="416" y="596" width="68" height="8" fill="#94A3B8"/></g>
@@ -174,74 +178,94 @@
   <!-- 3 · Pickup -->
   <div class="scene s3">
     <svg viewBox="0 0 1280 720" aria-hidden="true">
-      <defs><linearGradient id="s3-wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF6E5"/><stop offset="1" stop-color="#FCE4C0"/></linearGradient></defs>
-      <rect width="1280" height="720" fill="url(#s3-wall)"/>
-      <!-- menu board and lamps -->
-      <rect x="990" y="50" width="260" height="190" rx="14" fill="#14284B"/>
-      <text x="1120" y="94" text-anchor="middle" font-size="19" font-weight="800" fill="#FDE68A">🍜 Harbor Pho House</text>
-      <g fill="#94A3B8"><rect x="1014" y="124" width="140" height="10" rx="5"/><rect x="1014" y="158" width="160" height="10" rx="5"/><rect x="1014" y="192" width="120" height="10" rx="5"/></g>
-      <g fill="#6CC24A"><rect x="1190" y="124" width="40" height="10" rx="5"/><rect x="1190" y="158" width="40" height="10" rx="5"/><rect x="1190" y="192" width="40" height="10" rx="5"/></g>
-      <g stroke="#475569" stroke-width="3"><line x1="300" y1="0" x2="300" y2="70"/><line x1="560" y1="0" x2="560" y2="60"/></g>
-      <path d="M270 70 L330 70 L316 96 L284 96 Z" fill="#F59E0B"/><path d="M530 60 L590 60 L576 86 L544 86 Z" fill="#F59E0B"/>
-      <!-- staff member behind the counter -->
+      <rect width="1280" height="720" fill="#F1EFEA"/>
+      <!-- window, kitchen, sign, lamp and menu board -->
+      <rect x="0" y="40" width="130" height="430" fill="#DCEFE6"/><g fill="#9CCB9F"><circle cx="40" cy="380" r="46"/><circle cx="96" cy="410" r="40"/><circle cx="70" cy="330" r="34"/></g>
+      <rect x="126" y="40" width="10" height="430" fill="#FFFFFF"/>
+      <path d="M440 70 L840 70 L870 130 L410 130 Z" fill="#BFC5CB"/>
+      <rect x="420" y="130" width="440" height="340" fill="#C7CCD1"/><rect x="440" y="146" width="400" height="300" fill="#AEB5BC"/>
+      <rect x="440" y="230" width="400" height="8" fill="#D6DADF"/><rect x="440" y="330" width="400" height="8" fill="#D6DADF"/>
+      <rect x="450" y="200" width="56" height="30" rx="4" fill="#F8FAFC"/><rect x="450" y="200" width="56" height="6" rx="3" fill="#E2E8F0"/><rect x="520" y="190" width="56" height="40" rx="4" fill="#F8FAFC"/><rect x="520" y="190" width="56" height="6" rx="3" fill="#E2E8F0"/><rect x="590" y="205" width="56" height="25" rx="4" fill="#F8FAFC"/><rect x="590" y="205" width="56" height="6" rx="3" fill="#E2E8F0"/><rect x="660" y="195" width="56" height="35" rx="4" fill="#F8FAFC"/><rect x="660" y="195" width="56" height="6" rx="3" fill="#E2E8F0"/><rect x="740" y="200" width="56" height="30" rx="4" fill="#F8FAFC"/><rect x="740" y="200" width="56" height="6" rx="3" fill="#E2E8F0"/>
+      <g fill="#8D959E"><rect x="470" y="290" width="44" height="40" rx="6"/><rect x="560" y="300" width="60" height="30" rx="6"/><rect x="700" y="285" width="40" height="45" rx="6"/></g>
+      <rect x="470" y="10" width="340" height="50" rx="10" fill="#6B4423"/>
+      <text x="640" y="46" text-anchor="middle" font-size="32" font-weight="800" fill="#FFFFFF" letter-spacing="8">RESTAURANT</text>
+      <line x1="640" y1="60" x2="640" y2="96" stroke="#1F2937" stroke-width="3"/>
+      <path d="M604 130 Q604 96 640 96 Q676 96 676 130 Z" fill="#1F2937"/><ellipse cx="640" cy="132" rx="34" ry="7" fill="#FDE68A"/>
+      <rect x="1010" y="20" width="260" height="290" rx="6" fill="#8B5A2B"/><rect x="1022" y="32" width="236" height="266" rx="4" fill="#24282D"/>
+      <text x="1140" y="78" text-anchor="middle" font-size="34" font-weight="800" fill="#F8FAFC" letter-spacing="3">MENU</text>
+      <line x1="1040" y1="94" x2="1240" y2="94" stroke="#94A3B8" stroke-width="2"/>
+      <g font-size="19" font-weight="700" fill="#E5E7EB">
+        <text x="1040" y="128">BURGERS</text><text x="1240" y="128" text-anchor="end">$8</text>
+        <text x="1040" y="164">PIZZA</text><text x="1240" y="164" text-anchor="end">$10</text>
+        <text x="1040" y="200">SALADS</text><text x="1240" y="200" text-anchor="end">$7</text>
+        <text x="1040" y="236">PASTA</text><text x="1240" y="236" text-anchor="end">$9</text>
+        <text x="1040" y="272">DRINKS</text><text x="1240" y="272" text-anchor="end">$3</text>
+      </g>
+      <!-- the staff member behind the counter -->
       <g>
-        <path d="M780 520 Q784 400 850 378 Q900 362 950 378 Q1016 400 1020 520 Z" fill="#FFFFFF"/>
-        <path d="M842 392 L958 392 L966 520 L834 520 Z" fill="#DC2626"/><path d="M860 392 L860 360 M940 392 L940 360" stroke="#DC2626" stroke-width="8"/>
-        <rect x="882" y="330" width="36" height="52" rx="14" fill="#8D5A3B"/>
-        <ellipse cx="900" cy="270" rx="70" ry="78" fill="#A86B48"/>
-        <path d="M830 262 Q830 196 900 192 Q970 196 970 262 Q956 222 900 220 Q844 222 830 262 Z" fill="#1F2937"/>
-        <g class="eyes"><ellipse cx="876" cy="276" rx="7" ry="9" fill="#1F2937"/><ellipse cx="924" cy="276" rx="7" ry="9" fill="#1F2937"/></g>
-        <path d="M878 306 Q900 324 922 306" fill="none" stroke="#5B2E1F" stroke-width="6" stroke-linecap="round"/>
-        <path d="M800 450 Q740 470 690 500" fill="none" stroke="#FFFFFF" stroke-width="40" stroke-linecap="round"/><circle cx="684" cy="502" r="22" fill="#A86B48"/>
+        <path d="M912 252 Q910 196 960 192 Q1010 196 1008 252 L1012 322 Q1000 332 990 320 L990 272 L930 272 L930 320 Q920 332 908 322 Z" fill="#2B1A14"/>
+        <path d="M1004 226 Q1044 258 1034 334 Q1026 354 1014 334 Q1024 282 998 252 Z" fill="#2B1A14"/>
+        <path d="M880 320 Q960 302 1040 320 L1046 480 L874 480 Z" fill="#1C1C21"/>
+        <path d="M880 322 Q856 332 850 388 L880 394 Z M1040 322 Q1064 332 1070 388 L1040 394 Z" fill="#1C1C21"/>
+        <path d="M920 332 L1000 332 L1008 364 L1016 480 L904 480 L912 364 Z" fill="#2C2C32"/>
+        <path d="M922 334 L934 300 M998 334 L986 300" stroke="#2C2C32" stroke-width="6"/>
+        <rect x="947" y="282" width="26" height="38" rx="9" fill="#B57A5A"/>
+        <ellipse cx="960" cy="252" rx="38" ry="47" fill="#D29A77"/>
+        <path d="M922 248 Q920 200 960 198 Q1000 200 998 248 Q990 222 966 216 Q944 220 932 236 Q926 242 922 248 Z" fill="#2B1A14"/>
+        <circle cx="923" cy="266" r="3.5" fill="#FBBF24"/><circle cx="997" cy="266" r="3.5" fill="#FBBF24"/>
+        <path d="M940 236 L952 234 M968 234 L980 236" stroke="#2B1A14" stroke-width="3.5" stroke-linecap="round"/>
+        <g class="eyes"><ellipse cx="946" cy="250" rx="4" ry="5" fill="#2B1A14"/><ellipse cx="974" cy="250" rx="4" ry="5" fill="#2B1A14"/></g>
+        <circle cx="938" cy="268" r="7" fill="#F28B82" opacity=".35"/><circle cx="982" cy="268" r="7" fill="#F28B82" opacity=".35"/>
+        <path d="M944 274 Q960 292 976 274 Q960 280 944 274 Z" fill="#FFFFFF" stroke="#8C3B2E" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M852 388 Q846 444 882 462" fill="none" stroke="#D29A77" stroke-width="22" stroke-linecap="round"/><circle cx="890" cy="462" r="12" fill="#D29A77"/>
+        <path d="M1068 388 Q1074 444 1038 462" fill="none" stroke="#D29A77" stroke-width="22" stroke-linecap="round"/><circle cx="1030" cy="462" r="12" fill="#D29A77"/>
       </g>
-      <!-- counter -->
-      <rect y="500" width="1280" height="220" fill="#B7793F"/><rect y="490" width="1280" height="26" fill="#8B5A2B"/>
-      <g fill="#A36A35"><rect x="80" y="560" width="300" height="12" rx="6"/><rect x="560" y="610" width="360" height="12" rx="6"/><rect x="980" y="560" width="240" height="12" rx="6"/></g>
-      <!-- tablet with the PIN being typed -->
-      <g transform="translate(1040 360)">
-        <rect width="220" height="140" rx="16" fill="#14284B"/><rect x="12" y="12" width="196" height="116" rx="10" fill="#F8FAFC"/>
-        <text x="110" y="42" text-anchor="middle" font-size="14" font-weight="700" fill="#64748B" letter-spacing="1">ENTER PICKUP PIN</text>
-        <g font-size="36" font-weight="800" fill="#14284B" text-anchor="middle">
-          <text class="digit" x="50" y="92" style="animation-delay:1.6s">4</text><text class="digit" x="90" y="92" style="animation-delay:2.1s">8</text>
-          <text class="digit" x="130" y="92" style="animation-delay:2.6s">2</text><text class="digit" x="170" y="92" style="animation-delay:3.1s">7</text>
-        </g>
-        <g class="check"><circle cx="196" cy="16" r="26" fill="#4E9F3D"/><path d="M184 16 L193 25 L209 7" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
-      </g>
-      <path d="M1000 430 Q1030 466 1062 474" fill="none" stroke="#FFFFFF" stroke-width="36" stroke-linecap="round"/><circle cx="1070" cy="476" r="20" fill="#A86B48"/>
+      <!-- POS terminal (screen facing the staff) -->
+      <path d="M770 372 L884 360 L892 448 L778 456 Z" fill="#1F2937"/><rect x="808" y="452" width="56" height="12" fill="#111827"/>
+      <!-- counter: stone top, wood panels -->
+      <rect y="462" width="1280" height="22" fill="#DAD6CF"/><rect y="484" width="1280" height="8" fill="#C4BFB6"/>
+      <rect x="0" y="492" width="300" height="76" fill="#B57E52"/><rect x="300" y="492" width="260" height="76" fill="#A86F45"/><rect x="560" y="492" width="340" height="76" fill="#C08B5E"/><rect x="900" y="492" width="280" height="76" fill="#AD7449"/><rect x="1180" y="492" width="320" height="76" fill="#B57E52"/><rect x="0" y="568" width="220" height="76" fill="#A86F45"/><rect x="220" y="568" width="340" height="76" fill="#C08B5E"/><rect x="560" y="568" width="260" height="76" fill="#AD7449"/><rect x="820" y="568" width="300" height="76" fill="#B57E52"/><rect x="1120" y="568" width="360" height="76" fill="#A86F45"/><rect x="0" y="644" width="300" height="76" fill="#C08B5E"/><rect x="300" y="644" width="260" height="76" fill="#AD7449"/><rect x="560" y="644" width="340" height="76" fill="#B57E52"/><rect x="900" y="644" width="280" height="76" fill="#A86F45"/><rect x="1180" y="644" width="320" height="76" fill="#C08B5E"/><g stroke="#8E5E38" stroke-width="2"><line x1="0" y1="568" x2="1280" y2="568"/><line x1="0" y1="644" x2="1280" y2="644"/></g>
+      <g><rect x="1166" y="404" width="62" height="60" rx="6" fill="#C8CDD3"/>
+        <g fill="#3E8A4B"><ellipse cx="1180" cy="380" rx="10" ry="30" transform="rotate(-30 1180 380)"/><ellipse cx="1214" cy="376" rx="10" ry="32" transform="rotate(28 1214 376)"/><ellipse cx="1197" cy="364" rx="9" ry="34"/></g></g>
       <!-- the bag slides over to Sam -->
       <g class="bag">
-        <path d="M470 400 L590 400 L598 498 L462 498 Z" fill="#D9A862"/><path d="M470 400 L590 400 L590 380 L470 380 Z" fill="#C99350"/>
-        <path d="M506 380 Q530 344 554 380" fill="none" stroke="#8B5A2B" stroke-width="6"/>
-        <circle cx="530" cy="448" r="24" fill="#fff"/><path d="M518 456 C 518 440, 528 430, 544 430 C 544 446, 534 456, 518 456 Z" fill="#4E9F3D"/>
+        <path d="M470 384 L590 384 L598 464 L462 464 Z" fill="#D9A862"/><path d="M470 384 L590 384 L590 366 L470 366 Z" fill="#C99350"/>
+        <path d="M506 366 Q530 332 554 366" fill="none" stroke="#8B5A2B" stroke-width="6"/>
+        <circle cx="530" cy="424" r="22" fill="#fff"/><path d="M519 432 C 519 417, 528 408, 543 408 C 543 423, 534 432, 519 432 Z" fill="#4E9F3D"/>
       </g>
-      <!-- Sam at the counter, showing his PIN -->
+      <!-- Sam, from behind: one hand in his pocket, the other holding up his phone -->
       <g>
-        
-        <path d="M102 720 L112 550 Q118 484 158 474 L262 474 Q302 484 308 550 L318 720 Z" fill="#1F3A5F"/>
-        <path d="M180 474 L240 474 L210 556 Z" fill="#FFFFFF"/>
-        <path d="M203 486 L217 486 L221 570 L210 586 L199 570 Z" fill="#4E9F3D"/>
-        <path d="M180 474 L158 480 L202 596 Z M240 474 L262 480 L218 596 Z" fill="#162C49"/>
-        <rect x="195" y="424" width="30" height="54" rx="12" fill="#C68E63"/>
-        <ellipse cx="153" cy="370" rx="10" ry="16" fill="#C68E63"/><ellipse cx="267" cy="370" rx="10" ry="16" fill="#C68E63"/>
-        <ellipse cx="210" cy="362" rx="58" ry="72" fill="#D49A6A"/>
-        <path d="M150 352 Q144 282 206 278 Q268 276 272 342 Q256 312 222 310 Q182 306 166 324 Q156 334 150 352 Z" fill="#1F1A17"/>
-        <path d="M172 342 L196 338 M224 338 L248 342" stroke="#1F1A17" stroke-width="5" stroke-linecap="round"/>
-        <g class="eyes"><circle cx="185" cy="366" r="5.5" fill="#1F1A17"/><circle cx="235" cy="366" r="5.5" fill="#1F1A17"/></g>
-        <g fill="#FFFFFF" fill-opacity=".18" stroke="#111827" stroke-width="4"><circle cx="185" cy="366" r="17"/><circle cx="235" cy="366" r="17"/></g>
-        <path d="M202 364 Q210 358 218 364" fill="none" stroke="#111827" stroke-width="4"/>
-        <path d="M192 404 Q210 418 228 404" fill="none" stroke="#7A3E2B" stroke-width="5" stroke-linecap="round"/>
-        <path d="M298 508 Q352 484 380 456" fill="none" stroke="#1F3A5F" stroke-width="34" stroke-linecap="round"/><circle cx="380" cy="452" r="20" fill="#D49A6A"/><path d="M122 508 Q86 646 150 650" fill="none" stroke="#1F3A5F" stroke-width="34" stroke-linecap="round"/><circle cx="150" cy="650" r="17" fill="#FFFFFF"/><circle cx="162" cy="648" r="20" fill="#D49A6A"/>
+        <path d="M150 330 Q250 300 350 330 L356 606 L144 606 Z" fill="#1C1C21"/>
+        <path d="M150 332 Q118 344 110 424 L150 432 Z M350 332 Q382 344 392 424 L352 432 Z" fill="#1C1C21"/>
+        <path d="M128 426 Q126 520 166 600" fill="none" stroke="#C98E6B" stroke-width="30" stroke-linecap="round"/>
+        <path d="M144 598 L356 598 L362 720 L138 720 Z" fill="#3D6CA6"/>
+        <path d="M144 610 L356 610" stroke="#5B8BC4" stroke-width="3"/>
+        <path d="M176 632 L232 632 L230 680 Q204 694 178 680 Z M268 632 L324 632 L322 680 Q296 694 270 680 Z" fill="none" stroke="#5B8BC4" stroke-width="3"/>
+        <path d="M374 418 Q414 482 434 470 Q448 432 448 386" fill="none" stroke="#C98E6B" stroke-width="30" stroke-linecap="round"/>
+        <rect x="432" y="318" width="36" height="62" rx="7" fill="#111827"/><circle cx="448" cy="384" r="15" fill="#C98E6B"/>
+        <rect x="232" y="262" width="36" height="52" rx="10" fill="#B47A58"/>
+        <ellipse cx="200" cy="232" rx="9" ry="14" fill="#B47A58"/><ellipse cx="300" cy="232" rx="9" ry="14" fill="#B47A58"/>
+        <path d="M198 232 Q192 160 250 156 Q308 160 302 232 Q302 262 286 272 L214 272 Q198 262 198 232 Z" fill="#2A1A12"/>
+        <circle cx="212" cy="182" r="20" fill="#2A1A12"/><circle cx="234" cy="164" r="20" fill="#2A1A12"/><circle cx="260" cy="158" r="20" fill="#2A1A12"/><circle cx="284" cy="168" r="19" fill="#2A1A12"/><circle cx="299" cy="192" r="16" fill="#2A1A12"/><circle cx="203" cy="208" r="15" fill="#2A1A12"/><circle cx="301" cy="214" r="14" fill="#2A1A12"/><circle cx="248" cy="182" r="14" fill="#2A1A12"/><circle cx="222" cy="270" r="9" fill="#2A1A12"/><circle cx="244" cy="274" r="9" fill="#2A1A12"/><circle cx="266" cy="272" r="9" fill="#2A1A12"/><circle cx="284" cy="264" r="8" fill="#2A1A12"/>
       </g>
+      <!-- pop-outs: Sam's phone screen and the restaurant's screen -->
       <g class="cust-phone">
-        <rect x="336" y="250" width="130" height="220" rx="20" fill="#14284B"/><rect x="346" y="262" width="110" height="196" rx="12" fill="#ECFDF5"/>
-        <text x="401" y="320" text-anchor="middle" font-size="12" font-weight="700" fill="#065F46" letter-spacing="1">PICKUP PIN</text>
-        <text x="401" y="372" text-anchor="middle" font-size="32" font-weight="800" fill="#065F46" letter-spacing="4">4827</text>
-        <rect x="364" y="400" width="74" height="26" rx="13" fill="#4E9F3D"/><text x="401" y="418" text-anchor="middle" font-size="13" font-weight="800" fill="#fff">Show me</text>
-        <circle cx="380" cy="456" r="20" fill="#D49A6A"/>
+        <rect x="470" y="150" width="190" height="104" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/><path d="M490 250 L470 300 L520 252 Z" fill="#FFFFFF"/>
+        <text x="565" y="184" text-anchor="middle" font-size="14" font-weight="700" fill="#065F46" letter-spacing="2">PICKUP PIN</text>
+        <text x="565" y="232" text-anchor="middle" font-size="42" font-weight="800" fill="#065F46" letter-spacing="8">4827</text>
       </g>
-      <g class="banner"><rect x="390" y="560" width="500" height="76" rx="38" fill="#14284B"/>
-        <text x="640" y="608" text-anchor="middle" font-size="28" font-weight="800" fill="#fff"><tspan fill="#6CC24A">✓</tspan> Picked up · card charged $8.48</text></g>
-      <g font-size="44"><text class="heart" x="300" y="230" style="animation-delay:5.6s">💚</text><text class="heart" x="380" y="200" style="animation-delay:6s">😋</text><text class="heart" x="620" y="380" style="animation-delay:6.3s">✨</text></g>
+      <g class="pos-pop">
+        <rect x="690" y="240" width="230" height="100" rx="18" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/><path d="M800 338 L826 368 L836 338 Z" fill="#FFFFFF"/>
+        <text x="805" y="272" text-anchor="middle" font-size="13" font-weight="700" fill="#64748B" letter-spacing="1">ENTER PICKUP PIN</text>
+        <g font-size="36" font-weight="800" fill="#14284B" text-anchor="middle">
+          <text class="digit" x="745" y="320" style="animation-delay:1.6s">4</text><text class="digit" x="785" y="320" style="animation-delay:2.1s">8</text>
+          <text class="digit" x="825" y="320" style="animation-delay:2.6s">2</text><text class="digit" x="865" y="320" style="animation-delay:3.1s">7</text>
+        </g>
+        <g class="check"><circle cx="912" cy="246" r="24" fill="#4E9F3D"/><path d="M901 246 L909 254 L924 238" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></g>
+      </g>
+      <g class="banner"><rect x="430" y="580" width="520" height="76" rx="38" fill="#14284B"/>
+        <text x="690" y="628" text-anchor="middle" font-size="28" font-weight="800" fill="#fff"><tspan fill="#6CC24A">✓</tspan> Picked up · card charged $8.48</text></g>
+      <g font-size="44"><text class="heart" x="560" y="560" style="animation-delay:5.6s">💚</text><text class="heart" x="620" y="520" style="animation-delay:6s">😋</text><text class="heart" x="980" y="200" style="animation-delay:6.3s">✨</text></g>
     </svg>
     <div class="step"><b>3</b> Show your PIN &amp; pick up</div>
   </div>
