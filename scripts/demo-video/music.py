@@ -9,7 +9,7 @@ SoundFont (MIT licence), so the instruments are real recorded samples.
 A sunny acoustic-pop groove in D major at 112 BPM: strummed steel-string guitar, bass, electric piano,
 claps, shaker and glockenspiel, with a whistled hook in the chorus. It runs in 16-bar rounds (verse:
 D A Bm G twice; chorus: G A D Bm G A D A), counted back from the end so the last chorus resolves on a big
-D chord, with strings and a cymbal, just as the Rescue Bites logo pops in on the end screen.
+D chord, with strings and a cymbal, just as the Bite Wise logo pops in on the end screen.
 Set SOUNDFONT=/path/to/font.sf2 to use a different General MIDI SoundFont.
 """
 import json

@@ -30,7 +30,7 @@ function pages({ legal }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(doc.title)} · Rescue Bites</title>
+<title>${esc(doc.title)} · Bite Wise</title>
 <meta name="theme-color" content="#07110d">
 <link rel="icon" href="/assets/logo-mark.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/css/styles.css">
@@ -45,7 +45,7 @@ function pages({ legal }) {
       <button class="btn btn-ghost btn-sm" id="print-btn" type="button">🖨️ Print</button>
     </div>
     <article class="paper legal">
-      <div class="p-head"><img src="/assets/logo.svg" alt="Rescue Bites">
+      <div class="p-head"><img src="/assets/logo.svg" alt="Bite Wise">
         <div class="p-title"><h1>${esc(doc.title)}</h1><div class="p-muted small">Effective ${esc(doc.effective)} · Version ${esc(doc.version)}</div></div></div>
       ${doc.html}
     </article>

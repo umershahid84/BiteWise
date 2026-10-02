@@ -40,7 +40,7 @@ export async function createCardEntry(container) {
 
   if (config.paymentMode === 'stripe') {
     const stripe = await loadStripe(config.stripePublishableKey);
-    container.innerHTML = '<div class="stripe-el"></div><div class="test-note">🔒 Card details are sent securely to Stripe and never stored on Rescue Bites servers.</div>';
+    container.innerHTML = '<div class="stripe-el"></div><div class="test-note">🔒 Card details are sent securely to Stripe and never stored on Bite Wise servers.</div>';
     const card = stripe.elements().create('card', {
       style: { base: { fontSize: '16px', color: '#ecfdf5', '::placeholder': { color: '#86998f' } } },
     });

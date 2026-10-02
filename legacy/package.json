@@ -1,8 +1,8 @@
 {
-  "name": "rescuebites",
+  "name": "bitewise",
   "version": "0.1.0",
   "private": true,
-  "description": "Rescue Bites - discounted surplus restaurant food marketplace",
+  "description": "Bite Wise - discounted surplus restaurant food marketplace",
   "main": "server/index.js",
   "engines": {
     "node": ">=22.13"

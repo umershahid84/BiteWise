@@ -1,5 +1,5 @@
 {
-  "name": "rescuebites",
+  "name": "bitewise",
   "version": "2.0.0",
   "private": true,
   "scripts": {
@@ -59,7 +59,7 @@
     "typescript": "^5",
     "vitest": "^5.0.2"
   },
-  "description": "Rescue Bites: rescue surplus restaurant food around greater Seattle.",
+  "description": "Bite Wise: rescue surplus restaurant food around greater Seattle.",
   "engines": {
     "node": ">=20.9"
   }

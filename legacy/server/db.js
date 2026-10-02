@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- Refunds: 'original' = back to how the customer paid (card and/or credit they used);
--- 'credit' = Rescue Bites platform credit (funded by Rescue Bites; the restaurant keeps its money).
+-- 'credit' = Bite Wise platform credit (funded by Bite Wise; the restaurant keeps its money).
 CREATE TABLE IF NOT EXISTS refunds (
   id INTEGER PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders(id),

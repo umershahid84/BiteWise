@@ -15,7 +15,7 @@ const key = process.env.SUPABASE_SECRET_KEY;
 if (!url || !key) throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (see .env.example).');
 const db = createClient<Database>(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
-const DEMO_PASSWORD = 'RescueBites123';
+const DEMO_PASSWORD = 'BiteWise123';
 type Reason = Database['public']['Enums']['offer_reason'];
 
 const RESTAURANTS = [
@@ -148,10 +148,10 @@ async function deleteLogin(email: string) {
 async function user(username: string, role: 'customer' | 'restaurant' | 'admin', restaurant?: Record<string, unknown>) {
   const existing = await db.from('profiles').select('id').eq('username', username).maybeSingle();
   if (existing.data) {
-    // Demo accounts seeded before the rename to Rescue Bites move to the new email and password.
+    // Demo accounts seeded under an earlier name of the business move to the new email and password.
     const { data } = await db.auth.admin.getUserById(existing.data.id);
-    if (data.user?.email?.endsWith('@biteback.test')) {
-      const res = await db.auth.admin.updateUserById(existing.data.id, { email: `${username}@rescuebites.test`, password: DEMO_PASSWORD, email_confirm: true });
+    if (/@(biteback|rescuebites)\.test$/.test(data.user?.email ?? '')) {
+      const res = await db.auth.admin.updateUserById(existing.data.id, { email: `${username}@bitewise.test`, password: DEMO_PASSWORD, email_confirm: true });
       if (res.error) throw new Error(`update ${username}: ${res.error.message}`);
     }
     return existing.data.id;
@@ -159,7 +159,7 @@ async function user(username: string, role: 'customer' | 'restaurant' | 'admin',
   // Admins are created as customers and then promoted (like scripts/create-admin.ts does).
   const signupRole = role === 'admin' ? 'customer' : role;
   const accepted = Object.fromEntries(REQUIRED[signupRole].map((d) => [d, LEGAL_VERSION]));
-  const email = `${username}@rescuebites.test`;
+  const email = `${username}@bitewise.test`;
   const create = () => db.auth.admin.createUser({
     email,
     password: DEMO_PASSWORD,
@@ -185,7 +185,7 @@ async function restaurantId(ownerId: string) {
 async function main() {
   const tables = await db.from('profiles').select('id').limit(1);
   if (tables.error?.code === 'PGRST205' || tables.error?.code === '42P01') {
-    throw new Error(`The database doesn't have the Rescue Bites tables yet (${tables.error.message}).
+    throw new Error(`The database doesn't have the Bite Wise tables yet (${tables.error.message}).
 Create them first with: npx supabase db push   (see "Run it locally" in README.md), then run npm run seed again.`);
   }
   if (tables.error) throw new Error(`Can't reach the database at ${url}: ${tables.error.message}`);

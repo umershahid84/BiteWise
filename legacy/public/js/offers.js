@@ -9,7 +9,7 @@ const grid = $('#offers');
 const msg = $('#msg');
 let origin = null;
 try {
-  origin = JSON.parse(sessionStorage.getItem('rb-origin') || 'null');
+  origin = JSON.parse(sessionStorage.getItem('bw-origin') || 'null');
 } catch { /* storage unavailable */ }
 
 const config = await getConfig();
@@ -19,7 +19,7 @@ let offers = [];
 let lastSearch = null;
 let debounce;
 let view = 'list';
-try { view = sessionStorage.getItem('rb-view') === 'map' ? 'map' : 'list'; } catch { /* ignore */ }
+try { view = sessionStorage.getItem('bw-view') === 'map' ? 'map' : 'list'; } catch { /* ignore */ }
 
 // City / ZIP suggestions for the area box.
 api('/auth/areas').then(({ cities, zips }) => {
@@ -109,7 +109,7 @@ $('#locate-btn').addEventListener('click', () => {
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       origin = { lat: pos.coords.latitude.toFixed(4), lng: pos.coords.longitude.toFixed(4) };
-      try { sessionStorage.setItem('rb-origin', JSON.stringify(origin)); } catch { /* ignore */ }
+      try { sessionStorage.setItem('bw-origin', JSON.stringify(origin)); } catch { /* ignore */ }
       $('#locate-btn').textContent = '📍 Location on';
       load();
     },
@@ -147,7 +147,7 @@ async function openCheckout(offer) {
 
     <div class="section-label">Payment</div>
     <div id="credit-box" class="credit-box hidden">
-      <label class="check"><input type="checkbox" id="use-credit" checked> <span>Use my Rescue Bites credit · <b id="credit-avail"></b> available</span></label>
+      <label class="check"><input type="checkbox" id="use-credit" checked> <span>Use my Bite Wise credit · <b id="credit-avail"></b> available</span></label>
       <div class="timer-custom" id="credit-amt-row"><span class="muted">Apply $</span><input id="credit-amt" inputmode="decimal" style="width:120px">
         <span class="muted small" id="credit-hint"></span></div>
     </div>
@@ -184,7 +184,7 @@ async function openCheckout(offer) {
     $('#card-section', body).classList.toggle('hidden', card === 0);
     const rows = $('#credit-rows', body);
     if (rows) rows.innerHTML = credit
-      ? `<tr><td class="save">Rescue Bites credit applied</td><td class="save">−${money(credit)}</td></tr>
+      ? `<tr><td class="save">Bite Wise credit applied</td><td class="save">−${money(credit)}</td></tr>
          <tr class="total"><td>${card ? 'Card (charged at pickup)' : 'Due'}</td><td>${money(card)}</td></tr>` : '';
     $('#place-btn', body).textContent = card ? `Place order · ${money(card)}${credit ? ' + credit' : ''}` : 'Place order · paid with credit';
   }
@@ -296,7 +296,7 @@ let lastFitKey = null;
 
 function setView(v) {
   view = v;
-  try { sessionStorage.setItem('rb-view', v); } catch { /* ignore */ }
+  try { sessionStorage.setItem('bw-view', v); } catch { /* ignore */ }
   document.querySelectorAll('.view-toggle button').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
   $('#map-wrap').classList.toggle('hidden', v !== 'map');
   grid.classList.toggle('hidden', v === 'map');

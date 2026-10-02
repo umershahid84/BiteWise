@@ -25,7 +25,7 @@ const db = createClient(url, key, { auth: { persistSession: false, autoRefreshTo
 const BUCKET = 'brand';
 const LOGO = 'email-logo.png';
 const OUT = 'confirm-signup-email.html';
-const SUBJECT = 'Confirm your email for Rescue Bites 🥡';
+const SUBJECT = 'Confirm your email for Bite Wise 🦉';
 
 async function main() {
   const bucket = await db.storage.getBucket(BUCKET);
@@ -51,7 +51,7 @@ async function main() {
       body: JSON.stringify({ mailer_subjects_confirmation: SUBJECT, mailer_templates_confirmation_content: html }),
     });
     if (res.ok) {
-      console.log(`Installed the "Confirm signup" email in project ${ref}. New sign-ups get the Rescue Bites email from now on.
+      console.log(`Installed the "Confirm signup" email in project ${ref}. New sign-ups get the Bite Wise email from now on.
 The button links to your Site URL (Authentication → URL Configuration), so keep that set to your site's address.`);
       return;
     }

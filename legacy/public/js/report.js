@@ -18,11 +18,11 @@ async function load() {
   try {
     const { report: r } = await api(`/restaurant/report?date=${encodeURIComponent(date)}`);
     showError($('#msg'), null);
-    document.title = `Daily report ${r.date} · Rescue Bites`;
+    document.title = `Daily report ${r.date} · Bite Wise`;
     const s = r.summary;
     $('#report').innerHTML = `
       <div class="p-head">
-        <img src="/assets/logo.svg" alt="Rescue Bites">
+        <img src="/assets/logo.svg" alt="Bite Wise">
         <div class="p-title"><h1>Daily sales report</h1>
           <div class="small"><b>${esc(r.restaurant.name)}</b> · ${esc(r.dateText)}</div>
           <div class="p-muted small">${esc(r.restaurant.address)}, ${esc(r.restaurant.city)}, WA ${esc(r.restaurant.zip)}${r.restaurant.phone ? ` · ${esc(r.restaurant.phone)}` : ''}</div></div>
@@ -35,7 +35,7 @@ async function load() {
         <div><div class="p-label">Sales tax</div><b>${money(s.salesTaxCents)}</b></div>
         <div><div class="p-label">Total charged</div><b>${money(s.totalChargedCents)}</b></div>
       </div>
-      <p class="p-muted small" style="margin:0 0 16px">Menu value ${money(s.menuValueCents)} · Rescue Bites service fees paid by customers ${money(s.serviceFeesCents)} ·
+      <p class="p-muted small" style="margin:0 0 16px">Menu value ${money(s.menuValueCents)} · Bite Wise service fees paid by customers ${money(s.serviceFeesCents)} ·
         Awaiting pickup ${s.awaitingPickup} · Cancelled ${s.cancelled} · Not picked up ${s.notPickedUp}</p>
       <div class="table-scroll"><table class="report-table">
         <thead><tr><th>#</th><th>Ordered</th><th>Picked up</th><th style="text-align:left">Customer</th><th style="text-align:left">Item</th><th>Qty</th>

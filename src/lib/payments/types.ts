@@ -3,11 +3,11 @@
 //
 // Restaurants are paid through Stripe Connect (Express accounts):
 //   * When the restaurant's account can receive transfers at checkout, the card is authorized as a
-//     *destination charge* (transfer_data.destination). At capture, Rescue Bites keeps a platform
-//     application fee (service fee + sales tax Rescue Bites remits) and Stripe transfers the rest.
+//     *destination charge* (transfer_data.destination). At capture, Bite Wise keeps a platform
+//     application fee (service fee + sales tax Bite Wise remits) and Stripe transfers the rest.
 //   * Otherwise the charge stays on the platform and the restaurant's share is sent later with a
 //     separate transfer (automatically at pickup if they have connected by then, or from the admin console).
-//   * Platform credit is funded by Rescue Bites, so when credit covers part of the food, Rescue Bites tops
+//   * Platform credit is funded by Bite Wise, so when credit covers part of the food, Bite Wise tops
 //     up the restaurant with a separate transfer from its own balance.
 
 export class PaymentError extends Error {

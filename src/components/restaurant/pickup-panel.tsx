@@ -64,7 +64,7 @@ export function PickupPanel() {
   return (
     <Card className="mx-auto max-w-[520px]">
       <h2 className="text-center text-2xl font-extrabold">Verify a pickup</h2>
-      <p className="text-center text-muted">Ask the customer for their 4-digit Rescue Bites PIN.</p>
+      <p className="text-center text-muted">Ask the customer for their 4-digit Bite Wise PIN.</p>
       <form autoComplete="off" onSubmit={(e) => { e.preventDefault(); if (pin.length === 4) find(pin); }}>
         <div className="my-5 flex justify-center gap-3">
           {digits.map((d, i) => (
@@ -125,7 +125,7 @@ export function PickupPanel() {
           <h3 className="text-xl font-bold">Pickup confirmed</h3>
           <p className="text-muted">
             {done.quantity} × {done.itemTitle} for {done.customerUsername}.<br />
-            {done.totalCents - done.creditAppliedCents > 0 ? `Card charged ${money(done.totalCents - done.creditAppliedCents)}.` : 'Paid with Rescue Bites credit.'}
+            {done.totalCents - done.creditAppliedCents > 0 ? `Card charged ${money(done.totalCents - done.creditAppliedCents)}.` : 'Paid with Bite Wise credit.'}
           </p>
         </div>
       )}

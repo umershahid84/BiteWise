@@ -134,7 +134,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
         open={agreementOpen}
         role={role}
         title={role === 'restaurant' ? 'Restaurant Partner Agreement' : 'Terms of Service'}
-        intro="Please read and accept these terms to create your Rescue Bites account. If you decline, no account will be created."
+        intro="Please read and accept these terms to create your Bite Wise account. If you decline, no account will be created."
         acceptLabel="Accept & create account"
         busy={pending}
         onResult={onAgreement}

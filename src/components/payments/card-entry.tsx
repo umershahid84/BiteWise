@@ -6,7 +6,7 @@ import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { Field, Input } from '@/components/ui/field';
 
 // Card entry. With Stripe, card numbers go straight from the browser to Stripe (Stripe Elements)
-// and never reach Rescue Bites. In mock mode (no Stripe keys), only brand, last 4 digits and expiry
+// and never reach Bite Wise. In mock mode (no Stripe keys), only brand, last 4 digits and expiry
 // leave the browser.
 
 export type PaymentConfig = { mode: 'stripe' | 'mock'; publishableKey: string };
@@ -124,7 +124,7 @@ function StripeFields({ ref }: { ref: React.Ref<CardEntryHandle> }) {
       <div className="rounded-field border border-line bg-bg-2 px-3.5 py-3.5">
         <CardElement options={{ style: { base: { fontSize: '16px', color: '#ecfdf5', '::placeholder': { color: '#86998f' } } } }} />
       </div>
-      <div className="mt-2 text-xs text-muted">🔒 Card details are sent securely to Stripe and never stored on Rescue Bites servers.</div>
+      <div className="mt-2 text-xs text-muted">🔒 Card details are sent securely to Stripe and never stored on Bite Wise servers.</div>
     </div>
   );
 }

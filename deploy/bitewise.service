@@ -1,7 +1,7 @@
-# systemd service for Rescue Bites. Install it with: sudo bash scripts/server/install-service.sh
-# (the installer fills in the @...@ values). Then: sudo systemctl start rescuebites
+# systemd service for Bite Wise. Install it with: sudo bash scripts/server/install-service.sh
+# (the installer fills in the @...@ values). Then: sudo systemctl start bitewise
 [Unit]
-Description=Rescue Bites (Next.js)
+Description=Bite Wise (Next.js)
 Documentation=file://@APP_DIR@/README.md
 After=network-online.target
 Wants=network-online.target
@@ -21,7 +21,7 @@ Restart=always
 RestartSec=5
 KillSignal=SIGTERM
 TimeoutStopSec=30
-SyslogIdentifier=rescuebites
+SyslogIdentifier=bitewise
 # Hardening: no privilege escalation, a private /tmp, and read-only system folders.
 NoNewPrivileges=true
 PrivateTmp=true

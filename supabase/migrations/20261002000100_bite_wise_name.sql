@@ -1,8 +1,6 @@
--- The business is now called Bite Wise: the suspended-restaurant message names it, and the
--- every-minute cleanup job is renamed. The functions are as in 20260929000300_functions.sql; only that message changed.
-
--- Creates (p_offer_id null) or edits an offer from one of the restaurant's menu items.
--- p_expires_in_minutes starts the discard timer now (5 min to 3 days); null keeps the current timer.
+-- The business is now called Bite Wise: the suspended-restaurant message names it, and the every-minute
+-- cleanup job is renamed. The functions are as in 20260930000100_rescue_bites_name.sql (whose text now already
+-- says Bite Wise, for new databases); databases set up before this rename get the new wording here.
 create or replace function public.restaurant_save_offer(
   p_offer_id bigint, p_menu_item_id bigint, p_reason public.offer_reason, p_description text,
   p_discount_pct integer, p_quantity integer, p_expires_in_minutes integer
@@ -119,11 +117,11 @@ begin
 end;
 $$;
 
--- Databases set up before the rename have the cleanup job as biteback-sweep.
+-- The cleanup job was called biteback-sweep, then rescuebites-sweep.
 do $$
 begin
   if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.unschedule(jobid) from cron.job where jobname = 'biteback-sweep';
+    perform cron.unschedule(jobid) from cron.job where jobname in ('biteback-sweep', 'rescuebites-sweep');
     perform cron.schedule('bitewise-sweep', '* * * * *', 'select public.sweep()');
   end if;
 exception when others then

@@ -10,8 +10,8 @@ let restaurant = (await api('/restaurant/profile')).restaurant;
 function statusBanner() {
   const el = $('#r-status-banner');
   const text = {
-    pending: '⏳ <b>Your restaurant is waiting for approval.</b> You can set up your menu and offers now; customers will see them once Rescue Bites approves your account (usually within 1 business day).',
-    suspended: `⛔ <b>Your restaurant is suspended.</b> Your offers are hidden and you can't post new ones. You can still verify pickups for existing orders. Contact ${esc(config.supportEmail || 'Rescue Bites support')}.`,
+    pending: '⏳ <b>Your restaurant is waiting for approval.</b> You can set up your menu and offers now; customers will see them once Bite Wise approves your account (usually within 1 business day).',
+    suspended: `⛔ <b>Your restaurant is suspended.</b> Your offers are hidden and you can't post new ones. You can still verify pickups for existing orders. Contact ${esc(config.supportEmail || 'Bite Wise support')}.`,
   }[restaurant.status];
   el.className = text ? `alert ${restaurant.status === 'suspended' ? 'alert-error' : 'alert-warn'} restaurant-status` : 'hidden';
   el.innerHTML = text || '';
@@ -49,7 +49,7 @@ function renderPickup(panel) {
   panel.innerHTML = `
     <div class="card" style="max-width:520px;margin:0 auto">
       <h2 class="center">Verify a pickup</h2>
-      <p class="center muted">Ask the customer for their 4-digit Rescue Bites PIN.</p>
+      <p class="center muted">Ask the customer for their 4-digit Bite Wise PIN.</p>
       <form id="pin-form" autocomplete="off">
         <div class="pin-entry">${[0, 1, 2, 3].map((i) => `<input inputmode="numeric" maxlength="1" aria-label="PIN digit ${i + 1}" data-i="${i}">`).join('')}</div>
         <button class="btn btn-green btn-block" type="submit">Find order</button>
@@ -249,7 +249,7 @@ async function offerForm(existing, preselectId) {
         <div class="small" style="margin-top:4px">Menu price <b>${money(item.price_cents)}</b>${item.dietary ? ` · ${item.dietary.split(',').map((d) => `<span class="chip diet">${esc(d)}</span>`).join(' ')}` : ''}</div></div>`;
     const disc = Number($('#o-disc', b).value);
     $('#o-preview', b).innerHTML = disc >= 1 && disc <= 90
-      ? `Customers pay <b>${money(Math.floor((item.price_cents * (100 - disc)) / 100 + 0.5))}</b> <span class="was">${money(item.price_cents)}</span> per item, plus ${pct(config.serviceFeeBps)} Rescue Bites service fee and ${pct(restaurant.tax_rate_bps)} sales tax.`
+      ? `Customers pay <b>${money(Math.floor((item.price_cents * (100 - disc)) / 100 + 0.5))}</b> <span class="was">${money(item.price_cents)}</span> per item, plus ${pct(config.serviceFeeBps)} Bite Wise service fee and ${pct(restaurant.tax_rate_bps)} sales tax.`
       : 'Enter a discount from 1% to 90%.';
   };
   // Discard timer
@@ -410,7 +410,7 @@ function menuItemForm(existing) {
 
 // ---------- Live order alerts ----------
 let soundOn = true;
-try { soundOn = localStorage.getItem('rb-sound') !== 'off'; } catch { /* ignore */ }
+try { soundOn = localStorage.getItem('bw-sound') !== 'off'; } catch { /* ignore */ }
 const soundBtn = $('#sound-btn');
 const syncSound = () => {
   soundBtn.textContent = soundOn ? '🔔 Order sound: on' : '🔕 Order sound: off';
@@ -419,7 +419,7 @@ const syncSound = () => {
 };
 soundBtn.addEventListener('click', () => {
   soundOn = !soundOn;
-  try { localStorage.setItem('rb-sound', soundOn ? 'on' : 'off'); } catch { /* ignore */ }
+  try { localStorage.setItem('bw-sound', soundOn ? 'on' : 'off'); } catch { /* ignore */ }
   syncSound();
   if (soundOn) setTimeout(() => ringBell(), 50);
 });
@@ -446,7 +446,7 @@ function announceOrder(order) {
   let on = false;
   let n = 0;
   flash = setInterval(() => {
-    document.title = (on = !on) ? '🔔 New order! · Rescue Bites' : baseTitle;
+    document.title = (on = !on) ? '🔔 New order! · Bite Wise' : baseTitle;
     if (++n > 12 || document.hasFocus()) { clearInterval(flash); document.title = baseTitle; }
   }, 1000);
   renderKpis();
@@ -487,7 +487,7 @@ async function renderPayouts(panel) {
           <p style="margin:0"><b>${esc(bank.bankName)}</b> · ${bank.accountType === 'savings' ? 'Savings' : 'Checking'} ••••${esc(bank.accountLast4)}<br>
           <span class="muted small">Routing ••••${esc(bank.routingLast4)} · ${esc(bank.holderName)} · updated ${esc(fmtDateTime(bank.updatedAt))}</span></p>
           <button class="btn btn-ghost btn-sm" id="bank-edit" style="margin-top:12px">Change bank account</button>`
-          : '<div class="alert alert-warn small">Add your bank account so Rescue Bites can pay you.</div>'}</div>
+          : '<div class="alert alert-warn small">Add your bank account so Bite Wise can pay you.</div>'}</div>
         <form id="bank-form" class="${bank ? 'hidden' : ''}" novalidate autocomplete="off" style="margin-top:8px">
           <div class="field"><label for="b-holder">Account holder name</label><input id="b-holder" value="${esc(bank?.holderName || restaurant.name)}"></div>
           <div class="grid-2">
@@ -499,7 +499,7 @@ async function renderPayouts(panel) {
             <div class="field"><label for="b-acct">Account number</label><input id="b-acct" inputmode="numeric" maxlength="17" type="password"></div>
             <div class="field"><label for="b-acct2">Confirm account number</label><input id="b-acct2" inputmode="numeric" maxlength="17"></div>
           </div>
-          <p class="small muted">🔒 Encrypted and only visible to Rescue Bites for sending your payouts. See the <a href="/legal/restaurant-agreement" target="_blank">Partner Agreement</a>.</p>
+          <p class="small muted">🔒 Encrypted and only visible to Bite Wise for sending your payouts. See the <a href="/legal/restaurant-agreement" target="_blank">Partner Agreement</a>.</p>
           <div id="b-msg"></div>
           <button class="btn btn-primary" type="submit">Save bank account</button>
         </form>

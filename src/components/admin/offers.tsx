@@ -20,7 +20,7 @@ export function OffersPanel() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useAdmin<Offer[]>(['offers'], 'offers');
   const remove = async (o: Offer) => {
-    const reason = prompt(`Remove "${o.title}" from Rescue Bites? Reason (optional):`);
+    const reason = prompt(`Remove "${o.title}" from Bite Wise? Reason (optional):`);
     if (reason === null) return;
     if (await run(() => endOffer({ id: o.id, reason }), 'Offer removed')) queryClient.invalidateQueries({ queryKey: ['admin'] });
   };

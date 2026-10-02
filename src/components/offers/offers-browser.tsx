@@ -60,8 +60,8 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
   // Browser-only session preferences, read after hydration.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrigin(readSession<Origin | null>('rb-origin', null));
-    setView(readSession<'list' | 'map'>('rb-view', 'list'));
+    setOrigin(readSession<Origin | null>('bw-origin', null));
+    setView(readSession<'list' | 'map'>('bw-view', 'list'));
   }, []);
 
   // City and ZIP suggestions for the area box.
@@ -112,7 +112,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
   const set = (k: keyof Filters) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setFilters((x) => ({ ...x, [k]: e.target.value }));
   const switchView = (v: 'list' | 'map') => {
     setView(v);
-    writeSession('rb-view', v);
+    writeSession('bw-view', v);
   };
   const locate = () => {
     if (!navigator.geolocation) return setGeoError('Location is not available in this browser.');
@@ -121,7 +121,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
       (pos) => {
         const o = { lat: Number(pos.coords.latitude.toFixed(4)), lng: Number(pos.coords.longitude.toFixed(4)) };
         setOrigin(o);
-        writeSession('rb-origin', o);
+        writeSession('bw-origin', o);
         setLocating(false);
         setGeoError(null);
       },

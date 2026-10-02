@@ -59,7 +59,7 @@ export function LoginForm({ next, notice }: { next: string | null; notice: 'conf
         <Button block type="submit" disabled={pending}>{pending ? 'Please wait…' : 'Log in'}</Button>
       </form>
       <p className="mt-4 text-center text-sm text-muted">
-        New to Rescue Bites? <Link href="/signup">Create a free account</Link>
+        New to Bite Wise? <Link href="/signup">Create a free account</Link>
       </p>
     </>
   );

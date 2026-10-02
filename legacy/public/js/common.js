@@ -3,7 +3,7 @@
 export async function api(path, { method = 'GET', body } = {}) {
   const res = await fetch(`/api${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'Rescue Bites' },
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'Bite Wise' },
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: 'same-origin',
   });
@@ -83,14 +83,14 @@ export async function renderHeader(active) {
       '<button class="linklike" id="logout-btn">Log out</button>';
   } else {
     links = link('/offers', 'Browse deals', 'offers') + link('/orders', 'My orders', 'orders') + link('/account', 'Account', 'account') +
-      (user.creditCents > 0 ? `<a href="/account#credit" class="credit-chip" title="Your Rescue Bites platform credit">🎁 ${money(user.creditCents)} credit</a>` : '') +
+      (user.creditCents > 0 ? `<a href="/account#credit" class="credit-chip" title="Your Bite Wise platform credit">🎁 ${money(user.creditCents)} credit</a>` : '') +
       '<button class="linklike" id="logout-btn">Log out</button>';
   }
   el.className = 'site-header';
   el.innerHTML = `
     <div class="container">
-      <a class="brand" href="${user ? homeFor(user) : '/'}" aria-label="Rescue Bites home">
-        <img src="/assets/logo-dark.svg" alt="Rescue Bites">
+      <a class="brand" href="${user ? homeFor(user) : '/'}" aria-label="Bite Wise home">
+        <img src="/assets/logo-dark.svg" alt="Bite Wise">
       </a>
       <button class="nav-toggle" aria-label="Menu" aria-expanded="false">☰</button>
       <nav class="nav">${links}</nav>
@@ -116,7 +116,7 @@ async function promptUpdatedTerms(user) {
   const accepted = await askToAccept({
     role: user.role,
     title: 'Our terms have been updated',
-    intro: 'Please review and accept the updated terms to keep using Rescue Bites. If you decline, you will be signed out.',
+    intro: 'Please review and accept the updated terms to keep using Bite Wise. If you decline, you will be signed out.',
     acceptLabel: 'Accept & continue',
     declineLabel: 'Decline & sign out',
   });

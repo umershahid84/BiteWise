@@ -33,7 +33,7 @@ export function OverviewPanel({ range, setRange, go }: { range: Range; setRange:
       )}
       <SectionLabel>{day(data.range.from)} – {day(data.range.to)} · completed orders</SectionLabel>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi value={money(t.serviceFeesCents)} label="Rescue Bites revenue (service fees)" />
+        <Kpi value={money(t.serviceFeesCents)} label="Bite Wise revenue (service fees)" />
         <Kpi value={money(t.gmvCents)} label="Total charged to customers" />
         <Kpi value={money(t.foodSalesCents)} label="Restaurant food sales" />
         <Kpi value={money(t.salesTaxCents)} label="Sales tax collected" />

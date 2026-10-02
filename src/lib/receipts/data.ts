@@ -22,7 +22,7 @@ const PAYMENT_STATUS: Record<Order['status'], string> = {
 export const receiptNumber = (order: { id: number; created_at: string }) => {
   const d = new Date(order.created_at);
   const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
-  return `RB-${ymd}-${String(order.id).padStart(6, '0')}`;
+  return `BW-${ymd}-${String(order.id).padStart(6, '0')}`;
 };
 
 export type Receipt = Awaited<ReturnType<typeof receiptData>>;
@@ -80,7 +80,7 @@ export async function receiptData(order: Order) {
       amountCents: f.amount_cents,
       to:
         f.method === 'credit'
-          ? 'Rescue Bites platform credit'
+          ? 'Bite Wise platform credit'
           : [f.card_cents && `${order.card_label} (${money(f.card_cents)})`, f.credit_cents && `platform credit (${money(f.credit_cents)})`]
               .filter(Boolean).join(' + '),
       reason: f.reason,
@@ -171,7 +171,7 @@ export function reportCsv(rep: Report) {
     ['Discounts given', dollars(s.discountsCents)],
     ['Food sales', dollars(s.foodSalesCents)],
     ['Sales tax collected', dollars(s.salesTaxCents)],
-    ['Rescue Bites service fees (paid by customers)', dollars(s.serviceFeesCents)],
+    ['Bite Wise service fees (paid by customers)', dollars(s.serviceFeesCents)],
     ['Total charged to customers', dollars(s.totalChargedCents)],
     ['Awaiting pickup', s.awaitingPickup],
     ['Cancelled', s.cancelled],

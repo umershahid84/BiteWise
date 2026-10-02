@@ -65,7 +65,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
     try {
       // Browser-only preference, read after hydration.
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSoundOn(localStorage.getItem('rb-sound') !== 'off');
+      setSoundOn(localStorage.getItem('bw-sound') !== 'off');
     } catch {
       // storage unavailable
     }
@@ -83,7 +83,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
     let on = false;
     let n = 0;
     const flash = setInterval(() => {
-      document.title = (on = !on) ? '🔔 New order! · Rescue Bites' : base;
+      document.title = (on = !on) ? '🔔 New order! · Bite Wise' : base;
       if (++n > 12 || document.hasFocus()) {
         clearInterval(flash);
         document.title = base;
@@ -115,7 +115,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
     const next = !soundOn;
     setSoundOn(next);
     try {
-      localStorage.setItem('rb-sound', next ? 'on' : 'off');
+      localStorage.setItem('bw-sound', next ? 'on' : 'off');
     } catch {
       // ignore
     }
@@ -127,14 +127,14 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
     <main className="container-page py-8">
       {restaurant.status === 'pending' && (
         <Alert tone="warn" className="mb-5">
-          ⏳ <b>Your restaurant is waiting for approval.</b> You can set up your menu and offers now; customers will see them once Rescue Bites approves
+          ⏳ <b>Your restaurant is waiting for approval.</b> You can set up your menu and offers now; customers will see them once Bite Wise approves
           your account (usually within 1 business day).
         </Alert>
       )}
       {restaurant.status === 'suspended' && (
         <Alert tone="error" className="mb-5">
           ⛔ <b>Your restaurant is suspended.</b> Your offers are hidden and you can&apos;t post new ones. You can still verify pickups for existing
-          orders. Contact Rescue Bites support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
+          orders. Contact Bite Wise support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
         </Alert>
       )}
       <div className="mb-5 flex flex-wrap items-center gap-3">

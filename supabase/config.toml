@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "rescuebites"
+project_id = "bitewise"
 
 [api]
 enabled = true
@@ -250,7 +250,7 @@ otp_expiry = 3600
 # Branded sign-up confirmation email. On a supabase.com project, paste it in the dashboard instead
 # (Authentication → Emails → Confirm signup): npm run email:template prepares it.
 [auth.email.template.confirmation]
-subject = "Confirm your email for Rescue Bites 🥡"
+subject = "Confirm your email for Bite Wise 🦉"
 content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize notification email template

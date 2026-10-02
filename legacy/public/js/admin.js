@@ -61,7 +61,7 @@ async function overview(panel) {
       <a href="#restaurants" data-go="restaurants">Review now →</a></div>` : ''}
     <div class="section-label">${esc(day(`${d.range.from}T12:00:00Z`))} – ${esc(day(`${d.range.to}T12:00:00Z`))} · completed orders</div>
     <div class="kpis kpis-4">
-      <div class="kpi"><b>${money(t.serviceFeesCents)}</b><span>Rescue Bites revenue (service fees)</span></div>
+      <div class="kpi"><b>${money(t.serviceFeesCents)}</b><span>Bite Wise revenue (service fees)</span></div>
       <div class="kpi"><b>${money(t.gmvCents)}</b><span>Total charged to customers</span></div>
       <div class="kpi"><b>${money(t.foodSalesCents)}</b><span>Restaurant food sales</span></div>
       <div class="kpi"><b>${money(t.salesTaxCents)}</b><span>Sales tax collected</span></div>
@@ -220,7 +220,7 @@ async function customers(panel) {
       const m = openModal(`Issue platform credit · ${cr.dataset.name}`, `
         <div class="field"><label for="gc-amt">Amount ($)</label><input id="gc-amt" inputmode="decimal" placeholder="5.00"></div>
         <div class="field"><label for="gc-reason">Reason</label><input id="gc-reason" maxlength="300" placeholder="e.g. Sorry for the wait"></div>
-        <p class="small muted">Platform credit is paid by you (Rescue Bites). Restaurants receive their full payment when it's used.</p>
+        <p class="small muted">Platform credit is paid by you (Bite Wise). Restaurants receive their full payment when it's used.</p>
         <div id="gc-msg"></div><button class="btn btn-primary btn-block" id="gc-go">Issue credit</button>`);
       $('#gc-go', m.body).addEventListener('click', (ev) => withBusy(ev.currentTarget, async () => {
         try {
@@ -305,7 +305,7 @@ function refundForm(o, done) {
       <label class="pay-option"><input type="radio" name="rf-method" value="original" checked>
         <span><b>Original form of payment</b><br><span class="small muted">${paidWith}${o.creditAppliedCents && cardPart > 0 ? '. Refunded to the card first, then back to credit.' : ''}</span></span></label>
       <label class="pay-option"><input type="radio" name="rf-method" value="credit">
-        <span><b>Rescue Bites platform credit</b><br><span class="small muted">Added to ${esc(o.customer)}'s credit balance for future orders.</span></span></label>
+        <span><b>Bite Wise platform credit</b><br><span class="small muted">Added to ${esc(o.customer)}'s credit balance for future orders.</span></span></label>
       <div class="alert alert-info small" id="rf-effect"></div></div>
     <div class="field"><label for="rf-reason">Reason</label><input id="rf-reason" maxlength="300" placeholder="e.g. Item was missing from the bag"></div>
     <div id="rf-msg"></div>
@@ -318,8 +318,8 @@ function refundForm(o, done) {
     if (pct !== 'manual') $('#rf-amt', b).value = (amountCents() / 100).toFixed(2);
     const amt = amountCents();
     $('#rf-effect', b).innerHTML = method() === 'credit'
-      ? `💳 <b>${money(amt)}</b> platform credit, <b>paid by you (Rescue Bites)</b>. The restaurant still receives its full payment for this order.`
-      : `↩️ <b>${money(amt)}</b> back to the customer's original payment. <b>Neither the restaurant nor Rescue Bites keeps</b> the refunded share. It's deducted from the restaurant's payout and your service fee.`;
+      ? `💳 <b>${money(amt)}</b> platform credit, <b>paid by you (Bite Wise)</b>. The restaurant still receives its full payment for this order.`
+      : `↩️ <b>${money(amt)}</b> back to the customer's original payment. <b>Neither the restaurant nor Bite Wise keeps</b> the refunded share. It's deducted from the restaurant's payout and your service fee.`;
     $('#rf-go', b).textContent = `Refund ${money(amt)} ${method() === 'credit' ? 'as platform credit' : 'to original payment'}`;
   };
   $('#rf-pcts', b).addEventListener('click', (e) => {
@@ -377,7 +377,7 @@ async function payouts(panel) {
   const { balances, history } = await api('/admin/payouts');
   const owed = balances.reduce((n, b) => n + Math.max(0, b.balanceCents), 0);
   panel.innerHTML = `
-    <div class="alert alert-info small">Restaurants earn the <b>food subtotal</b> of completed orders, minus the food share of any refunds. Rescue Bites keeps the service fee and remits sales tax.
+    <div class="alert alert-info small">Restaurants earn the <b>food subtotal</b> of completed orders, minus the food share of any refunds. Bite Wise keeps the service fee and remits sales tax.
       Pay restaurants from your bank or payment processor, then record the payout here. (Automatic payouts need Stripe Connect.)</div>
     <div class="row" style="margin-bottom:14px"><h3 style="margin:0">Balances · ${money(owed)} owed</h3><span class="spacer"></span>
       <a class="btn btn-ghost btn-sm" href="/api/admin/payouts.csv">⬇ Export CSV</a></div>
@@ -463,7 +463,7 @@ async function settings(panel) {
       <h3>Business settings</h3>
       <div class="grid-2">
         <div class="field"><label for="s-fee">Customer service fee (%)</label><input id="s-fee" inputmode="decimal" value="${s.serviceFeePct}">
-          <div class="hint">Charged on the food subtotal of new orders. This is Rescue Bites' revenue.</div></div>
+          <div class="hint">Charged on the food subtotal of new orders. This is Bite Wise's revenue.</div></div>
         <div class="field"><label for="s-tax">Default sales tax for new restaurants (%)</label><input id="s-tax" inputmode="decimal" value="${s.defaultTaxRatePct}">
           <div class="hint">Each restaurant can have its own rate.</div></div>
       </div>

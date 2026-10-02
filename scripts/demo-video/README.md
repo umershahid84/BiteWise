@@ -1,6 +1,6 @@
 # Demo videos
 
-The narrated tours in `public/videos/` (home page, **How it works** on the deals page, **Watch the tour** on the restaurant dashboard) are recorded from the real app and end on an animated Rescue Bites logo ("Happy rescuing!" / "Happy selling!"). The voice-over is generated with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx), an open-source text-to-speech model (Apache 2.0) that runs on your own computer. The upbeat background music is an original tune written in code by `music.py` and played with real instrument samples by [FluidSynth](https://www.fluidsynth.org/) and the FluidR3 General MIDI SoundFont (MIT licence), so no music licences are needed. It dips automatically while the narrator speaks.
+The narrated tours in `public/videos/` (home page, **How it works** on the deals page, **Watch the tour** on the restaurant dashboard) are recorded from the real app and end on an animated Bite Wise logo ("Happy rescuing!" / "Happy selling!"). The voice-over is generated with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx), an open-source text-to-speech model (Apache 2.0) that runs on your own computer. The upbeat background music is an original tune written in code by `music.py` and played with real instrument samples by [FluidSynth](https://www.fluidsynth.org/) and the FluidR3 General MIDI SoundFont (MIT licence), so no music licences are needed. It dips automatically while the narrator speaks.
 
 To change what is said, edit `narration.json`, then rebuild:
 

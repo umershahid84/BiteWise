@@ -96,7 +96,7 @@ export async function signIn(input: unknown) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.status === 429) throw new AppError(429, 'Too many attempts. Please wait a few minutes and try again.');
-      if (/banned/i.test(error.message)) throw new AppError(403, 'This account has been suspended. Contact Rescue Bites support for help.');
+      if (/banned/i.test(error.message)) throw new AppError(403, 'This account has been suspended. Contact Bite Wise support for help.');
       if (/not confirmed/i.test(error.message)) throw new AppError(403, 'Please confirm your email address first. Check your inbox for the link.');
       throw new AppError(401, 'Email/user name or password is incorrect.');
     }
@@ -111,7 +111,7 @@ export async function signIn(input: unknown) {
       const until = profile?.status === 'suspended' && profile.suspended_until
         ? ` until ${new Date(profile.suspended_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: serverEnv.timeZone })}`
         : '';
-      throw new AppError(403, `This account has been suspended${until}. Contact Rescue Bites support for help.`);
+      throw new AppError(403, `This account has been suspended${until}. Contact Bite Wise support for help.`);
     }
     return { next: homeFor(profile.role) };
   });

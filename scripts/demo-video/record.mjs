@@ -1,4 +1,4 @@
-// Records the "See Rescue Bites in action" tours (public/videos/), timed to the spoken narration.
+// Records the "See Bite Wise in action" tours (public/videos/), timed to the spoken narration.
 // Full steps are in scripts/demo-video/README.md. This step needs the app running on fresh demo data
 // and .video-tmp/voice/durations.json from voice.py; it writes .video-tmp/<tour>-raw.webm and <tour>-cues.json.
 //
@@ -12,38 +12,38 @@ const OUT = path.resolve('.video-tmp');
 const DURATIONS = JSON.parse(fs.readFileSync(path.join(OUT, 'voice/durations.json'), 'utf8'));
 const LOGO = fs.readFileSync(new URL('../../public/assets/logo-dark.svg', import.meta.url), 'utf8');
 const SIZE = { width: 1280, height: 720 };
-const PASSWORD = 'RescueBites123';
+const PASSWORD = 'BiteWise123';
 fs.mkdirSync(OUT, { recursive: true });
 
 // Pointer and click ripple, injected into every page.
 const OVERLAY = () => {
   const css = `
     nextjs-portal { display: none !important; }
-    #rb-cursor { position: fixed; z-index: 2147483647; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+    #bw-cursor { position: fixed; z-index: 2147483647; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
       background: rgba(255,255,255,.9); border: 3px solid #10b981; box-shadow: 0 2px 10px rgba(0,0,0,.5); pointer-events: none;
       transition: transform .12s; left: -40px; top: -40px; }
-    #rb-cursor.down { transform: scale(.7); }
-    .rb-ripple { position: fixed; z-index: 2147483646; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
-      border: 3px solid #34d399; pointer-events: none; animation: rb-rip .5s ease-out forwards; }
-    @keyframes rb-rip { from { transform: scale(.3); opacity: 1 } to { transform: scale(1.4); opacity: 0 } }`;
+    #bw-cursor.down { transform: scale(.7); }
+    .bw-ripple { position: fixed; z-index: 2147483646; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+      border: 3px solid #34d399; pointer-events: none; animation: bw-rip .5s ease-out forwards; }
+    @keyframes bw-rip { from { transform: scale(.3); opacity: 1 } to { transform: scale(1.4); opacity: 0 } }`;
   const add = () => {
-    if (document.getElementById('rb-cursor')) return;
+    if (document.getElementById('bw-cursor')) return;
     const style = document.createElement('style');
     style.textContent = css;
     document.head.append(style);
-    const cursor = Object.assign(document.createElement('div'), { id: 'rb-cursor' });
+    const cursor = Object.assign(document.createElement('div'), { id: 'bw-cursor' });
     document.body.append(cursor);
-    const pos = JSON.parse(sessionStorage.getItem('rb-pos') ?? '[-40,-40]');
+    const pos = JSON.parse(sessionStorage.getItem('bw-pos') ?? '[-40,-40]');
     cursor.style.left = `${pos[0]}px`;
     cursor.style.top = `${pos[1]}px`;
     addEventListener('mousemove', (e) => {
       cursor.style.left = `${e.clientX}px`;
       cursor.style.top = `${e.clientY}px`;
-      sessionStorage.setItem('rb-pos', JSON.stringify([e.clientX, e.clientY]));
+      sessionStorage.setItem('bw-pos', JSON.stringify([e.clientX, e.clientY]));
     }, true);
     addEventListener('mousedown', (e) => {
       cursor.classList.add('down');
-      const r = Object.assign(document.createElement('div'), { className: 'rb-ripple' });
+      const r = Object.assign(document.createElement('div'), { className: 'bw-ripple' });
       r.style.left = `${e.clientX}px`;
       r.style.top = `${e.clientY}px`;
       document.body.append(r);
@@ -93,7 +93,7 @@ function narrator(tour) {
   };
 }
 
-// End screen: fades in over the last page, pops in the Rescue Bites logo piece by piece and says goodbye.
+// End screen: fades in over the last page, pops in the Bite Wise logo piece by piece and says goodbye.
 const OUTRO = {
   customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join · Greater Seattle' },
   restaurant: { headline: 'Happy selling!', line: 'Less waste. More revenue.', pill: 'Free to join · Paid through Stripe' },
@@ -102,25 +102,25 @@ const OUTRO = {
 async function showOutro(p, n, tour) {
   await p.evaluate(({ logo, text }) => {
     const css = `
-      #rb-cursor { display: none !important; }
-      #rb-outro { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; overflow: hidden;
+      #bw-cursor { display: none !important; }
+      #bw-outro { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; overflow: hidden;
         background: radial-gradient(620px 420px at 18% 22%, rgba(52,211,153,.28), transparent 70%),
           radial-gradient(560px 380px at 85% 80%, rgba(253,224,71,.20), transparent 70%), #04130d;
         font-family: var(--font-jakarta), var(--font-inter), system-ui, sans-serif; color: #ecfdf5;
         animation: o-fade .7s ease-out both; }
       @keyframes o-fade { from { opacity: 0 } to { opacity: 1 } }
-      #rb-outro .stage { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
-      #rb-outro .logo { position: relative; width: 700px; animation: o-bob 3s ease-in-out 2.4s infinite; }
-      #rb-outro .logo svg { display: block; width: 100%; height: auto; overflow: visible; }
-      #rb-outro svg :is(.tile, .box, .handle, .leaf, .heart, .word1, .word2, .tagline) { transform-box: fill-box; }
-      #rb-outro svg .tile { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
-      #rb-outro svg .box { transform-origin: 50% 100%; animation: o-in .5s ease-out .75s both; }
-      #rb-outro svg .handle { animation: o-fadein .4s ease-out .9s both; }
-      #rb-outro svg .leaf { transform-origin: 0% 100%; animation: o-leaf 1.1s cubic-bezier(.34,1.56,.64,1) 1s both; }
-      #rb-outro svg .heart { transform-origin: center; animation: o-beat 1s cubic-bezier(.34,1.56,.64,1) 1.2s both; }
-      #rb-outro svg .word1 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) .95s both; }
-      #rb-outro svg .word2 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) 1.1s both; }
-      #rb-outro svg .tagline { animation: o-fadein .6s ease-out 1.45s both; }
+      #bw-outro .stage { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
+      #bw-outro .logo { position: relative; width: 600px; animation: o-bob 3s ease-in-out 2.4s infinite; }
+      #bw-outro .logo svg { display: block; width: 100%; height: auto; overflow: visible; }
+      #bw-outro svg :is(.tile, .body, .eyes, .beak, .leaf, .word1, .word2, .tagline) { transform-box: fill-box; }
+      #bw-outro svg .tile { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
+      #bw-outro svg .body { transform-origin: 50% 100%; animation: o-in .5s ease-out .75s both; }
+      #bw-outro svg .beak { animation: o-fadein .4s ease-out 1.3s both; }
+      #bw-outro svg .leaf { transform-origin: 0% 100%; animation: o-leaf 1.1s cubic-bezier(.34,1.56,.64,1) 1s both; }
+      #bw-outro svg .eyes { transform-origin: center; animation: o-beat 1s cubic-bezier(.34,1.56,.64,1) 1.2s both; }
+      #bw-outro svg .word1 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) .95s both; }
+      #bw-outro svg .word2 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) 1.1s both; }
+      #bw-outro svg .tagline { animation: o-fadein .6s ease-out 1.45s both; }
       @keyframes o-beat { 0% { transform: scale(0) } 50% { transform: scale(1.25) } 70% { transform: scale(.92) } 100% { transform: scale(1) } }
       @keyframes o-pop { from { transform: scale(0) rotate(-30deg); opacity: 0 } 60% { opacity: 1 } to { transform: scale(1) rotate(0); opacity: 1 } }
       @keyframes o-in { from { transform: scale(.4); opacity: 0 } to { transform: scale(1); opacity: 1 } }
@@ -129,27 +129,27 @@ async function showOutro(p, n, tour) {
       @keyframes o-slide { from { transform: translateX(-40px); opacity: 0 } to { transform: none; opacity: 1 } }
       @keyframes o-fadein { from { opacity: 0 } to { opacity: 1 } }
       @keyframes o-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
-      #rb-outro .shine { position: absolute; left: 0; top: 0; width: 164px; height: 164px; border-radius: 46px; overflow: hidden; pointer-events: none; }
-      #rb-outro .shine::after { content: ''; position: absolute; inset: -40%; transform: translateX(-120%) rotate(25deg);
+      #bw-outro .shine { position: absolute; left: 0; top: 0; width: 166px; height: 166px; border-radius: 46px; overflow: hidden; pointer-events: none; }
+      #bw-outro .shine::after { content: ''; position: absolute; inset: -40%; transform: translateX(-120%) rotate(25deg);
         background: linear-gradient(90deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); animation: o-shine 1.1s ease-in-out 1.9s both; }
       @keyframes o-shine { from { transform: translateX(-120%) rotate(25deg) } to { transform: translateX(120%) rotate(25deg) } }
-      #rb-outro .burst i { position: absolute; left: 82px; top: 82px; width: 10px; height: 10px; margin: -5px; border-radius: 50%;
+      #bw-outro .burst i { position: absolute; left: 83px; top: 83px; width: 10px; height: 10px; margin: -5px; border-radius: 50%;
         opacity: 0; animation: o-burst .9s ease-out .55s both; }
       @keyframes o-burst { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1) }
         100% { opacity: 0; transform: rotate(var(--a)) translateX(150px) scale(.4) } }
-      #rb-outro h2 { margin: 40px 0 0; font-size: 76px; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; padding-bottom: .12em;
+      #bw-outro h2 { margin: 40px 0 0; font-size: 76px; font-weight: 800; letter-spacing: -.03em; line-height: 1.05; padding-bottom: .12em;
         background: linear-gradient(90deg, #6ee7b7, #fde047); -webkit-background-clip: text; background-clip: text; color: transparent;
         animation: o-rise .8s cubic-bezier(.2,.8,.2,1) 1.7s both; }
-      #rb-outro p { margin: 14px 0 0; font-size: 28px; font-weight: 600; color: #a7f3d0; animation: o-rise .7s cubic-bezier(.2,.8,.2,1) 2.1s both; }
-      #rb-outro .pill { margin-top: 26px; padding: 10px 22px; border-radius: 999px; border: 1px solid rgba(110,231,183,.4);
+      #bw-outro p { margin: 14px 0 0; font-size: 28px; font-weight: 600; color: #a7f3d0; animation: o-rise .7s cubic-bezier(.2,.8,.2,1) 2.1s both; }
+      #bw-outro .pill { margin-top: 26px; padding: 10px 22px; border-radius: 999px; border: 1px solid rgba(110,231,183,.4);
         background: rgba(16,185,129,.12); font: 700 20px var(--font-inter), system-ui, sans-serif; color: #d1fae5;
         animation: o-rise .7s cubic-bezier(.2,.8,.2,1) 2.45s both; }
       @keyframes o-rise { from { transform: translateY(26px); opacity: 0 } to { transform: none; opacity: 1 } }
-      #rb-outro .float { position: absolute; bottom: -60px; font-size: var(--s); opacity: 0; animation: o-float var(--d) linear var(--w) infinite; }
+      #bw-outro .float { position: absolute; bottom: -60px; font-size: var(--s); opacity: 0; animation: o-float var(--d) linear var(--w) infinite; }
       @keyframes o-float { 0% { transform: translateY(0) rotate(0); opacity: 0 } 15% { opacity: .55 } 85% { opacity: .45 }
         100% { transform: translateY(-860px) rotate(var(--r)); opacity: 0 } }`;
     const el = document.createElement('div');
-    el.id = 'rb-outro';
+    el.id = 'bw-outro';
     const foods = ['🍜', '🥐', '🌮', '🍕', '🍣', '🥗', '🍱', '🌱', '🥟', '🍩', '🌱', '🥖', '🍛', '🌿'];
     // Down both sides, clear of the logo and text in the middle.
     const floats = foods.map((f, i) => `<span class="float" style="left:${i % 2 ? 80 + ((i * 5) % 17) : 2 + ((i * 5) % 17)}%;--s:${26 + ((i * 7) % 18)}px;--d:${6 + (i % 4)}s;--w:${(i * 0.37) % 2.2}s;--r:${i % 2 ? 40 : -40}deg">${f}</span>`).join('');

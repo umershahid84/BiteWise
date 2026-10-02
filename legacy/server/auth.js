@@ -1,7 +1,7 @@
 const crypto = require('node:crypto');
 const { HttpError } = require('./errors');
 
-const COOKIE = 'rb_session';
+const COOKIE = 'bw_session';
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16);

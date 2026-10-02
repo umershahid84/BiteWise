@@ -146,7 +146,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
       customerId,
       paymentRef: paymentRef!,
       attached,
-      description: `Rescue Bites order #${order.id}: ${order.quantity} x ${order.item_title}`,
+      description: `Bite Wise order #${order.id}: ${order.quantity} x ${order.item_title}`,
       metadata: { order_id: String(order.id), restaurant_id: String(order.restaurant_id) },
       destinationAccount: destination?.id ?? null,
       idempotencyKey: `authorize-${order.id}`,
@@ -221,7 +221,7 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
 
   if (claimed.paymentRef) {
     try {
-      // Destination charge: Rescue Bites keeps the service fee and sales tax; Stripe sends the rest.
+      // Destination charge: Bite Wise keeps the service fee and sales tax; Stripe sends the rest.
       const applicationFee = destination ? Math.max(0, cardCents - share) : null;
       charge = await payments().capture(claimed.paymentRef, { applicationFeeCents: applicationFee, idempotencyKey: `capture-${order.id}` });
     } catch (err) {
@@ -242,7 +242,7 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
         p_transaction_id: charge.transferId, p_bank_details: bankDetails({ id: destination, bank: (await paymentAccount(order.restaurant_id))?.bank_summary ?? '' }),
         p_note: `Order #${order.id} (destination charge)`, p_by: null as unknown as string,
       }));
-      // Platform credit paid part of the food: Rescue Bites tops up the restaurant from its own balance.
+      // Platform credit paid part of the food: Bite Wise tops up the restaurant from its own balance.
       if (share > sent) await sendTransfer(order.restaurant_id, share - sent, null, `Order #${order.id} (platform credit top-up)`, order.id, `topup-${order.id}`);
     } else if (await transferAccount(order.restaurant_id)) {
       await sendTransfer(order.restaurant_id, share, cardCents >= share ? charge.chargeId : null, `Order #${order.id}`, order.id, `transfer-${order.id}`);
@@ -257,7 +257,7 @@ async function sendTransfer(restaurantId: number, amountCents: number, sourceCha
   const acct = await transferAccount(restaurantId);
   if (!acct) throw new AppError(409, 'This restaurant has not finished setting up Stripe payouts yet.');
   const t = await payments().transfer({
-    accountId: acct.id, amountCents, sourceChargeId, description: `Rescue Bites payout: ${note}`,
+    accountId: acct.id, amountCents, sourceChargeId, description: `Bite Wise payout: ${note}`,
     metadata: { restaurant_id: String(restaurantId), ...(orderId ? { order_id: String(orderId) } : {}) }, idempotencyKey: key,
   });
   return must(await db().rpc('record_payout', {
@@ -274,15 +274,15 @@ export async function payRestaurant(restaurantId: number, amountCents: number, a
   }
   return must(await db().rpc('record_payout', {
     p_restaurant_id: restaurantId, p_order_id: null as unknown as number, p_kind: 'manual', p_amount_cents: amountCents,
-    p_transaction_id: '', p_bank_details: 'Paid outside Stripe (recorded by Rescue Bites)', p_note: note, p_by: adminId,
+    p_transaction_id: '', p_bank_details: 'Paid outside Stripe (recorded by Bite Wise)', p_note: note, p_by: adminId,
   }));
 }
 
 // ---------------------------------------------------------------- refunds
 
 // Refunds a completed order, either to the ORIGINAL payment (card first, then any platform credit
-// the customer used; the restaurant and Rescue Bites give up their shares) or as PLATFORM CREDIT
-// (funded by Rescue Bites; the restaurant keeps its money).
+// the customer used; the restaurant and Bite Wise give up their shares) or as PLATFORM CREDIT
+// (funded by Bite Wise; the restaurant keeps its money).
 export async function refundOrder(orderId: number, p: { amountCents: number; method: 'original' | 'credit'; reason: string; adminId: string }) {
   const o = await getOrder(orderId);
   if (o.status !== 'picked_up') throw new AppError(409, 'Only completed (charged) orders can be refunded. Cancel open orders instead.');

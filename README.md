@@ -1,17 +1,17 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="public/assets/logo-dark.svg">
-    <img src="public/assets/logo.svg" alt="Rescue Bites" width="460">
+    <img src="public/assets/logo.svg" alt="Bite Wise" width="460">
   </picture>
 </p>
 
-# Rescue Bites: Reduce Food Waste
+# Bite Wise: Reduce Food Waste
 
-Rescue Bites is a marketplace where restaurants in greater Seattle sell food that would otherwise be thrown away (wrong orders, delayed deliveries, orders nobody picked up, end-of-day surplus) at a discount they choose. Customers reserve it online, pay with a card hold, and pick it up with a 4-digit PIN. The card is charged only when the restaurant enters the PIN.
+Bite Wise is a marketplace where restaurants in greater Seattle sell food that would otherwise be thrown away (wrong orders, delayed deliveries, orders nobody picked up, end-of-day surplus) at a discount they choose. Customers reserve it online, pay with a card hold, and pick it up with a 4-digit PIN. The card is charged only when the restaurant enters the PIN.
 
 ## Tech stack
 
-| Area | What Rescue Bites uses |
+| Area | What Bite Wise uses |
 |---|---|
 | **Framework** | Next.js 16 (App Router, Server Components, Server Actions, Route Handlers, `proxy.ts`), TypeScript (strict) |
 | **Styling & UI** | Tailwind CSS v4, Lucide icons, shadcn-style primitives built on Radix UI (`src/components/ui`) |
@@ -28,7 +28,7 @@ Rescue Bites is a marketplace where restaurants in greater Seattle sell food tha
 1. Sign up free with an **email, user name and password**, after reading and accepting the Customer Terms and Privacy Policy. **Declining creates no account.**
 2. Browse deals as a **list** or on an **interactive map**, updated live. Search any city or ZIP code in King, Pierce, Thurston, Snohomish and Kitsap counties (Seattle, Des Moines, Kent, Federal Way, Tacoma, Fife, Olympia and more) or use your location, and filter by diet and distance.
 3. Choose a quantity (never more than the restaurant made available) and see the total before ordering: **food price + 5% service fee + WA sales tax**.
-4. Pay with a saved or new card, optionally using **Rescue Bites platform credit** (the card covers the rest, at least $0.50).
+4. Pay with a saved or new card, optionally using **Bite Wise platform credit** (the card covers the rest, at least $0.50).
 5. A confetti screen shows the **4-digit PIN**. A hold is placed on the card; **it is charged only at pickup**. Cancel any time before pickup at no charge.
 6. Every order has a **point-of-sale receipt** (web, print and PDF).
 
@@ -46,14 +46,14 @@ Rescue Bites is a marketplace where restaurants in greater Seattle sell food tha
 
 ## Money flow
 
-| | Customer pays | Restaurant receives | Rescue Bites keeps |
+| | Customer pays | Restaurant receives | Bite Wise keeps |
 |---|---|---|---|
 | **Normal order** | food + 5% fee + tax (charged at pickup) | the food subtotal (Stripe transfer at pickup) | service fee + sales tax (which it remits as marketplace facilitator) |
-| **Paid partly with platform credit** | the rest by card | still the **full** food subtotal (Rescue Bites tops up from its balance) | pays for the credit |
+| **Paid partly with platform credit** | the rest by card | still the **full** food subtotal (Bite Wise tops up from its balance) | pays for the credit |
 | **Refund to original payment** | money back to their card (credit part back to their balance) | gives up its share (the transfer is partially reversed) | gives up its fee share |
 | **Refund as platform credit** | credit for future orders | keeps its full payment | pays for the credit |
 
-With Stripe Connect, card holds are **destination charges** (`transfer_data.destination`) when the restaurant's Stripe account is ready. At capture Rescue Bites sets an **application fee** (service fee + tax), so Stripe moves the food subtotal to the restaurant. Restaurants that haven't connected Stripe yet are charged on the platform and paid later from the owner console.
+With Stripe Connect, card holds are **destination charges** (`transfer_data.destination`) when the restaurant's Stripe account is ready. At capture Bite Wise sets an **application fee** (service fee + tax), so Stripe moves the food subtotal to the restaurant. Restaurants that haven't connected Stripe yet are charged on the platform and paid later from the owner console.
 
 ## Project layout
 
@@ -133,7 +133,7 @@ npm run dev               # http://localhost:3000
 
 Opening the app through a tunnel or proxy (e.g. VS Code port forwarding, `*.devtunnels.ms`)? Add `TRUSTED_ORIGINS=*.devtunnels.ms,localhost:3000` to `.env.local` and restart (rebuild first if you use `npm start`); otherwise Next.js blocks log-in and other forms as cross-site requests.
 
-Demo logins (password `RescueBites123`): customer `demo`, owner `admin`, restaurants `harborpho`, `ballardbread`, `caphilltacos`, `fremontpizza`, `bellevuecurry`, `redmondpoke`, `kirklandsushi` (Stripe connected) and 22 more around the region (`tacomathai`, `olympiacafe`, `desmoinesfish`, ...). Test cards (mock mode): `4242 4242 4242 4242` works; `4000 0000 0000 0002` is declined.
+Demo logins (password `BiteWise123`): customer `demo`, owner `admin`, restaurants `harborpho`, `ballardbread`, `caphilltacos`, `fremontpizza`, `bellevuecurry`, `redmondpoke`, `kirklandsushi` (Stripe connected) and 22 more around the region (`tacomathai`, `olympiacafe`, `desmoinesfish`, ...). Test cards (mock mode): `4242 4242 4242 4242` works; `4000 0000 0000 0002` is declined.
 
 Create your real owner account (admins can't sign up on the website):
 
@@ -145,28 +145,28 @@ Other commands: `npm run lint`, `npm run typecheck`, `npm test` (unit + integrat
 
 ## Keep it running on your own server (systemd)
 
-`npm start` stops when the terminal that started it closes (for example when you close VS Code). On a Linux server, install Rescue Bites as a **systemd service** instead: it keeps running after you log out, restarts itself if it crashes, and starts when the server boots.
+`npm start` stops when the terminal that started it closes (for example when you close VS Code). On a Linux server, install Bite Wise as a **systemd service** instead: it keeps running after you log out, restarts itself if it crashes, and starts when the server boots.
 
 **One-time setup** (from the app folder, as your normal user, with `.env.local` filled in):
 
 ```bash
 npm run service:install        # asks for your sudo password; builds the app the first time
-sudo systemctl start rescuebites
+sudo systemctl start bitewise
 ```
 
 The installer uses your user account and your Node.js (nvm works), and serves on port 3000. Change it with `npm run service:install -- --port 8080`; running the installer again updates the service.
 
 | To... | Run |
 |---|---|
-| Start / stop / restart | `sudo systemctl start rescuebites` / `stop` / `restart` |
-| See if it's running | `systemctl status rescuebites` |
-| Follow the logs | `sudo journalctl -u rescuebites -f` |
-| Turn off starting at boot | `sudo systemctl disable rescuebites` |
+| Start / stop / restart | `sudo systemctl start bitewise` / `stop` / `restart` |
+| See if it's running | `systemctl status bitewise` |
+| Follow the logs | `sudo journalctl -u bitewise -f` |
+| Turn off starting at boot | `sudo systemctl disable bitewise` |
 | **Deploy the latest code** | `npm run update` |
 
 **`npm run update`** pulls the latest code, runs `npm ci` if packages changed, and builds the new version **while the site keeps running**. Then it swaps the new build in and restarts, so the site is down for about a second. If the new version doesn't answer, the previous one is put back automatically. If nothing new was pushed, it says so and does nothing. When an update includes database migrations, it reminds you to run `npx supabase db push`.
 
-**Upgrading a server from before the rename to Rescue Bites** (when the service was called `biteback`): run `npm run update` twice. The first run deploys the new code on the old service; the second replaces the `biteback` service with `rescuebites`, keeping its port and settings (or run `npm run service:install` once to switch straight away). Then run `npx supabase db push`, which also renames the database's cleanup job, and `npm run seed` if the server has the demo data: it moves the demo accounts to `@rescuebites.test` emails and the `RescueBites123` password. In `.env.local`, change `LEGAL_ENTITY_NAME` and `SUPPORT_EMAIL` if they still say BiteBack.
+**Upgrading a server from before the rename to Bite Wise** (when the service was called `rescuebites` or `biteback`): run `npm run update` twice. The first run deploys the new code on the old service; the second replaces the old service with `bitewise`, keeping its port and settings (or run `npm run service:install` once to switch straight away). Then run `npx supabase db push`, which also renames the database's cleanup job, and `npm run seed` if the server has the demo data: it moves the demo accounts to `@bitewise.test` emails and the `BiteWise123` password. In `.env.local`, change `LEGAL_ENTITY_NAME` and `SUPPORT_EMAIL` if they still have an old name.
 
 Don't run `npm start` or `npm run build` in the same folder while the service is running: that would replace the build it is serving. Use `npm run dev` for development, `npm run update` to deploy.
 
@@ -192,7 +192,7 @@ Use a commercial map tile provider in production (`NEXT_PUBLIC_MAP_TILE_URL`). O
 
 ## Branded emails
 
-The "confirm your email" message sent after sign-up comes from **Supabase Auth**, not from the app. Rescue Bites replaces Supabase's plain default with a branded one: `supabase/templates/confirmation.html` (logo, a welcome with the user's name, and different wording for customers and restaurants). The local stack (`npm run db:start`) uses it automatically through `supabase/config.toml`.
+The "confirm your email" message sent after sign-up comes from **Supabase Auth**, not from the app. Bite Wise replaces Supabase's plain default with a branded one: `supabase/templates/confirmation.html` (logo, a welcome with the user's name, and different wording for customers and restaurants). The local stack (`npm run db:start`) uses it automatically through `supabase/config.toml`.
 
 For a project on supabase.com, install it with `npm run email:template`. It uploads the logo to a public `brand` storage bucket in your project (email apps need a public web address for images), then sets the **Confirm signup** email's subject and body through the Supabase Management API. That needs a personal access token: create one at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) and add `SUPABASE_ACCESS_TOKEN=...` to `.env.local` (or the script uses the one `npx supabase login` saved, where it can find it). Building the app doesn't change the email: it lives in Supabase. Without a token, the script writes `confirm-signup-email.html` and tells you where to paste it (**Authentication → Emails → Confirm signup**, source view).
 
@@ -200,7 +200,7 @@ Keep **Authentication → URL Configuration → Site URL** set to your site's ad
 
 **Free Supabase projects** can only change the email design after connecting their own email provider (below); until then `npm run email:template` says so.
 
-**Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Rescue Bites <hello@your-domain>`. The template stays the same.
+**Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Bite Wise <hello@your-domain>`. The template stays the same.
 
 ## Legal documents
 

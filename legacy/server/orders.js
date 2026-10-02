@@ -115,7 +115,7 @@ function createOrderService({ db, config, payments }) {
         customerId,
         paymentRef,
         attached,
-        description: `Rescue Bites order #${order.id}: ${order.quantity} x ${order.item_title}`,
+        description: `Bite Wise order #${order.id}: ${order.quantity} x ${order.item_title}`,
         metadata: { order_id: String(order.id) },
       });
     } catch (err) {

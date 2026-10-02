@@ -1,5 +1,5 @@
 // npm run update [-- --no-pull] [-- --force]
-// On a Linux server running the rescuebites systemd service (or the old biteback one), this runs update.sh, which
+// On a Linux server running the bitewise systemd service (or an old one named rescuebites or biteback), this runs update.sh, which
 // builds while the site keeps running and then restarts the service. Anywhere else (Windows, macOS, or a machine
 // without the service) it pulls the latest code, installs packages if they changed and builds; then start the app
 // with npm start. Stop the app first, since the build replaces the files it is serving.
@@ -29,7 +29,7 @@ function git(...gitArgs) {
 
 function hasService() {
   if (process.platform !== 'linux') return false;
-  return ['rescuebites', 'biteback'].some((name) => spawnSync('systemctl', ['cat', name], { stdio: 'ignore' }).status === 0);
+  return ['bitewise', 'rescuebites', 'biteback'].some((name) => spawnSync('systemctl', ['cat', name], { stdio: 'ignore' }).status === 0);
 }
 
 // True if something (npm start or npm run dev) is answering on the app's port.
