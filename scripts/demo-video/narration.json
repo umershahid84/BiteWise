@@ -14,9 +14,9 @@
     { "id": "pin", "text": "Done! You get a four-digit PIN. Show it at the counter when you pick up." },
     { "id": "orders", "text": "Your orders and PINs are always under My orders." },
     { "id": "receipt", "text": "And every order comes with a receipt you can print or download." },
-    { "id": "story-order", "text": "Here's how it works in real life. Maya orders dinner on her phone, and gets her PIN." },
-    { "id": "story-drive", "text": "Then she drives over to the restaurant, before the pickup window closes." },
-    { "id": "story-pickup", "text": "At the counter, she shows her PIN. The staff check it and hand over her food, and only then is her card charged." },
+    { "id": "story-order", "text": "Here's how it works in real life. Sam orders dinner on his phone, and gets his PIN." },
+    { "id": "story-drive", "text": "Then he drives over to the restaurant, before the pickup window closes." },
+    { "id": "story-pickup", "text": "At the counter, he shows his PIN. The staff check it and hand over his food, and only then is his card charged." },
     { "id": "end", "text": "That's Bite Wise. Rescue great food, and save money. Happy rescuing!" }
   ],
   "restaurant": [

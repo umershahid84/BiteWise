@@ -16,7 +16,7 @@ export const TOURS = {
   },
   restaurant: {
     title: 'How Bite Wise works for restaurants',
-    length: '1:03',
+    length: '1:04',
     src: '/videos/restaurant-tour',
     steps: ['Post surplus food in under a minute', 'A bell rings when someone orders', 'Type the PIN and hand over the food', 'Get paid through Stripe, with reports'],
   },
