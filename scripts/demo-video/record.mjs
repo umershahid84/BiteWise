@@ -11,6 +11,7 @@ const BASE = process.env.DEMO_URL ?? 'http://localhost:3000';
 const OUT = path.resolve('.video-tmp');
 const DURATIONS = JSON.parse(fs.readFileSync(path.join(OUT, 'voice/durations.json'), 'utf8'));
 const LOGO = fs.readFileSync(new URL('../../public/assets/logo-dark.svg', import.meta.url), 'utf8');
+const STORY = fs.readFileSync(new URL('./story.html', import.meta.url), 'utf8');
 const SIZE = { width: 1280, height: 720 };
 const PASSWORD = 'BiteWise123';
 fs.mkdirSync(OUT, { recursive: true });
@@ -99,6 +100,22 @@ const OUTRO = {
   restaurant: { headline: 'Happy selling!', line: 'Less waste. More revenue.', pill: 'Free to join · Paid through Stripe' },
 };
 
+// The illustrated "real life" scenes of the customer tour (story.html): ordering on the phone, driving over and the
+// pickup at the counter. Each scene stays up for its narration line, and at least as long as its animation.
+const STORY_SCENES = [['story-order', 6500], ['story-drive', 8200], ['story-pickup', 8800]];
+
+async function showStory(p, n) {
+  await p.evaluate((html) => document.body.insertAdjacentHTML('beforeend', html), STORY);
+  for (const [i, [id, minMs]] of STORY_SCENES.entries()) {
+    const start = Date.now();
+    await p.evaluate((i) => document.querySelectorAll('#bw-story .scene').forEach((el, j) => el.classList.toggle('active', j === i)), i);
+    await n.say(p, id, { gap: i === 0 ? 300 : 0 });
+    await n.idle(p, 300);
+    const left = minMs - (Date.now() - start);
+    if (left > 0) await wait(p, left);
+  }
+}
+
 async function showOutro(p, n, tour) {
   await p.evaluate(({ logo, text }) => {
     const css = `
@@ -112,12 +129,11 @@ async function showOutro(p, n, tour) {
       #bw-outro .stage { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; }
       #bw-outro .logo { position: relative; width: 600px; animation: o-bob 3s ease-in-out 2.4s infinite; }
       #bw-outro .logo svg { display: block; width: 100%; height: auto; overflow: visible; }
-      #bw-outro svg :is(.tile, .body, .eyes, .beak, .leaf, .word1, .word2, .tagline) { transform-box: fill-box; }
-      #bw-outro svg .tile { transform-origin: center; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
-      #bw-outro svg .body { transform-origin: 50% 100%; animation: o-in .5s ease-out .75s both; }
-      #bw-outro svg .beak { animation: o-fadein .4s ease-out 1.3s both; }
-      #bw-outro svg .leaf { transform-origin: 0% 100%; animation: o-leaf 1.1s cubic-bezier(.34,1.56,.64,1) 1s both; }
-      #bw-outro svg .eyes { transform-origin: center; animation: o-beat 1s cubic-bezier(.34,1.56,.64,1) 1.2s both; }
+      #bw-outro svg :is(.b, .leaf, .ileaf, .word1, .word2, .tagline) { transform-box: fill-box; }
+      #bw-outro svg .b { transform-origin: 50% 100%; animation: o-pop .9s cubic-bezier(.34,1.56,.64,1) .35s both; }
+      #bw-outro svg .leaf { transform-origin: 0% 100%; animation: o-leaf 1.1s cubic-bezier(.34,1.56,.64,1) .9s both; }
+      #bw-outro svg .ileaf { transform-origin: 0% 100%; animation: o-drop .8s cubic-bezier(.34,1.56,.64,1) 1.5s both; }
+      @keyframes o-drop { from { transform: translateY(-60px) rotate(-30deg); opacity: 0 } 60% { opacity: 1 } to { transform: none; opacity: 1 } }
       #bw-outro svg .word1 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) .95s both; }
       #bw-outro svg .word2 { animation: o-slide .6s cubic-bezier(.2,.8,.2,1) 1.1s both; }
       #bw-outro svg .tagline { animation: o-fadein .6s ease-out 1.45s both; }
@@ -129,11 +145,7 @@ async function showOutro(p, n, tour) {
       @keyframes o-slide { from { transform: translateX(-40px); opacity: 0 } to { transform: none; opacity: 1 } }
       @keyframes o-fadein { from { opacity: 0 } to { opacity: 1 } }
       @keyframes o-bob { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
-      #bw-outro .shine { position: absolute; left: 0; top: 0; width: 166px; height: 166px; border-radius: 46px; overflow: hidden; pointer-events: none; }
-      #bw-outro .shine::after { content: ''; position: absolute; inset: -40%; transform: translateX(-120%) rotate(25deg);
-        background: linear-gradient(90deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%); animation: o-shine 1.1s ease-in-out 1.9s both; }
-      @keyframes o-shine { from { transform: translateX(-120%) rotate(25deg) } to { transform: translateX(120%) rotate(25deg) } }
-      #bw-outro .burst i { position: absolute; left: 83px; top: 83px; width: 10px; height: 10px; margin: -5px; border-radius: 50%;
+      #bw-outro .burst i { position: absolute; left: 85px; top: 84px; width: 10px; height: 10px; margin: -5px; border-radius: 50%;
         opacity: 0; animation: o-burst .9s ease-out .55s both; }
       @keyframes o-burst { 0% { opacity: 1; transform: rotate(var(--a)) translateX(0) scale(1) }
         100% { opacity: 0; transform: rotate(var(--a)) translateX(150px) scale(.4) } }
@@ -153,9 +165,9 @@ async function showOutro(p, n, tour) {
     const foods = ['🍜', '🥐', '🌮', '🍕', '🍣', '🥗', '🍱', '🌱', '🥟', '🍩', '🌱', '🥖', '🍛', '🌿'];
     // Down both sides, clear of the logo and text in the middle.
     const floats = foods.map((f, i) => `<span class="float" style="left:${i % 2 ? 80 + ((i * 5) % 17) : 2 + ((i * 5) % 17)}%;--s:${26 + ((i * 7) % 18)}px;--d:${6 + (i % 4)}s;--w:${(i * 0.37) % 2.2}s;--r:${i % 2 ? 40 : -40}deg">${f}</span>`).join('');
-    const colors = ['#fb923c', '#fde047', '#34d399', '#f97316'];
+    const colors = ['#6cc24a', '#fde047', '#34d399', '#f1f5f9'];
     const burst = Array.from({ length: 12 }, (_, i) => `<i style="--a:${i * 30}deg;background:${colors[i % 4]}"></i>`).join('');
-    el.innerHTML = `<style>${css}</style>${floats}<div class="stage"><div class="logo">${logo}<div class="shine"></div><div class="burst">${burst}</div></div>
+    el.innerHTML = `<style>${css}</style>${floats}<div class="stage"><div class="logo">${logo}<div class="burst">${burst}</div></div>
       <h2>${text.headline}</h2><p>${text.line}</p><div class="pill">${text.pill}</div></div>`;
     document.body.append(el);
   }, { logo: LOGO, text: OUTRO[tour] });
@@ -253,6 +265,7 @@ async function customerTour(browser) {
   await wait(p, 1000);
   await scrollBy(p, 600, 24);
   await n.idle(p, 400);
+  await showStory(p, n);
   await showOutro(p, n, 'customer');
   await wait(p, 1400);
   await n.say(p, 'end', { gap: 0 });

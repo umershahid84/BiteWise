@@ -18,7 +18,7 @@ const FONTS = {
   monoBold: 'IBMPlexMono-Bold.woff',
 };
 const LOGO = path.join(process.cwd(), 'public', 'assets', 'logo.png');
-const LOGO_RATIO = 400 / 1444;
+const LOGO_RATIO = 400 / 1428;
 const GREEN = '#047857';
 const INK = '#0b1b14';
 const MUTED = '#6b7b73';

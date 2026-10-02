@@ -1,31 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Bite Wise">
   <defs>
-    <linearGradient id="m-tile" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FDBA74"/><stop offset=".5" stop-color="#F97316"/><stop offset="1" stop-color="#C2410C"/>
-    </linearGradient>
-    <linearGradient id="m-body" x1="60" y1="40" x2="150" y2="175" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFEDD5"/>
-    </linearGradient>
-    <mask id="m-bite" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
-      <rect width="200" height="200" fill="#fff"/><circle cx="163" cy="112" r="13" fill="#000"/><circle cx="160" cy="135" r="11" fill="#000"/>
+    <mask id="m-b" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect x="28" y="16" width="84" height="168" rx="10" fill="#fff"/>
+      <rect x="96" y="16" width="26" height="84" fill="#fff"/><circle cx="121" cy="58" r="42" fill="#fff"/>
+      <rect x="96" y="92" width="30" height="92" fill="#fff"/><circle cx="124" cy="134" r="50" fill="#fff"/>
+      <circle cx="154" cy="22" r="13" fill="#000"/><circle cx="166" cy="42" r="10" fill="#000"/><circle cx="141" cy="12" r="9" fill="#000"/>
+      <g fill="#000"><rect x="52" y="32" width="10" height="46" rx="5"/><rect x="66" y="32" width="10" height="46" rx="5"/><rect x="80" y="32" width="10" height="46" rx="5"/><rect x="94" y="32" width="10" height="46" rx="5"/>
+      <path d="M52 70 L104 70 L104 86 Q104 102 87 111 L87 200 L69 200 L69 111 Q52 102 52 86 Z"/></g>
+      <path d="M98 178 C 98 142, 120 114, 162 104 C 162 148, 138 176, 98 178 Z" fill="#000" stroke="#000" stroke-width="16" stroke-linejoin="round"/>
+    </mask>
+    <mask id="m-v" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+      <rect width="200" height="200" fill="#fff"/><path d="M106 170 C 122 146, 138 128, 156 112" fill="none" stroke="#000" stroke-width="5" stroke-linecap="round"/>
     </mask>
   </defs>
-  <rect class="tile" width="200" height="200" rx="56" fill="url(#m-tile)"/>
-  <g class="mark">
-    <g class="body" mask="url(#m-bite)">
-      <path d="M50 76 L56 38 L84 58 Q100 53 116 58 L144 38 L150 76 Q162 106 156 136 Q148 172 100 174 Q52 172 44 136 Q38 106 50 76 Z" fill="url(#m-body)"/>
-      <path d="M54 110 Q34 138 58 166 Q66 150 66 128 Q63 116 54 110 Z" fill="#FED7AA"/>
-      <path d="M146 110 Q166 138 142 166 Q134 150 134 128 Q137 116 146 110 Z" fill="#FED7AA"/>
-      <path d="M78 150 q11 8 22 0 q11 8 22 0 M86 162 q7 5 14 0 q7 5 14 0" fill="none" stroke="#FDBA74" stroke-width="4.5" stroke-linecap="round"/>
-    </g>
-    <path class="leaf" d="M100 56 C 100 38, 112 26, 130 24 C 130 42, 118 54, 100 56 Z" fill="#22C55E"/>
-    <g class="eyes">
-      <circle cx="78" cy="104" r="20" fill="#fff" stroke="#3B2416" stroke-width="6.5"/>
-      <circle cx="122" cy="104" r="20" fill="#fff" stroke="#3B2416" stroke-width="6.5"/>
-      <path d="M98 101 Q100 97 102 101" fill="none" stroke="#3B2416" stroke-width="5" stroke-linecap="round"/>
-      <circle cx="80" cy="106" r="9" fill="#1C1917"/><circle cx="124" cy="106" r="9" fill="#1C1917"/>
-      <circle cx="83.5" cy="102.5" r="3" fill="#fff"/><circle cx="127.5" cy="102.5" r="3" fill="#fff"/>
-    </g>
-    <path class="beak" d="M93 124 L107 124 L100 135 Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="3" stroke-linejoin="round"/>
-  </g>
+  <rect width="200" height="200" rx="44" fill="#FFFFFF"/>
+  <g transform="translate(18 18) scale(.82)"><g class="b"><rect width="200" height="200" fill="#14284B" mask="url(#m-b)"/></g>
+  <g class="leaf"><path d="M98 178 C 98 142, 120 114, 162 104 C 162 148, 138 176, 98 178 Z" fill="#4E9F3D" mask="url(#m-v)"/></g></g>
 </svg>

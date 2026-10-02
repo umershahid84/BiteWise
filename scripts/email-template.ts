@@ -25,7 +25,7 @@ const db = createClient(url, key, { auth: { persistSession: false, autoRefreshTo
 const BUCKET = 'brand';
 const LOGO = 'email-logo.png';
 const OUT = 'confirm-signup-email.html';
-const SUBJECT = 'Confirm your email for Bite Wise 🦉';
+const SUBJECT = 'Confirm your email for Bite Wise 🍃';
 
 async function main() {
   const bucket = await db.storage.getBucket(BUCKET);
