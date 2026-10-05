@@ -129,7 +129,7 @@ npm run seed              # demo accounts, menus, live offers and two weeks of o
 npm run dev               # http://localhost:3000
 ```
 
-`npm run db:start` fails with "docker: command not found" if Docker isn't installed or running; use Option A instead. The integration tests (`npm test`) and `npm run db:reset` need this local setup.
+`npm run db:start` fails with "docker: command not found" if Docker isn't installed or running; use Option A instead. The integration tests (`npm test`) and `npm run db:reset` need this local setup. When `.env.local` points at a hosted project on supabase.com, `npm test` runs only the unit tests and skips the integration tests, because they create throwaway users and orders.
 
 ### Using the app
 

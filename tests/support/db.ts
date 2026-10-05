@@ -9,9 +9,16 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '';
 const secretKey = process.env.SUPABASE_SECRET_KEY ?? '';
 
-// Integration tests need the local Supabase stack (npm run db:start) and .env.local.
+// Integration tests need the local Supabase stack (npm run db:start) and .env.local. They create throwaway
+// users and orders, so they never run against a hosted project (*.supabase.co): there they are skipped.
+export const isLocalDb = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/.test(url);
+let warned = false;
 export async function supabaseAvailable() {
-  if (!url || !secretKey) return false;
+  if (url && !isLocalDb) {
+    if (!warned) console.warn(`Skipping the integration tests: .env.local points at ${new URL(url).host}, not a local Supabase (npm run db:start).`);
+    warned = true;
+  }
+  if (!url || !secretKey || !isLocalDb) return false;
   try {
     const res = await fetch(`${url}/rest/v1/`, { headers: { apikey: anonKey } });
     return res.status < 500;
