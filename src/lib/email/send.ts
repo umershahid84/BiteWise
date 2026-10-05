@@ -24,19 +24,34 @@ export async function sendEmail(email: Email): Promise<boolean> {
     console.info(`[email not sent: SMTP_HOST is not set] to ${email.to}: ${email.subject}`);
     return false;
   }
+  if (smtp.user && !smtp.password) {
+    console.warn(`[email not sent: SMTP_PASSWORD is empty in .env.local] to ${email.to}: ${email.subject}
+  Add SMTP_PASSWORD=... (for Gmail, a 16-letter app password from https://myaccount.google.com/apppasswords) and restart the app.`);
+    return false;
+  }
   transport ??= nodemailer.createTransport({
     host: smtp.host,
     port: smtp.port,
     secure: smtp.port === 465,
     auth: smtp.user ? { user: smtp.user, pass: smtp.password } : undefined,
   });
-  await transport.sendMail({
-    from: smtp.from,
-    to: email.to,
-    subject: email.subject,
-    html: email.html,
-    text: email.text,
-    attachments: [LOGO, ...(email.attachments ?? [])],
-  });
+  try {
+    await transport.sendMail({
+      from: smtp.from,
+      to: email.to,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+      attachments: [LOGO, ...(email.attachments ?? [])],
+    });
+  } catch (err) {
+    if ((err as { code?: string }).code === 'EAUTH') {
+      transport = undefined; // try a fresh login next time
+      console.warn(`[email not sent: the SMTP server refused the login for ${smtp.user}] to ${email.to}: ${email.subject}
+  Check SMTP_USER and SMTP_PASSWORD in .env.local. For Gmail, SMTP_PASSWORD must be an app password (https://myaccount.google.com/apppasswords), not your normal password.`);
+      return false;
+    }
+    throw err;
+  }
   return true;
 }

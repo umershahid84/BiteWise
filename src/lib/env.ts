@@ -34,7 +34,8 @@ export const serverEnv = {
     host: process.env.SMTP_HOST ?? '',
     port: int(process.env.SMTP_PORT, 587),
     user: process.env.SMTP_USER ?? '',
-    password: process.env.SMTP_PASSWORD ?? '',
+    // Gmail shows app passwords in groups of four ("abcd efgh ijkl mnop"); the spaces aren't part of it.
+    password: (process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s+/g, ''),
     from: process.env.EMAIL_FROM || (process.env.SMTP_USER ? `Bite Wise <${process.env.SMTP_USER}>` : 'Bite Wise <no-reply@bitewise.app>'),
   },
   // Orders not picked up are released (never charged) this long after the discard timer ends.
