@@ -53,6 +53,11 @@ export function createMockProvider(): PaymentProvider {
       return { id: id('re') };
     },
 
+    async charge({ paymentRef }) {
+      if (paymentRef.endsWith('_0002')) throw new PaymentError('Your card was declined.');
+      return { id: id('pi') };
+    },
+
     async void() {},
 
     async createConnectedAccount({ restaurantId }) {

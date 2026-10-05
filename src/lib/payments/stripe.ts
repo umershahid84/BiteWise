@@ -104,6 +104,27 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
       return { id: refund.id };
     },
 
+    async charge({ amountCents, customerId, paymentRef, description, metadata, idempotencyKey }) {
+      return wrap(async () => {
+        const intent = await stripe.paymentIntents.create(
+          {
+            amount: amountCents,
+            currency: 'usd',
+            customer: customerId,
+            payment_method: paymentRef,
+            payment_method_types: ['card'],
+            off_session: true,
+            confirm: true,
+            description,
+            metadata,
+          },
+          { idempotencyKey },
+        );
+        if (intent.status !== 'succeeded') throw new PaymentError('Your card could not be charged.');
+        return { id: intent.id };
+      });
+    },
+
     async void(ref) {
       await stripe.paymentIntents.cancel(ref).catch(() => {});
     },

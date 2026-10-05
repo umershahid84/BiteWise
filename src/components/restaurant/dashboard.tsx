@@ -4,14 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Banknote, Bell, BellOff, ClipboardList, FileText, KeyRound, Plus, Store, Tablet, Tag, UtensilsCrossed } from 'lucide-react';
+import { Banknote, Bell, BellOff, ClipboardList, Crown, FileText, KeyRound, Plus, Store, Tablet, Tag, UtensilsCrossed } from 'lucide-react';
 import { DemoVideoButton } from '@/components/app/demo-video';
 import type { MapConfig } from '@/components/offers/types';
 import { Alert } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Kpi } from '@/components/ui/misc';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { fmtTime, money, pct } from '@/lib/format';
+import { fmtDay, fmtTime, money, pct } from '@/lib/format';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { isUnlocked, ringBell, unlockOnInteraction } from './bell';
 import { KioskPanel } from './kiosk-panel';
@@ -21,16 +21,19 @@ import { OffersPanel } from './offers-panel';
 import { OrdersPanel } from './orders-panel';
 import { PayoutsPanel } from './payouts-panel';
 import { PickupPanel } from './pickup-panel';
+import { PlanPanel } from './plan-panel';
 import { ProfilePanel } from './profile-panel';
 import type { Ctx, Restaurant } from './types';
 
 type NewOrder = { id: number; quantity: number; item_title: string; customer_username: string; total_cents: number; pickup_end: string; image_url: string | null };
 
-export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, initialTab, stripeReturn }: {
+export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, stripePublishableKey, needsPlan, initialTab, stripeReturn }: {
   restaurant: Restaurant;
   serviceFeeBps: number;
   map: MapConfig;
   paymentMode: 'stripe' | 'mock';
+  stripePublishableKey: string;
+  needsPlan: boolean;
   initialTab: string;
   stripeReturn: boolean;
 }) {
@@ -134,8 +137,14 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
       )}
       {restaurant.status === 'suspended' && (
         <Alert tone="error" className="mb-5">
-          ⛔ <b>Your restaurant is suspended.</b> Your offers are hidden and you can&apos;t post new ones. You can still verify pickups for existing
-          orders. Contact Bite Wise support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
+          ⛔ <b>Your restaurant is suspended{restaurant.suspended_until ? ` until ${fmtDay(restaurant.suspended_until)}` : ''}.</b> Your offers are hidden and you can&apos;t post
+          new ones. You can still verify pickups for existing orders. Contact Bite Wise support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
+        </Alert>
+      )}
+      {restaurant.status === 'approved' && needsPlan && tab !== 'plan' && (
+        <Alert tone="warn" className="mb-5">
+          ⭐ <b>Choose your Bite Wise plan to post offers.</b>{' '}
+          <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>See plans</button>
         </Alert>
       )}
       <div className="mb-5 flex flex-wrap items-center gap-3">
@@ -170,6 +179,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
           <TabsTrigger value="orders"><ClipboardList /> Orders</TabsTrigger>
           <TabsTrigger value="payouts"><Banknote /> Payouts</TabsTrigger>
           <TabsTrigger value="kiosk"><Tablet /> Kiosk</TabsTrigger>
+          <TabsTrigger value="plan"><Crown /> Plan</TabsTrigger>
           <TabsTrigger value="profile"><Store /> Profile</TabsTrigger>
         </TabsList>
         <TabsContent value="pickup"><PickupPanel /></TabsContent>
@@ -178,6 +188,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
         <TabsContent value="orders"><OrdersPanel restaurantId={restaurant.id} /></TabsContent>
         <TabsContent value="payouts"><PayoutsPanel ctx={ctx} stripeReturn={stripeReturn} /></TabsContent>
         <TabsContent value="kiosk"><KioskPanel approved={restaurant.status === 'approved'} /></TabsContent>
+        <TabsContent value="plan"><PlanPanel payment={{ mode: paymentMode, publishableKey: stripePublishableKey }} approved={restaurant.status === 'approved'} /></TabsContent>
         <TabsContent value="profile"><ProfilePanel ctx={ctx} /></TabsContent>
       </Tabs>
 

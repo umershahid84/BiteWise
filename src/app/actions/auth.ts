@@ -3,6 +3,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { serverEnv } from '@/lib/env';
+import { checkEmailDomain } from '@/lib/email-domain';
 import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
 import { homeFor } from '@/lib/constants';
@@ -27,15 +28,22 @@ function checkSignup(input: unknown) {
   return data;
 }
 
+// The email must be a real, permanent address (see src/lib/email-domain.ts), and not already used: banned accounts
+// keep their email, so a banned person can't sign up again with it.
 async function assertAvailable(email: string, username: string) {
   const admin = supabaseAdmin();
-  const [byEmail, byName] = await Promise.all([
-    admin.from('profiles').select('id').eq('email', email).maybeSingle(),
+  const [byEmail, byName, domain] = await Promise.all([
+    admin.from('profiles').select('id, status').eq('email', email).maybeSingle(),
     admin.from('profiles').select('id').eq('username', username).maybeSingle(),
+    checkEmailDomain(email),
   ]);
+  if (byEmail.data?.status === 'banned') throw new AppError(403, 'This email address can\'t be used to create a Bite Wise account.');
   if (byEmail.data) throw new AppError(409, 'An account with this email already exists.');
+  if (!domain.ok) throw new AppError(400, domain.reason);
   if (byName.data) throw new AppError(409, 'That user name is taken.');
 }
+
+const BANNED = 'This account has been permanently closed for breaking the Bite Wise terms. Contact Bite Wise support if you think this is a mistake.';
 
 // Checks the sign-up form before the agreement is shown, without creating anything.
 export async function validateSignup(input: unknown) {
@@ -87,6 +95,9 @@ export async function signUp(input: unknown) {
   });
 }
 
+const untilText = (until: string | null | undefined) =>
+  until ? ` until ${new Date(until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: serverEnv.timeZone })}` : '';
+
 const loginSchema = z.object({ login: z.string().trim().min(1, 'Enter your email or user name.'), password: z.string().min(1, 'Enter your password.') });
 
 // Log in with an email address or a user name.
@@ -102,7 +113,12 @@ export async function signIn(input: unknown) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.status === 429) throw new AppError(429, 'Too many attempts. Please wait a few minutes and try again.');
-      if (/banned/i.test(error.message)) throw new AppError(403, 'This account has been suspended. Contact Bite Wise support for help.');
+      if (/banned/i.test(error.message)) {
+        // Supabase calls suspensions and bans both "banned"; the profile says which.
+        const { data: p } = await supabaseAdmin().from('profiles').select('status, suspended_until').eq('email', email).maybeSingle();
+        if (p?.status === 'banned') throw new AppError(403, BANNED);
+        throw new AppError(403, `This account has been suspended${untilText(p?.suspended_until)}. Contact Bite Wise support for help.`);
+      }
       if (/not confirmed/i.test(error.message)) throw new AppError(403, 'Please confirm your email address first. Check your inbox for the link.');
       throw new AppError(401, 'Email/user name or password is incorrect.');
     }
@@ -114,10 +130,8 @@ export async function signIn(input: unknown) {
     }
     if (!profile || profile.status !== 'active') {
       await supabase.auth.signOut();
-      const until = profile?.status === 'suspended' && profile.suspended_until
-        ? ` until ${new Date(profile.suspended_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: serverEnv.timeZone })}`
-        : '';
-      throw new AppError(403, `This account has been suspended${until}. Contact Bite Wise support for help.`);
+      if (profile?.status === 'banned') throw new AppError(403, BANNED);
+      throw new AppError(403, `This account has been suspended${untilText(profile?.status === 'suspended' ? profile.suspended_until : null)}. Contact Bite Wise support for help.`);
     }
     return { next: homeFor(profile.role) };
   });

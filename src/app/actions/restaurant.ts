@@ -9,6 +9,7 @@ import { ensureKioskToken, kioskUrls, rotateKioskToken } from '@/lib/kiosk';
 import { action, AppError, check, maybe, must } from '@/lib/errors';
 import { payments } from '@/lib/payments';
 import * as orders from '@/lib/orders';
+import * as subscriptions from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
 import { menuItemSchema, parse, restaurantProfileSchema } from '@/lib/validate';
@@ -174,5 +175,59 @@ export async function newKioskLink() {
     const { restaurant } = await requireRestaurant();
     if (restaurant.status !== 'approved') throw new AppError(409, 'Your kiosk is available once your restaurant is approved.');
     return kioskInfo(restaurant.id, await rotateKioskToken(restaurant.id));
+  });
+}
+
+// ---------------------------------------------------------------- plan (subscription)
+
+const paidPlan = z.enum(['monthly', 'annual'], { message: 'Choose the monthly or annual plan.' });
+
+export async function getPlan() {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    return subscriptions.planSummary(restaurant.id);
+  });
+}
+
+// With Stripe, the plan's card is confirmed in the browser first (SetupIntent), so renewals can charge it later.
+export async function createPlanSetupIntent() {
+  return action(async () => {
+    const { viewer } = await requireRestaurant();
+    const profile = maybe(await supabaseAdmin().from('profiles').select('stripe_customer_id').eq('id', viewer.id).maybeSingle());
+    const customerId = await payments().ensureCustomer({ email: viewer.email, username: viewer.username, existingId: profile?.stripe_customer_id });
+    if (customerId !== profile?.stripe_customer_id) await supabaseAdmin().from('profiles').update({ stripe_customer_id: customerId }).eq('id', viewer.id);
+    return payments().createSetupIntent(customerId);
+  });
+}
+
+export async function subscribePlan(input: unknown) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    if (restaurant.status === 'banned') throw new AppError(403, 'Your restaurant has been removed from Bite Wise.');
+    const d = parse(z.object({ plan: paidPlan, token: z.unknown(), autoRenew: z.boolean().default(true) }), input);
+    return subscriptions.subscribe(restaurant.id, d);
+  });
+}
+
+export async function setPlanAutoRenew(on: boolean) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    await subscriptions.setAutoRenew(restaurant.id, parse(z.boolean(), on));
+    return null;
+  });
+}
+
+export async function setPlanAtRenewal(plan: unknown) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    await subscriptions.setRenewPlan(restaurant.id, parse(paidPlan, plan));
+    return null;
+  });
+}
+
+export async function updatePlanCard(token: unknown) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    return subscriptions.updateCard(restaurant.id, token);
   });
 }

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { log } from '@/lib/admin';
 import { requireActor } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
+import * as moderation from '@/lib/moderation';
 import { money } from '@/lib/format';
 import * as orders from '@/lib/orders';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
@@ -15,33 +16,28 @@ import { dollars, int, parse } from '@/lib/validate';
 const db = () => supabaseAdmin();
 const note = (field: string, min = 0) => z.string().trim().min(min, `${field} must be at least ${min} characters.`).max(300, `${field} must be at most 300 characters.`);
 
+const days = z.number().int().refine((n) => (SUSPENSION_DAYS as readonly number[]).includes(n), 'Choose a suspension length.').optional();
+
+// Approve, reinstate, suspend for a number of days, or ban a restaurant for good (see src/lib/moderation.ts).
 export async function setRestaurantStatus(input: unknown) {
   return action(async () => {
     const me = await requireActor('admin');
-    const d = parse(z.object({ id: z.number().int(), status: z.enum(['approved', 'suspended', 'pending']), note: note('Note').default('') }), input);
-    const r = must(await db().from('restaurants').update({ status: d.status, admin_note: d.note }).eq('id', d.id).select('id, name').maybeSingle());
-    await log(me.id, `restaurant.${d.status}`, 'restaurant', r.id, `${r.name}${d.note ? `: ${d.note}` : ''}`);
-    if (d.status === 'approved') await sendOnboardingEmails(r.id); // welcome email: signed agreement + kiosk link
+    const d = parse(z.object({ id: z.number().int(), status: z.enum(['approved', 'suspended', 'banned', 'pending']), days, note: note('Note').default('') }), input);
+    const name = await moderation.setRestaurantStatus(d.id, d);
+    await log(me.id, `restaurant.${d.status}`, 'restaurant', d.id, `${name}${d.days ? ` for ${d.days} days` : ''}${d.note ? `: ${d.note}` : ''}`);
+    if (d.status === 'approved') await sendOnboardingEmails(d.id); // welcome email: signed agreement + kiosk link
     return null;
   });
 }
 
-// Suspending signs the user out everywhere and blocks login (a Supabase Auth ban) for a set number of days.
-// The account reactivates by itself when the time is up (the sweep job), or when an admin reactivates it.
+// Reactivate, suspend for a number of days, or ban an account for good (see src/lib/moderation.ts).
 export async function setUserStatus(input: unknown) {
   return action(async () => {
     const me = await requireActor('admin');
-    const d = parse(
-      z.object({ id: z.string().uuid(), status: z.enum(['active', 'suspended']), days: z.number().int().refine((n) => (SUSPENSION_DAYS as readonly number[]).includes(n), 'Choose a suspension length.').optional() }),
-      input,
-    );
-    if (d.id === me.id) throw new AppError(400, 'You cannot suspend your own account.');
-    if (d.status === 'suspended' && !d.days) throw new AppError(400, 'Choose how many days to suspend the account for.');
-    const until = d.status === 'suspended' ? new Date(Date.now() + d.days! * 86_400_000).toISOString() : null;
-    const u = must(await db().from('profiles').update({ status: d.status, suspended_until: until }).eq('id', d.id).neq('status', 'deleted').select('username, role').maybeSingle());
-    const { error } = await db().auth.admin.updateUserById(d.id, { ban_duration: d.status === 'suspended' ? `${d.days! * 24}h` : 'none' });
-    if (error) throw new AppError(500, error.message);
-    await log(me.id, `user.${d.status}`, 'user', d.id, `${u.username} (${u.role})${d.days ? ` for ${d.days} days` : ''}`);
+    const d = parse(z.object({ id: z.string().uuid(), status: z.enum(['active', 'suspended', 'banned']), days, note: note('Reason').default('') }), input);
+    if (d.id === me.id) throw new AppError(400, 'You cannot suspend or ban your own account.');
+    const res = await moderation.setUserStatus(d.id, d);
+    await log(me.id, res.action, 'user', d.id, res.details);
     return null;
   });
 }
@@ -167,6 +163,9 @@ export async function updateSettings(input: unknown) {
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
+        monthlyPrice: z.coerce.number().min(1, 'Monthly price must be $1 to $1,000.').max(1000, 'Monthly price must be $1 to $1,000.'),
+        annualPrice: z.coerce.number().min(1, 'Annual price must be $1 to $10,000.').max(10000, 'Annual price must be $1 to $10,000.'),
+        foundingSpots: z.coerce.number().int('Founding spots must be a whole number.').min(0, 'Founding spots must be 0 to 10,000.').max(10000, 'Founding spots must be 0 to 10,000.'),
       }),
       input,
     );
@@ -174,6 +173,9 @@ export async function updateSettings(input: unknown) {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,
+      subscription_monthly_cents: Math.round(d.monthlyPrice * 100),
+      subscription_annual_cents: Math.round(d.annualPrice * 100),
+      founding_spots: d.foundingSpots,
     };
     const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));
     const changed = Object.entries(values).filter(([k, v]) => current.get(k) !== v);

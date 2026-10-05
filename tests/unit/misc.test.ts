@@ -44,7 +44,7 @@ describe('Pacific time days', () => {
 });
 
 describe('legal documents', () => {
-  const company = { entity: 'Bite Wise <LLC>', email: 'help@example.com', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10 };
+  const company = { entity: 'Bite Wise <LLC>', email: 'help@example.com', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
   it('lists what each role must accept', () => {
     expect(requiredDocuments('customer').map((d) => d.id)).toEqual(['customer-terms', 'privacy']);
     expect(requiredDocuments('restaurant').map((d) => d.id)).toEqual(['restaurant-agreement', 'privacy']);
@@ -55,6 +55,7 @@ describe('legal documents', () => {
     expect(doc.html).toContain('Bite Wise &lt;LLC&gt;');
     expect(doc.html).toContain('currently 5% of the food subtotal');
     expect(renderDocument('restaurant-agreement', company)!.html).toContain('Stripe Connect');
+    expect(renderDocument('restaurant-agreement', company)!.html).toMatch(/\$15 per month[^]*\$150 per year[^]*\$30 less/);
     expect(renderDocument('nope', company)).toBeNull();
   });
 });

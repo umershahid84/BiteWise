@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { redirect } from 'next/navigation';
+import type { Database } from '@/lib/database.types';
 import { homeFor, type Role } from '@/lib/constants';
 import { AppError, must } from '@/lib/errors';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -10,7 +11,7 @@ export type Viewer = {
   email: string;
   username: string;
   role: Role;
-  restaurant: { id: number; name: string; status: 'pending' | 'approved' | 'suspended' } | null;
+  restaurant: { id: number; name: string; status: Database['public']['Enums']['restaurant_status'] } | null;
   creditCents: number;
   pendingTerms: { id: string; title: string; version: string }[];
 };

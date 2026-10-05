@@ -44,7 +44,11 @@ Bite Wise is a marketplace where restaurants in greater Seattle sell food that w
 
 **Counter kiosk:** every approved restaurant gets a private kiosk link for its counter tablet (see "Restaurant onboarding and the counter kiosk").
 
-**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals and suspensions, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval) and an audit log of every admin action.
+**Restaurant plans:** $15 a month or $150 a year (save $30), and the first 50 restaurants approved are **Founding Partners**, free for as long as they stay partners. Paid plans renew automatically (restaurants can turn that off) — see "Restaurant plans and auto-renewal".
+
+**Real emails only:** sign-up refuses disposable inboxes (Mailinator, 10-Minute Mail, Guerrilla Mail, ...), reserved test domains and domains that don't exist or take no email (checked with a DNS lookup of the domain's mail servers).
+
+**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval, plan prices and founding spots) and an audit log of every admin action.
 
 ## Money flow
 
@@ -187,7 +191,7 @@ To keep the app running in the background on Windows instead, use WSL 2 with sys
 
 1. **Supabase:** create a project, then `npx supabase link --project-ref <ref>` and `npx supabase db push` to apply the migrations. In Auth settings, set the Site URL, add `https://<your-site>/auth/confirm` as a redirect URL, and turn on **Confirm email**. Enable the `pg_cron` extension (Database → Extensions) before pushing, or schedule `/api/cron/sweep` instead.
 2. **Stripe:** turn on Connect (Express accounts). Add a webhook endpoint `https://<your-site>/api/stripe/webhook` for `account.updated` (connected accounts), `payment_intent.amount_capturable_updated` and `payment_intent.payment_failed`.
-3. **Vercel (or any Node host):** set the variables from `.env.example` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, Stripe keys, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, company details). `vercel.json` calls `/api/cron/sweep` every 5 minutes, which voids card holds of released orders.
+3. **Vercel (or any Node host):** set the variables from `.env.example` (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, Stripe keys, `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, company details). `vercel.json` calls `/api/cron/sweep` every 5 minutes, which voids card holds of released orders and renews restaurant plans (a long-running Node server does this by itself).
 4. Create your owner account with `npm run create-admin` (pointing `.env.local` at the production project).
 
 Use a commercial map tile provider in production (`NEXT_PUBLIC_MAP_TILE_URL`). OpenStreetMap's public tiles are for light use only.
@@ -223,9 +227,36 @@ No website or email can put an icon on a home screen without the person confirmi
 
 Restaurants find their link, a QR code to open it on the tablet, and a **Get a new link** button (the old link stops working at once) in the dashboard's **Kiosk** tab, along with **Download signed agreement (PDF)**.
 
+## Restaurant plans and auto-renewal
+
+An approved restaurant needs a plan to post offers. It chooses one in the dashboard's **Plan** tab:
+
+| Plan | Price | Notes |
+|---|---|---|
+| **Founding Partner** | free | The first 50 restaurants approved (setting `founding_spots`). Given automatically on approval; no card. |
+| **Monthly** | $15 / month | Paid in advance. |
+| **Annual** | $150 / year | Paid in advance; $30 less than 12 months. |
+
+Prices and the number of founding spots are in the owner console's **Settings**. Plans are charged to a card saved with the plan (Stripe, or the mock processor without Stripe keys), with an invoice number (`BW-SUB-000001`) and an emailed receipt.
+
+**Auto-renewal** is on by default and can be turned off any time in the Plan tab; the plan then ends at the end of the paid period. Restaurants can also switch between monthly and annual from their next renewal and change their card. Annual plans get a reminder email a week before renewing. If a renewal payment fails, the restaurant is emailed and the payment is retried daily; after 7 days the plan lapses and its offers are paused until it pays.
+
+Renewals are charged by the app's **scheduled jobs**, which also void card holds. A long-running server (`npm start` or the Linux service) runs them by itself every 5 minutes (`src/instrumentation.ts`). On Vercel, `vercel.json` calls `/api/cron/sweep` instead (set `CRON_SECRET`).
+
+Databases set up before plans existed give their already-approved restaurants the first founding spots. `npm run seed` puts the demo restaurants on paid plans instead (they never use founding spots).
+
+## Suspensions and bans
+
+| | Customer | Restaurant |
+|---|---|---|
+| **Suspend** (5, 10, 15, 20 or 30 days) | can't log in; lifted automatically | offers hidden, can't post; staff can still hand over orders already placed; lifted automatically |
+| **Ban** (permanent) | can't log in, open orders cancelled (not charged), email can't sign up again | removed from the site: offers end, open orders cancelled, kiosk link stops working, owner banned too |
+
+Both are in the owner console (**Customers** and **Restaurants** tabs), need the name typed to confirm a ban, and are written to the audit log. **Lift ban** undoes a ban made by mistake. Sales, payout and tax records are always kept.
+
 ## Legal documents
 
-Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-09-29.1`, updated for Stripe Connect payouts and Supabase) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
+Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-10-06.1`, which added the restaurant subscription fees and permanent bans) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
 
 ## Upgrading from the first version
 

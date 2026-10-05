@@ -145,7 +145,15 @@ async function deleteLogin(email: string) {
 
 // Creates a user through Supabase Auth (the sign-up trigger creates the profile, restaurant and
 // terms-acceptance records), or returns the existing one.
+const demoUsers: { id: string; role: 'customer' | 'restaurant' | 'admin' }[] = [];
+
 async function user(username: string, role: 'customer' | 'restaurant' | 'admin', restaurant?: Record<string, unknown>) {
+  const id = await findOrCreateUser(username, role, restaurant);
+  demoUsers.push({ id, role });
+  return id;
+}
+
+async function findOrCreateUser(username: string, role: 'customer' | 'restaurant' | 'admin', restaurant?: Record<string, unknown>) {
   const existing = await db.from('profiles').select('id').eq('username', username).maybeSingle();
   if (existing.data) {
     // Demo accounts seeded under an earlier name of the business move to the new email and password.
@@ -222,6 +230,37 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
       status: u === 'issaquahbakehouse' ? 'pending' : 'approved',
       description: `Neighborhood ${cuisine.toLowerCase()} spot in ${city}.`, phone: `(253) 555-${String(1000 + i).slice(-4)}`,
     }).eq('id', ids[u]).select('id'), 'approve');
+  }
+
+  // Plans: the Seattle demo restaurants are on the annual plan and the others on the monthly plan (mock payments).
+  // Demo restaurants never take one of the free Founding Partner spots, which are kept for real restaurants.
+  for (const [u, rid] of Object.entries(ids)) {
+    if (u === 'issaquahbakehouse') continue;
+    const plan = RESTAURANTS.some((r) => r.user === u) ? 'annual' : 'monthly';
+    const existing = await db.from('restaurant_subscriptions').select('plan, founding_number, current_period_end').eq('restaurant_id', rid).maybeSingle();
+    if (existing.data && existing.data.founding_number === null && existing.data.plan === plan && Date.parse(existing.data.current_period_end ?? '') > Date.now()) continue;
+    const start = new Date();
+    const end = new Date(start);
+    end.setUTCMonth(end.getUTCMonth() + (plan === 'annual' ? 12 : 1));
+    const price = plan === 'annual' ? 15000 : 1500;
+    must(await db.from('restaurant_subscriptions').upsert({
+      restaurant_id: rid, plan, renew_plan: null, status: 'active', founding_number: null, auto_renew: true, price_cents: price,
+      current_period_start: start.toISOString(), current_period_end: end.toISOString(), customer_ref: 'cus_mock_demo',
+      card_ref: 'pm_mock_demo_4242', card_label: 'VISA •••• 4242', last_payment_error: '', retry_at: null, renewing_at: null,
+    }).select('restaurant_id'), 'plan');
+    const invoice = must(await db.rpc('next_subscription_invoice'), 'invoice number');
+    must(await db.from('subscription_payments').insert({
+      restaurant_id: rid, plan, amount_cents: price, status: 'paid', period_start: start.toISOString(), period_end: end.toISOString(),
+      invoice_number: invoice, transaction_id: `pi_mock_demo_sub_${rid}`, card_label: 'VISA •••• 4242',
+    }).select('id'), 'plan payment');
+  }
+
+  // Demo accounts accept the current terms, so they aren't asked again after the terms change.
+  for (const u of demoUsers.filter((x) => x.role !== 'admin')) {
+    for (const document of REQUIRED[u.role as 'customer' | 'restaurant']) {
+      const has = await db.from('terms_acceptances').select('id').eq('user_id', u.id).eq('document', document).eq('version', LEGAL_VERSION).limit(1);
+      if (!has.data?.length) must(await db.from('terms_acceptances').insert({ user_id: u.id, document, version: LEGAL_VERSION, ip: 'seed', user_agent: 'npm run seed' }).select('id'), 'terms');
+    }
   }
 
   // Menus.

@@ -8,10 +8,16 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-09-29.1';
-export const EFFECTIVE = 'September 29, 2026';
+export const LEGAL_VERSION = '2026-10-06.1';
+export const EFFECTIVE = 'October 6, 2026';
 
-export type Company = { entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number };
+export type Company = {
+  entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
+  // Restaurant subscription: prices in dollars, and how many Founding Partner (free) spots there are.
+  monthlyPrice: number; annualPrice: number; foundingSpots: number;
+};
+
+const usd = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] as string);
@@ -146,8 +152,9 @@ liability for gross negligence, wilful misconduct, or death or personal injury c
 from your misuse of the Service or your violation of these Terms or the law.</p>
 
 <h2>12. Suspension and termination</h2>
-<p>You may close your account at any time by contacting us. We may suspend or terminate your access if you violate these Terms, if
-required by law, or to protect users, Restaurants or the Service. Sections that by their nature should survive termination
+<p>You may close your account at any time by contacting us. We may suspend your access for a set number of days, or terminate it
+permanently (a ban), if you violate these Terms, if required by law, or to protect users, Restaurants or the Service. A banned
+person may not open a new account, and any open orders are cancelled without charge. Sections that by their nature should survive termination
 (including Sections 3, 6, 9, 10, 11 and 14) will survive.</p>
 
 <h2>13. Changes to these Terms</h2>
@@ -230,9 +237,9 @@ will cancel through Bite Wise support so the customer's payment hold is released
 <p>5.1 <b>Customer payments.</b> Bite Wise, through its payment processor Stripe, collects all payments from customers on your
 behalf as your limited payment collection agent. A customer's payment to Bite Wise satisfies the customer's obligation to you.</p>
 <p>5.2 <b>Your proceeds.</b> For each completed order you are entitled to the food subtotal (the discounted price times quantity).
-Bite Wise currently charges Partners <b>no commission</b>. Customers pay a separate Bite Wise service fee (currently ${c.serviceFeePct}% of
-the food subtotal), which Bite Wise keeps. We will give you at least 30 days' written notice before introducing or changing any fee
-charged to Partners.</p>
+Bite Wise charges Partners <b>no commission</b> on orders. Customers pay a separate Bite Wise service fee (currently ${c.serviceFeePct}% of
+the food subtotal), which Bite Wise keeps. Partners pay the subscription fee in Section 5.6. We will give you at least 30 days'
+written notice before introducing or changing any fee charged to Partners.</p>
 <p>5.3 <b>Payouts through Stripe Connect.</b> Payouts are made through Stripe Connect. To be paid, you must create and verify a
 Stripe Express account from the Partner Portal (Payouts tab) and keep it in good standing. By doing so you also agree to the
 <a href="https://stripe.com/connect-account/legal" target="_blank" rel="noopener">Stripe Connected Account Agreement</a>, which
@@ -264,6 +271,22 @@ before deciding on a refund. Bite Wise may resolve a complaint in one of two way
 if it had been paid by card. Bite Wise bears the cost of the credit. If a payment is reversed through a chargeback caused by your acts or
 omissions, the corresponding amount is deducted from your future payouts.</p>
 
+<p>5.6 <b>Subscription.</b> To list Offers, an approved Partner needs an active Bite Wise plan:</p>
+<ul>
+  <li><b>Founding Partners.</b> The first ${c.foundingSpots} restaurants approved on Bite Wise are Founding Partners and pay no
+  subscription fee for as long as this Agreement continues. Founding status is personal to your restaurant and can't be transferred.</li>
+  <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
+  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude any applicable taxes.</li>
+  <li><b>Automatic renewal.</b> Paid plans renew automatically at the end of each period, for the same length, and the card on file is
+  charged the plan price then in effect. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
+  ends at the end of the period you have paid for. For annual plans we email you a reminder before each renewal. We will give you at
+  least 30 days' notice of any price change, which applies from your next renewal.</li>
+  <li><b>Failed payments.</b> If a renewal payment fails, we will retry it and tell you. If it is still unpaid 7 days after the renewal
+  date, your plan lapses and your Offers are paused until you pay.</li>
+  <li><b>No partial refunds.</b> Fees already paid are not refunded for unused parts of a period, except where the law requires or
+  where Bite Wise ends this Agreement for convenience, in which case we refund the unused part of a prepaid period.</li>
+</ul>
+
 <h2>6. Content and licence</h2>
 <p>You grant Bite Wise a non-exclusive, royalty-free, worldwide licence, for the term of this Agreement, to use, reproduce, display and
 adapt your business name, logo, menu information and photos you upload, solely to operate and promote the Bite Wise marketplace. You
@@ -293,8 +316,9 @@ the claim arose.</p>
 
 <h2>11. Term and termination</h2>
 <p>This Agreement starts when you accept it and continues until terminated. Either party may terminate for convenience with 14 days'
-written notice. Bite Wise may suspend or terminate immediately if you breach Sections 2, 3 or 7, if food safety is at risk, or if
-required by law. On termination, your Offers are removed, open orders are cancelled and released, and Bite Wise will pay out amounts
+written notice. Bite Wise may suspend your restaurant (for a set number of days) or terminate immediately and permanently remove it
+from Bite Wise (a ban) if you breach Sections 2, 3, 7 or 8, if food safety is at risk, or if required by law. A banned Partner may not
+open a new Partner or customer account. On termination, your Offers are removed, open orders are cancelled and released, and Bite Wise will pay out amounts
 owed for completed orders, less adjustments under Section 5.5.</p>
 
 <h2>12. Changes</h2>

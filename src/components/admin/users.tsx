@@ -16,7 +16,7 @@ import { money } from '@/lib/format';
 import { day, run, useAdmin } from './shared';
 
 type User = {
-  id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number;
+  id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number;
   noShows: number; creditCents: number; termsAcceptedAt: string | null;
 };
 
@@ -27,9 +27,11 @@ export function UsersPanel({ adminId }: { adminId: string }) {
   const [creditFor, setCreditFor] = useState<User | null>(null);
   const [suspendFor, setSuspendFor] = useState<User | null>(null);
   const [deleteFor, setDeleteFor] = useState<User | null>(null);
+  const [banFor, setBanFor] = useState<User | null>(null);
   const { data, isLoading } = useAdmin<User[]>(['users', role, q], 'users', { role, q });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
   const reactivate = async (u: User) => {
+    if (u.status === 'banned' && !confirm(`Lift the permanent ban on ${u.username}? They will be able to log in again.`)) return;
     if (await run(() => setUserStatus({ id: u.id, status: 'active' }), `${u.username} is active again`)) refresh();
   };
   return (
@@ -57,10 +59,11 @@ export function UsersPanel({ adminId }: { adminId: string }) {
                   </td>
                   <td className="whitespace-nowrap">
                     <div className="flex gap-1.5">
-                      {u.role === 'customer' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
+                      {u.role === 'customer' && u.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
                       {u.id !== adminId && (u.status === 'active'
                         ? <Button size="sm" variant="danger" onClick={() => setSuspendFor(u)}>Suspend</Button>
-                        : <Button size="sm" variant="green" onClick={() => reactivate(u)}>Reactivate</Button>)}
+                        : <Button size="sm" variant="green" onClick={() => reactivate(u)}>{u.status === 'banned' ? 'Lift ban' : 'Reactivate'}</Button>)}
+                      {u.id !== adminId && u.role !== 'admin' && u.status !== 'banned' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(u)}>Ban</Button>}
                       {u.id !== adminId && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(u)}>Delete</Button>}
                     </div>
                   </td>
@@ -75,6 +78,9 @@ export function UsersPanel({ adminId }: { adminId: string }) {
       </Dialog>
       <Dialog open={!!suspendFor} onOpenChange={(o) => !o && setSuspendFor(null)}>
         {suspendFor && <SuspendForm user={suspendFor} onDone={() => { setSuspendFor(null); refresh(); }} />}
+      </Dialog>
+      <Dialog open={!!banFor} onOpenChange={(o) => !o && setBanFor(null)}>
+        {banFor && <BanForm user={banFor} onDone={() => { setBanFor(null); refresh(); }} />}
       </Dialog>
       <Dialog open={!!deleteFor} onOpenChange={(o) => !o && setDeleteFor(null)}>
         {deleteFor && <DeleteForm user={deleteFor} onDone={() => { setDeleteFor(null); refresh(); }} />}
@@ -101,26 +107,33 @@ function CreditForm({ user, onDone }: { user: User; onDone: () => void }) {
   );
 }
 
+// The suspension lengths (SUSPENSION_DAYS) as a row of buttons. Also used for restaurants.
+export function DaysPicker({ days, onChange }: { days: number; onChange: (n: number) => void }) {
+  return (
+    <div className="mb-4 grid grid-cols-5 gap-2" role="radiogroup" aria-label="Suspension length">
+      {SUSPENSION_DAYS.map((n) => (
+        <button
+          key={n}
+          type="button"
+          role="radio"
+          aria-checked={days === n}
+          onClick={() => onChange(n)}
+          className={`rounded-xl border px-2 py-3 text-center font-bold transition outline-none focus-visible:ring-2 focus-visible:ring-primary ${days === n ? 'border-danger bg-danger-soft text-danger' : 'border-line bg-surface text-ink hover:border-ink-2'}`}
+        >
+          {n}<span className="block text-xs font-semibold opacity-80">days</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function SuspendForm({ user, onDone }: { user: User; onDone: () => void }) {
   const [days, setDays] = useState<number>(SUSPENSION_DAYS[0]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   return (
     <DialogContent title={`Suspend ${user.username}`} description="They are signed out and can't log in until the suspension ends. The account reactivates by itself afterwards, or you can reactivate it sooner.">
-      <div className="mb-4 grid grid-cols-5 gap-2" role="radiogroup" aria-label="Suspension length">
-        {SUSPENSION_DAYS.map((n) => (
-          <button
-            key={n}
-            type="button"
-            role="radio"
-            aria-checked={days === n}
-            onClick={() => setDays(n)}
-            className={`rounded-xl border px-2 py-3 text-center font-bold transition outline-none focus-visible:ring-2 focus-visible:ring-primary ${days === n ? 'border-danger bg-danger-soft text-danger' : 'border-line bg-surface text-ink hover:border-ink-2'}`}
-          >
-            {n}<span className="block text-xs font-semibold opacity-80">days</span>
-          </button>
-        ))}
-      </div>
+      <DaysPicker days={days} onChange={setDays} />
       <ErrorText error={error} />
       <Button block variant="danger" disabled={busy} onClick={async () => {
         setBusy(true);
@@ -130,6 +143,35 @@ function SuspendForm({ user, onDone }: { user: User; onDone: () => void }) {
         toast.success(`${user.username} is suspended for ${days} days`);
         onDone();
       }}>Suspend for {days} days</Button>
+    </DialogContent>
+  );
+}
+
+function BanForm({ user, onDone }: { user: User; onDone: () => void }) {
+  const [reason, setReason] = useState('');
+  const [confirmText, setConfirmText] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <DialogContent title={`Ban ${user.username} permanently?`} description="For serious or repeated abuse. Use Suspend for a time-out.">
+      <ul className="mt-0 mb-4 list-disc pl-5 text-sm text-ink-2">
+        <li>They are signed out and can never log in again.</li>
+        <li>Their email ({user.email}) can&apos;t be used to create a new account.</li>
+        {user.role === 'customer' && <li>Open orders are cancelled and their card holds released (no charge).</li>}
+        {user.role === 'restaurant' && <li>Their restaurant is removed from Bite Wise: offers end, open orders are cancelled and the kiosk stops working.</li>}
+        <li>Order history is kept. You can lift the ban later if it was a mistake.</li>
+      </ul>
+      <Field label="Reason (kept in the audit log)" htmlFor="b-reason"><Input id="b-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Repeated fraudulent chargebacks" /></Field>
+      <Field label={`Type ${user.username} to confirm`} htmlFor="b-confirm"><Input id="b-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" /></Field>
+      <ErrorText error={error} />
+      <Button block variant="danger" disabled={busy || confirmText.trim().toLowerCase() !== user.username.toLowerCase()} onClick={async () => {
+        setBusy(true);
+        const res = await setUserStatus({ id: user.id, status: 'banned', note: reason });
+        setBusy(false);
+        if (!res.ok) return setError(res.error);
+        toast.success(`${user.username} is banned`);
+        onDone();
+      }}>Ban permanently</Button>
     </DialogContent>
   );
 }

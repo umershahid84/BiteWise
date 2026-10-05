@@ -12,13 +12,18 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
   const { tab, stripe } = await searchParams;
   const supabase = await supabaseServer();
   const restaurant = must(await supabase.from('restaurants').select('*').eq('owner_id', viewer.id).single());
-  const { data: fee } = await supabase.from('settings').select('value').eq('key', 'service_fee_bps').single();
+  const [{ data: fee }, { data: planOk }] = await Promise.all([
+    supabase.from('settings').select('value').eq('key', 'service_fee_bps').single(),
+    supabase.rpc('restaurant_plan_ok', { p_restaurant_id: restaurant.id }),
+  ]);
   return (
     <RestaurantDashboard
       restaurant={restaurant}
       serviceFeeBps={Number(fee?.value ?? 500)}
       map={publicEnv.map}
       paymentMode={paymentMode()}
+      stripePublishableKey={publicEnv.stripePublishableKey}
+      needsPlan={!planOk}
       initialTab={typeof tab === 'string' ? tab : 'pickup'}
       stripeReturn={stripe === 'return' || stripe === 'refresh'}
     />

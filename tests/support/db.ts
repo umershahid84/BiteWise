@@ -59,12 +59,14 @@ export async function signUp(role: 'customer' | 'restaurant', extra: Record<stri
   return { client, id: data.user.id, username, email };
 }
 
-// A restaurant that is approved, connected to (mock) Stripe, with one menu item and one live offer.
+// A restaurant that is approved, on a plan, connected to (mock) Stripe, with one menu item and one live offer.
 export async function restaurantWithOffer({ quantity = 3, price = 1000, discount = 50, connected = true } = {}) {
   const owner = await signUp('restaurant');
   const db = admin();
   const r = (await db.from('restaurants').select('*').eq('owner_id', owner.id).single()).data!;
   await db.from('restaurants').update({ status: 'approved' }).eq('id', r.id);
+  // A plan, so it may post offers (a founding plan without a number doesn't use one of the free spots).
+  await db.from('restaurant_subscriptions').insert({ restaurant_id: r.id, plan: 'founding', auto_renew: false });
   if (connected) {
     await db.from('restaurant_payment_accounts').update({
       stripe_account_id: `acct_mock_${r.id}_${uid()}`, charges_enabled: true, payouts_enabled: true, bank_summary: 'TEST BANK ••••6789',

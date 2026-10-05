@@ -4,6 +4,7 @@ import { applicationPendingEmail, welcomeEmail } from '@/lib/email/templates';
 import { publicEnv } from '@/lib/env';
 import { ensureKioskToken, kioskUrls } from '@/lib/kiosk';
 import { signedAgreementPdf } from '@/lib/legal/agreement-pdf';
+import { claimFounding, getSubscription, prices } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // The emails a restaurant gets while joining, after Supabase's "confirm your email":
@@ -16,7 +17,7 @@ export async function sendOnboardingEmails(restaurantId: number) {
   try {
     const db = supabaseAdmin();
     const { data: r } = await db.from('restaurants').select('id, name, status, owner_id').eq('id', restaurantId).maybeSingle();
-    if (!r || r.status === 'suspended') return;
+    if (!r || r.status === 'suspended' || r.status === 'banned') return;
     const { data: auth } = await db.auth.admin.getUserById(r.owner_id);
     const email = auth.user?.email;
     if (!email || !auth.user?.email_confirmed_at) return;
@@ -35,9 +36,12 @@ export async function sendOnboardingEmails(restaurantId: number) {
       if (r.status === 'approved') {
         const urls = kioskUrls(await ensureKioskToken(r.id));
         const agreement = await signedAgreementPdf(r.id, now);
+        await claimFounding(r.id);
+        const [sub, p] = await Promise.all([getSubscription(r.id), prices()]);
+        const plan = { founding: sub?.founding_number ?? null, monthlyCents: p.monthlyCents, annualCents: p.annualCents };
         sent = await sendEmail({
           to: email,
-          ...welcomeEmail({ restaurant: r.name, dashboardUrl, ...urls }),
+          ...welcomeEmail({ restaurant: r.name, dashboardUrl, ...urls, plan }),
           attachments: [{ filename: agreement.filename, content: agreement.pdf, contentType: 'application/pdf' }],
         });
       } else {

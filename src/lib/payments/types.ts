@@ -49,6 +49,15 @@ export interface PaymentProvider {
   // Returns the charge and (for destination charges) the automatic transfer to the restaurant.
   capture(ref: string, p: { applicationFeeCents: number | null; idempotencyKey: string }): Promise<{ chargeId: string | null; transferId: string | null }>;
   refund(ref: string, amountCents: number, idempotencyKey: string): Promise<{ id: string }>;
+  // Charges a saved card straight away, without the customer present (restaurant subscription fees).
+  charge(p: {
+    amountCents: number;
+    customerId: string;
+    paymentRef: string;
+    description: string;
+    metadata: Record<string, string>;
+    idempotencyKey: string;
+  }): Promise<{ id: string }>;
   void(ref: string): Promise<void>;
 
   // Stripe Connect

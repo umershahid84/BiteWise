@@ -61,8 +61,31 @@ We'll email you once you're approved.`,
   };
 }
 
-export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidUrl: string; appleUrl: string; dashboardUrl: string }) {
+const usd = (cents: number) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: serverEnv.timeZone });
+
+// The restaurant's plan, for the welcome email: a Founding Partner number, or the prices of the paid plans.
+export type WelcomePlan = { founding: number | null; monthlyCents: number; annualCents: number };
+
+function planBox(p: WelcomePlan, planUrl: string) {
+  if (p.founding) {
+    return `<div style="background:#E8F5E1;border-radius:18px;padding:18px 22px;margin:0 0 20px;">
+      <p style="margin:0;font:800 17px ${FONT};color:#2F6B24;">🌱 You're Founding Partner #${p.founding}</p>
+      <p style="margin:6px 0 0;font:15px/1.55 ${FONT};color:#334155;">As one of our first restaurants, you use Bite Wise <b>free, for as long as you're a partner</b>. No card needed.</p>
+    </div>`;
+  }
+  const saving = p.monthlyCents * 12 - p.annualCents;
+  return `<div style="background:#FFF7E6;border-radius:18px;padding:18px 22px;margin:0 0 20px;">
+    <p style="margin:0;font:800 17px ${FONT};color:#92400E;">⭐ One last step: choose your plan</p>
+    <p style="margin:6px 0 14px;font:15px/1.55 ${FONT};color:#334155;"><b>${usd(p.monthlyCents)} a month</b>, or <b>${usd(p.annualCents)} a year</b>${saving > 0 ? ` (you save ${usd(saving)})` : ''}.
+      No commission on your sales. Plans renew automatically, and you can turn that off any time.</p>
+    ${button(planUrl, 'Choose my plan', '#D97706')}
+  </div>`;
+}
+
+export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidUrl: string; appleUrl: string; dashboardUrl: string; plan: WelcomePlan }) {
   const r = esc(o.restaurant);
+  const planUrl = `${o.dashboardUrl}?tab=plan`;
   const step = (n: number, html: string) => `<tr><td width="34" valign="top" style="padding:6px 0;"><div style="width:26px;height:26px;border-radius:13px;background:#E8F5E1;color:#3E8230;font:800 14px/26px ${FONT};text-align:center;">${n}</div></td><td style="padding:6px 0;font:15px/1.5 ${FONT};color:#334155;">${html}</td></tr>`;
   return {
     subject: `Welcome to Bite Wise, ${o.restaurant}! Your kiosk is ready`,
@@ -73,6 +96,7 @@ export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidU
       subtitle: 'Your restaurant is approved and live on Bite Wise.',
       body: `<p style="margin:0 0 14px;">Great news: <b>${r}</b> is approved. Customers nearby can now see and order the surplus food you post.</p>
         <p style="margin:0 0 20px;">📎 Attached is your <b>electronically signed Restaurant Partner Agreement</b> (PDF) for your records.</p>
+        ${planBox(o.plan, planUrl)}
         <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:18px;padding:22px 22px 18px;">
           <h2 style="margin:0 0 6px;font:800 19px ${FONT};color:#14284B;">📲 Your restaurant kiosk</h2>
           <p style="margin:0 0 16px;font:15px/1.55 ${FONT};color:#475569;">Put this on the tablet at your counter. It shows new orders with a bell, and staff hand them
@@ -94,6 +118,7 @@ export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidU
     }),
     text: `Welcome to Bite Wise, ${o.restaurant}! You're approved and live.
 Your electronically signed Restaurant Partner Agreement is attached.
+${o.plan.founding ? `You're Founding Partner #${o.plan.founding}: Bite Wise is free for you for as long as you're a partner.` : `Choose your plan (${usd(o.plan.monthlyCents)} a month or ${usd(o.plan.annualCents)} a year) to start posting offers: ${planUrl}`}
 
 Your restaurant kiosk (open it on your counter tablet; share it only with your staff):
 ${o.kioskUrl}
@@ -101,5 +126,72 @@ Android tablet: ${o.androidUrl}
 iPad / iPhone: ${o.appleUrl}
 
 Dashboard: ${o.dashboardUrl}`,
+  };
+}
+
+const PLAN_NAMES = { monthly: 'Monthly', annual: 'Annual' } as const;
+
+// Sent after each successful subscription payment (the first one and every renewal).
+export function subscriptionReceiptEmail(o: {
+  restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; invoiceNumber: string; cardLabel: string;
+  periodEnd: string; autoRenew: boolean; renewal: boolean; planUrl: string;
+}) {
+  const row = (k: string, v: string) => `<tr><td style="padding:7px 0;color:#64748B;font:14px ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:700 14px ${FONT};color:#1E293B;">${v}</td></tr>`;
+  const next = o.autoRenew ? `Renews automatically on ${date(o.periodEnd)}` : `Ends on ${date(o.periodEnd)} (auto-renewal is off)`;
+  return {
+    subject: `${o.renewal ? 'Your Bite Wise plan renewed' : 'Your Bite Wise plan is active'}: ${usd(o.amountCents)} (${o.invoiceNumber})`,
+    html: layout({
+      preview: `${PLAN_NAMES[o.plan]} plan, ${usd(o.amountCents)}. ${next}.`,
+      emoji: '🧾',
+      title: o.renewal ? 'Your plan renewed' : 'Your plan is active',
+      subtitle: `${esc(o.restaurant)} · ${PLAN_NAMES[o.plan]} plan`,
+      body: `<p style="margin:0 0 16px;">Thank you! Here is your receipt.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
+          ${row('Invoice', esc(o.invoiceNumber))}${row('Plan', PLAN_NAMES[o.plan])}${row('Amount paid', usd(o.amountCents))}${row('Card', esc(o.cardLabel))}${row('Paid through', date(o.periodEnd))}
+        </table>
+        <p style="margin:0 0 18px;font-size:15px;color:#475569;">${next}. You can change your plan, card or auto-renewal in the Plan tab.</p>
+        ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
+    }),
+    text: `Bite Wise receipt ${o.invoiceNumber}: ${PLAN_NAMES[o.plan]} plan for ${o.restaurant}, ${usd(o.amountCents)} paid with ${o.cardLabel}.
+Paid through ${date(o.periodEnd)}. ${next}.
+Manage your plan: ${o.planUrl}`,
+  };
+}
+
+// A renewal payment failed: the restaurant has until graceEnd to update its card.
+export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; graceEnd: string; planUrl: string }) {
+  return {
+    subject: `Action needed: your Bite Wise payment didn't go through`,
+    html: layout({
+      preview: `Update your card by ${date(o.graceEnd)} to keep your offers live.`,
+      emoji: '💳',
+      title: "Your payment didn't go through",
+      subtitle: esc(o.restaurant),
+      body: `<p style="margin:0 0 14px;">We couldn't charge <b>${usd(o.amountCents)}</b> for your Bite Wise plan${o.error ? ` (${esc(o.error)})` : ''}.</p>
+        <p style="margin:0 0 18px;">Your offers stay live while we try again. Please update your card by <b>${date(o.graceEnd)}</b>; after that your
+          offers are paused until the plan is paid.</p>
+        ${button(o.planUrl, 'Update my card', '#D97706')}`,
+    }),
+    text: `We couldn't charge ${usd(o.amountCents)} for the Bite Wise plan of ${o.restaurant}${o.error ? ` (${o.error})` : ''}.
+Please update your card by ${date(o.graceEnd)} to keep your offers live: ${o.planUrl}`,
+  };
+}
+
+// Sent about a week before an annual plan renews.
+export function renewalReminderEmail(o: { restaurant: string; amountCents: number; renewsOn: string; cardLabel: string; planUrl: string }) {
+  return {
+    subject: `Your Bite Wise annual plan renews on ${date(o.renewsOn)}`,
+    html: layout({
+      preview: `${usd(o.amountCents)} will be charged to ${o.cardLabel}.`,
+      emoji: '🔔',
+      title: 'Your annual plan renews soon',
+      subtitle: esc(o.restaurant),
+      body: `<p style="margin:0 0 14px;">Just a heads-up: your Bite Wise annual plan renews automatically on <b>${date(o.renewsOn)}</b>, and
+          <b>${usd(o.amountCents)}</b> will be charged to ${esc(o.cardLabel)}.</p>
+        <p style="margin:0 0 18px;">Nothing to do if you'd like to continue. To switch to monthly, change your card or turn auto-renewal off, open the Plan tab before then.</p>
+        ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
+    }),
+    text: `Your Bite Wise annual plan for ${o.restaurant} renews on ${date(o.renewsOn)}: ${usd(o.amountCents)} will be charged to ${o.cardLabel}.
+Manage your plan: ${o.planUrl}`,
   };
 }
