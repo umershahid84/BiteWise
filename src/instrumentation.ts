@@ -3,8 +3,18 @@
 // Serverless hosts (Vercel) don't keep the process running: there vercel.json calls /api/cron/sweep instead.
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs' || process.env.VERCEL || process.env.DISABLE_SCHEDULED_JOBS) return;
-  const { runScheduledJobs } = await import('@/lib/jobs');
-  const run = () => runScheduledJobs().catch((err) => console.error('scheduled jobs:', err instanceof Error ? err.message : err));
+  const { databaseNotReady, runScheduledJobs } = await import('@/lib/jobs');
+  let warned = '';
+  const run = async () => {
+    const problem = await databaseNotReady().catch((err) => `Can't reach the database: ${err instanceof Error ? err.message : err}`);
+    if (problem) {
+      if (problem !== warned) console.warn(`\n⚠  Scheduled jobs are paused. ${problem}\n`);
+      warned = problem;
+      return;
+    }
+    warned = '';
+    await runScheduledJobs().catch((err) => console.error('scheduled jobs:', err instanceof Error ? err.message : err));
+  };
   setTimeout(run, 30_000).unref();
   setInterval(run, 5 * 60_000).unref();
 }

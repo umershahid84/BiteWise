@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'http://127.0.0.1:54321';
@@ -9,6 +10,9 @@ const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? '').split(',').map((s) =>
 const nextConfig: NextConfig = {
   // scripts/server/update.sh builds into a separate folder while the live site keeps running from .next.
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  // This folder is the app: without this, Next.js looks for the workspace root higher up and warns when it finds a
+  // stray package-lock.json there (e.g. in the Windows user folder).
+  outputFileTracingRoot: path.resolve(import.meta.dirname),
   // pdfkit reads its font metrics from disk, so it must not be bundled.
   serverExternalPackages: ['pdfkit', 'nodemailer'],
   // Fonts and logos for PDFs (receipts, reports, agreements) and emails are read at runtime.
