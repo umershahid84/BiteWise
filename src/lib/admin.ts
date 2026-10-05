@@ -4,6 +4,7 @@ import { serverEnv } from '@/lib/env';
 import { AppError, must } from '@/lib/errors';
 import { dollars, toCsv } from '@/lib/receipts/data';
 import { dayKey, dayRange, todayIn } from '@/lib/receipts/time';
+import { prices } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Owner/admin console data. Callers must check that the user is an admin first (see requireActor('admin')).
@@ -319,6 +320,50 @@ export async function taxCsv(params: URLSearchParams) {
   };
 }
 
+// ---------------------------------------------------------------- restaurant plans
+
+// The Plans tab: prices, a summary and every restaurant's plan (approved restaurants, plus any with a plan).
+export async function plans() {
+  const [p, rows, subs, owners, paid] = await Promise.all([
+    prices(),
+    all<{ id: number; name: string; city: string; status: string; owner_id: string; created_at: string }>((a, b) => db().from('restaurants').select('id, name, city, status, owner_id, created_at').range(a, b)),
+    all<Database['public']['Tables']['restaurant_subscriptions']['Row']>((a, b) => db().from('restaurant_subscriptions').select('*').range(a, b)),
+    all<{ id: string; email: string }>((a, b) => db().from('profiles').select('id, email').eq('role', 'restaurant').range(a, b)),
+    all<{ restaurant_id: number; amount_cents: number; created_at: string }>((a, b) => db().from('subscription_payments').select('restaurant_id, amount_cents, created_at').eq('status', 'paid').range(a, b)),
+  ]);
+  const sub = new Map(subs.map((x) => [x.restaurant_id, x]));
+  const email = new Map(owners.map((o) => [o.id, o.email]));
+  const yearAgo = Date.now() - 365 * 86_400_000;
+  const list = rows
+    .filter((r) => r.status === 'approved' || sub.has(r.id))
+    .map((r) => {
+      const s = sub.get(r.id);
+      return {
+        restaurantId: r.id, name: r.name, city: r.city, restaurantStatus: r.status, ownerEmail: email.get(r.owner_id) ?? '',
+        plan: s?.plan ?? null, status: s?.status ?? null, foundingNumber: s?.founding_number ?? null, autoRenew: s?.auto_renew ?? false,
+        priceCents: s?.price_cents ?? 0, periodEnd: s?.current_period_end ?? null, cardLabel: s?.card_label ?? '', lastPaymentError: s?.last_payment_error ?? '',
+        paid12mCents: paid.filter((x) => x.restaurant_id === r.id && Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents, 0),
+      };
+    });
+  const rank = (x: (typeof list)[number]) => (x.status === 'past_due' ? 0 : !x.plan ? 1 : x.status === 'expired' ? 2 : 3);
+  list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+  const active = subs.filter((x) => x.plan !== 'founding' && x.status === 'active');
+  return {
+    prices: p,
+    summary: {
+      founding: subs.filter((x) => x.plan === 'founding').length,
+      monthly: active.filter((x) => x.plan === 'monthly').length,
+      annual: active.filter((x) => x.plan === 'annual').length,
+      delinquent: subs.filter((x) => x.status === 'past_due').length,
+      noPlan: list.filter((x) => !x.plan).length,
+      // Monthly recurring revenue: monthly plans plus annual plans spread over 12 months.
+      mrrCents: active.reduce((n, x) => n + (x.plan === 'annual' ? Math.round(x.price_cents / 12) : x.price_cents), 0),
+      paid12mCents: paid.filter((x) => Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents, 0),
+    },
+    rows: list,
+  };
+}
+
 // ---------------------------------------------------------------- settings & audit
 
 export async function settings() {
@@ -328,9 +373,6 @@ export async function settings() {
     serviceFeePct: Number(get('service_fee_bps') ?? 500) / 100,
     defaultTaxRatePct: Number(get('default_tax_rate_bps') ?? 1035) / 100,
     requireRestaurantApproval: get('require_restaurant_approval') !== false,
-    monthlyPrice: Number(get('subscription_monthly_cents') ?? 1500) / 100,
-    annualPrice: Number(get('subscription_annual_cents') ?? 15000) / 100,
-    foundingSpots: Number(get('founding_spots') ?? 50),
   };
 }
 

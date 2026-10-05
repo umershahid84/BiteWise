@@ -158,22 +158,22 @@ Manage your plan: ${o.planUrl}`,
   };
 }
 
-// A renewal payment failed: the restaurant has until graceEnd to update its card.
-export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; graceEnd: string; planUrl: string }) {
+// A subscription payment was declined: the plan is delinquent and the restaurant can't post until it pays.
+export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; planUrl: string }) {
   return {
-    subject: `Action needed: your Bite Wise payment didn't go through`,
+    subject: `Action needed: your Bite Wise payment was declined`,
     html: layout({
-      preview: `Update your card by ${date(o.graceEnd)} to keep your offers live.`,
+      preview: 'Your offers are paused until your plan is paid.',
       emoji: '💳',
-      title: "Your payment didn't go through",
+      title: 'Your payment was declined',
       subtitle: esc(o.restaurant),
       body: `<p style="margin:0 0 14px;">We couldn't charge <b>${usd(o.amountCents)}</b> for your Bite Wise plan${o.error ? ` (${esc(o.error)})` : ''}.</p>
-        <p style="margin:0 0 18px;">Your offers stay live while we try again. Please update your card by <b>${date(o.graceEnd)}</b>; after that your
-          offers are paused until the plan is paid.</p>
-        ${button(o.planUrl, 'Update my card', '#D97706')}`,
+        <p style="margin:0 0 14px;">Your plan is now <b>delinquent</b>: your offers are paused and you can't post new ones until the payment goes through.</p>
+        <p style="margin:0 0 18px;">Pay now with another card (or add a new one) in the Plan tab. We'll also retry your default card automatically over the next few days.</p>
+        ${button(o.planUrl, 'Pay now', '#D97706')}`,
     }),
     text: `We couldn't charge ${usd(o.amountCents)} for the Bite Wise plan of ${o.restaurant}${o.error ? ` (${o.error})` : ''}.
-Please update your card by ${date(o.graceEnd)} to keep your offers live: ${o.planUrl}`,
+Your plan is delinquent: your offers are paused and you can't post until it is paid. Pay now: ${o.planUrl}`,
   };
 }
 

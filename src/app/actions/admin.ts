@@ -5,6 +5,7 @@ import { log } from '@/lib/admin';
 import { requireActor } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
 import * as moderation from '@/lib/moderation';
+import * as subscriptions from '@/lib/subscriptions';
 import { money } from '@/lib/format';
 import * as orders from '@/lib/orders';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
@@ -163,9 +164,6 @@ export async function updateSettings(input: unknown) {
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
-        monthlyPrice: z.coerce.number().min(1, 'Monthly price must be $1 to $1,000.').max(1000, 'Monthly price must be $1 to $1,000.'),
-        annualPrice: z.coerce.number().min(1, 'Annual price must be $1 to $10,000.').max(10000, 'Annual price must be $1 to $10,000.'),
-        foundingSpots: z.coerce.number().int('Founding spots must be a whole number.').min(0, 'Founding spots must be 0 to 10,000.').max(10000, 'Founding spots must be 0 to 10,000.'),
       }),
       input,
     );
@@ -173,9 +171,6 @@ export async function updateSettings(input: unknown) {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,
-      subscription_monthly_cents: Math.round(d.monthlyPrice * 100),
-      subscription_annual_cents: Math.round(d.annualPrice * 100),
-      founding_spots: d.foundingSpots,
     };
     const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));
     const changed = Object.entries(values).filter(([k, v]) => current.get(k) !== v);
@@ -184,5 +179,48 @@ export async function updateSettings(input: unknown) {
     }
     if (changed.length) await log(me.id, 'settings.update', 'settings', null, changed.map(([k, v]) => `${k}=${v}`).join(', '));
     return { changed: changed.map(([k]) => k) };
+  });
+}
+
+// Restaurant plan prices and the number of free Founding Partner spots. New prices apply to new plans straight away
+// and to existing plans from their next renewal (or the next payment of a delinquent plan).
+export async function updatePlanPrices(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(
+      z.object({
+        monthlyPrice: z.coerce.number().min(0.5, 'Monthly price must be $0.50 to $1,000.').max(1000, 'Monthly price must be $0.50 to $1,000.'),
+        annualPrice: z.coerce.number().min(0.5, 'Annual price must be $0.50 to $10,000.').max(10000, 'Annual price must be $0.50 to $10,000.'),
+        foundingSpots: z.coerce.number().int('Founding spots must be a whole number.').min(0, 'Founding spots must be 0 to 10,000.').max(10000, 'Founding spots must be 0 to 10,000.'),
+      }),
+      input,
+    );
+    const values = {
+      subscription_monthly_cents: Math.round(d.monthlyPrice * 100),
+      subscription_annual_cents: Math.round(d.annualPrice * 100),
+      founding_spots: d.foundingSpots,
+    };
+    const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));
+    const changed = Object.entries(values).filter(([k, v]) => Number(current.get(k)) !== v);
+    for (const [key, value] of changed) check(await db().from('settings').upsert({ key, value, updated_at: new Date().toISOString() }));
+    if (changed.length) await log(me.id, 'plans.prices', 'settings', null, changed.map(([k, v]) => `${k}=${v}`).join(', '));
+    return { changed: changed.map(([k]) => k) };
+  });
+}
+
+// Charges a delinquent restaurant's plan to its default card on file (for example after it says it fixed its card).
+export async function chargeDelinquentPlan(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(z.object({ restaurantId: z.number().int() }), input);
+    const r = must(await db().from('restaurants').select('name').eq('id', d.restaurantId).maybeSingle());
+    try {
+      const res = await subscriptions.payNow(d.restaurantId);
+      await log(me.id, 'plans.charge', 'restaurant', d.restaurantId, `${r.name}: paid, active until ${res.periodEnd}`);
+      return res;
+    } catch (err) {
+      if (err instanceof AppError) await log(me.id, 'plans.charge_failed', 'restaurant', d.restaurantId, `${r.name}: ${err.message}`);
+      throw err;
+    }
   });
 }

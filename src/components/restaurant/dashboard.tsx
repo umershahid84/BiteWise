@@ -27,13 +27,13 @@ import type { Ctx, Restaurant } from './types';
 
 type NewOrder = { id: number; quantity: number; item_title: string; customer_username: string; total_cents: number; pickup_end: string; image_url: string | null };
 
-export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, stripePublishableKey, needsPlan, initialTab, stripeReturn }: {
+export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, stripePublishableKey, planNotice, initialTab, stripeReturn }: {
   restaurant: Restaurant;
   serviceFeeBps: number;
   map: MapConfig;
   paymentMode: 'stripe' | 'mock';
   stripePublishableKey: string;
-  needsPlan: boolean;
+  planNotice: 'choose' | 'delinquent' | null;
   initialTab: string;
   stripeReturn: boolean;
 }) {
@@ -141,7 +141,13 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
           new ones. You can still verify pickups for existing orders. Contact Bite Wise support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
         </Alert>
       )}
-      {restaurant.status === 'approved' && needsPlan && tab !== 'plan' && (
+      {restaurant.status === 'approved' && planNotice === 'delinquent' && tab !== 'plan' && (
+        <Alert tone="error" className="mb-5">
+          💳 <b>Your plan is delinquent: a payment was declined.</b> Your offers are paused and you can&apos;t post until it&apos;s paid.{' '}
+          <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>Pay now</button>
+        </Alert>
+      )}
+      {restaurant.status === 'approved' && planNotice === 'choose' && tab !== 'plan' && (
         <Alert tone="warn" className="mb-5">
           ⭐ <b>Choose your Bite Wise plan to post offers.</b>{' '}
           <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>See plans</button>

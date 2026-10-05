@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart3, Banknote, ClipboardList, Landmark, ScrollText, Settings, Store, Tag, Users } from 'lucide-react';
+import { BarChart3, Banknote, ClipboardList, Crown, Landmark, ScrollText, Settings, Store, Tag, Users } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuditPanel } from './audit';
 import { OffersPanel } from './offers';
 import { OrdersPanel } from './orders';
 import { OverviewPanel } from './overview';
 import { PayoutsPanel } from './payouts';
+import { PlansPanel } from './plans';
 import { RestaurantsPanel } from './restaurants';
 import { SettingsPanel } from './settings';
 import { daysAgo, todayPT, type Range } from './shared';
@@ -15,7 +16,7 @@ import { TaxPanel } from './tax';
 import { UsersPanel } from './users';
 
 const TABS = [
-  ['overview', 'Overview', BarChart3], ['restaurants', 'Restaurants', Store], ['customers', 'Customers', Users], ['orders', 'Orders', ClipboardList],
+  ['overview', 'Overview', BarChart3], ['restaurants', 'Restaurants', Store], ['plans', 'Plans', Crown], ['customers', 'Customers', Users], ['orders', 'Orders', ClipboardList],
   ['offers', 'Live offers', Tag], ['payouts', 'Payouts', Banknote], ['tax', 'Sales tax', Landmark], ['settings', 'Settings', Settings], ['audit', 'Audit log', ScrollText],
 ] as const;
 
@@ -42,6 +43,7 @@ export function AdminConsole({ adminId }: { adminId: string }) {
         </TabsList>
         <TabsContent value="overview"><OverviewPanel range={range} setRange={setRange} go={go} /></TabsContent>
         <TabsContent value="restaurants"><RestaurantsPanel /></TabsContent>
+        <TabsContent value="plans"><PlansPanel /></TabsContent>
         <TabsContent value="customers"><UsersPanel adminId={adminId} /></TabsContent>
         <TabsContent value="orders"><OrdersPanel range={range} setRange={setRange} /></TabsContent>
         <TabsContent value="offers"><OffersPanel /></TabsContent>

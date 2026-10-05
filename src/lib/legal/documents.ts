@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-06.1';
-export const EFFECTIVE = 'October 6, 2026';
+export const LEGAL_VERSION = '2026-10-07.1';
+export const EFFECTIVE = 'October 7, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -277,12 +277,15 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   subscription fee for as long as this Agreement continues. Founding status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
   (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude any applicable taxes.</li>
-  <li><b>Automatic renewal.</b> Paid plans renew automatically at the end of each period, for the same length, and the card on file is
-  charged the plan price then in effect. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
+  <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
+  renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
+  is charged the plan price then in effect. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
   ends at the end of the period you have paid for. For annual plans we email you a reminder before each renewal. We will give you at
   least 30 days' notice of any price change, which applies from your next renewal.</li>
-  <li><b>Failed payments.</b> If a renewal payment fails, we will retry it and tell you. If it is still unpaid 7 days after the renewal
-  date, your plan lapses and your Offers are paused until you pay.</li>
+  <li><b>Declined payments.</b> If a payment is declined, your plan becomes <b>delinquent</b> straight away: your Offers are paused and
+  you cannot post or turn on Offers until a payment for your plan succeeds. We will tell you by email and retry your card on file
+  automatically for up to 7 days; you can also pay at any time from the Plan tab with any card. Your new plan period starts when the
+  payment succeeds.</li>
   <li><b>No partial refunds.</b> Fees already paid are not refunded for unused parts of a period, except where the law requires or
   where Bite Wise ends this Agreement for convenience, in which case we refund the unused part of a prepaid period.</li>
 </ul>

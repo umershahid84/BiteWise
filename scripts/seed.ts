@@ -232,10 +232,18 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
     }).eq('id', ids[u]).select('id'), 'approve');
   }
 
-  // Plans: the Seattle demo restaurants are on the annual plan and the others on the monthly plan (mock payments).
+  // Plans: the Seattle demo restaurants are on the annual plan and the others on the monthly plan (mock payments),
+  // each with a test card on file.
   // Demo restaurants never take one of the free Founding Partner spots, which are kept for real restaurants.
   for (const [u, rid] of Object.entries(ids)) {
     if (u === 'issaquahbakehouse') continue;
+    // A test card on file (mock payments), which auto-renewal charges.
+    const owner = must(await db.from('restaurants').select('owner_id').eq('id', rid).single(), 'owner').owner_id;
+    const cards = must(await db.from('payment_methods').select('id').eq('user_id', owner).limit(1), 'cards');
+    if (!cards.length) {
+      must(await db.from('payment_methods').insert({ user_id: owner, provider_ref: 'pm_mock_demo_4242', brand: 'visa', last4: '4242', exp_month: 12, exp_year: 2030, is_default: true }).select('id'), 'card');
+      await db.from('profiles').update({ stripe_customer_id: `cus_mock_demo_${rid}` }).eq('id', owner).is('stripe_customer_id', null);
+    }
     const plan = RESTAURANTS.some((r) => r.user === u) ? 'annual' : 'monthly';
     const existing = await db.from('restaurant_subscriptions').select('plan, founding_number, current_period_end').eq('restaurant_id', rid).maybeSingle();
     if (existing.data && existing.data.founding_number === null && existing.data.plan === plan && Date.parse(existing.data.current_period_end ?? '') > Date.now()) continue;

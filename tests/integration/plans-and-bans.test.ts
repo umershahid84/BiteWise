@@ -52,62 +52,103 @@ describe.skipIf(!available)('restaurant plans', () => {
     }
   });
 
-  it('starts a paid plan by charging the card, and refuses a declined card', async () => {
+  it('starts a paid plan with a new card, which is saved on file, and refuses a declined card', async () => {
     const shop = await newRestaurant();
     await expect(subs.subscribe(shop.restaurant.id, { plan: 'monthly', token: card('0002'), autoRenew: true })).rejects.toThrow(/declined/);
     expect((await admin().from('restaurant_subscriptions').select('*').eq('restaurant_id', shop.restaurant.id).maybeSingle()).data).toBeNull();
+    expect(await subs.cardsOf(shop.owner.id)).toEqual([]); // the declined card isn't kept
 
     const res = await subs.subscribe(shop.restaurant.id, { plan: 'annual', token: card('4242'), autoRenew: true });
     expect(res.invoiceNumber).toMatch(/^BW-SUB-\d{6}$/);
     const s = await subOf(shop.restaurant.id);
     expect(s).toMatchObject({ plan: 'annual', status: 'active', price_cents: 15000, auto_renew: true, card_label: 'VISA •••• 4242' });
-    const days = (Date.parse(s.current_period_end!) - Date.parse(s.current_period_start!)) / 86_400_000;
-    expect(days).toBeGreaterThanOrEqual(365);
+    expect((Date.parse(s.current_period_end!) - Date.parse(s.current_period_start!)) / 86_400_000).toBeGreaterThanOrEqual(365);
     expect((await paymentsOf(shop.restaurant.id)).map((p) => [p.status, p.amount_cents])).toEqual([['failed', 1500], ['paid', 15000]]);
+    expect((await subs.cardsOf(shop.owner.id)).map((c) => [c.last4, c.is_default])).toEqual([['4242', true]]);
     expect((await shop.post()).error).toBeNull();
     await expect(subs.subscribe(shop.restaurant.id, { plan: 'monthly', token: card('4242'), autoRenew: true })).rejects.toThrow(/already have an active plan/);
   });
 
-  it('renews automatically, switching plans at renewal, and lets a plan end when auto-renewal is off', async () => {
+  it('keeps cards on file: auto-renewal charges the default card, and the last card of a renewing plan stays', async () => {
+    const shop = await newRestaurant();
+    const first = await subs.addCard(shop.restaurant.id, card('4242'), false);
+    const second = await subs.addCard(shop.restaurant.id, card('5556'), false);
+    expect((await subs.cardsOf(shop.owner.id)).find((c) => c.is_default)?.id).toBe(first.id); // the first card is the default
+    await subs.subscribe(shop.restaurant.id, { plan: 'monthly', cardId: first.id, autoRenew: true });
+    await subs.setDefaultCard(shop.restaurant.id, second.id);
+    await admin().from('restaurant_subscriptions').update({ current_period_end: new Date(Date.now() - 60_000).toISOString() }).eq('restaurant_id', shop.restaurant.id);
+    await subs.renewDue();
+    expect((await subOf(shop.restaurant.id)).card_label).toBe('VISA •••• 5556');
+    expect((await paymentsOf(shop.restaurant.id)).map((p) => p.card_label)).toEqual(['VISA •••• 4242', 'VISA •••• 5556']);
+
+    await subs.removeCard(shop.restaurant.id, first.id);
+    await expect(subs.removeCard(shop.restaurant.id, second.id)).rejects.toThrow(/Add another card first/);
+    await subs.setAutoRenew(shop.restaurant.id, false);
+    await subs.removeCard(shop.restaurant.id, second.id);
+    await expect(subs.setAutoRenew(shop.restaurant.id, true)).rejects.toThrow(/Add a card on file/);
+  });
+
+  it('renews at the current price, switching plans at renewal, and lets a plan end when auto-renewal is off', async () => {
+    const db = admin();
     const shop = await newRestaurant();
     await subs.subscribe(shop.restaurant.id, { plan: 'monthly', token: card('4242'), autoRenew: true });
     await subs.setRenewPlan(shop.restaurant.id, 'annual');
+    const old = (await db.from('settings').select('value').eq('key', 'subscription_annual_cents').single()).data!.value;
+    await db.from('settings').update({ value: 12000 }).eq('key', 'subscription_annual_cents'); // the admin changes the price
     const ended = new Date(Date.now() - 60_000).toISOString();
-    await admin().from('restaurant_subscriptions').update({ current_period_end: ended }).eq('restaurant_id', shop.restaurant.id);
-    await subs.renewDue();
+    await db.from('restaurant_subscriptions').update({ current_period_end: ended }).eq('restaurant_id', shop.restaurant.id);
+    try {
+      await subs.renewDue();
+    } finally {
+      await db.from('settings').update({ value: old }).eq('key', 'subscription_annual_cents');
+    }
     const renewed = await subOf(shop.restaurant.id);
-    expect(renewed).toMatchObject({ plan: 'annual', renew_plan: null, status: 'active', price_cents: 15000 });
+    expect(renewed).toMatchObject({ plan: 'annual', renew_plan: null, status: 'active', price_cents: 12000 });
     expect(Date.parse(renewed.current_period_start!)).toBe(Date.parse(ended)); // the new period starts where the old one ended
-    expect((await paymentsOf(shop.restaurant.id)).filter((p) => p.status === 'paid').map((p) => p.plan)).toEqual(['monthly', 'annual']);
+    expect((await paymentsOf(shop.restaurant.id)).filter((p) => p.status === 'paid').map((p) => [p.plan, p.amount_cents])).toEqual([['monthly', 1500], ['annual', 12000]]);
 
     // Auto-renewal off: nothing is charged and the plan lapses; live offers are paused.
     expect((await shop.post()).error).toBeNull();
     await subs.setAutoRenew(shop.restaurant.id, false);
-    await admin().from('restaurant_subscriptions').update({ current_period_end: new Date(Date.now() - 60_000).toISOString() }).eq('restaurant_id', shop.restaurant.id);
+    await db.from('restaurant_subscriptions').update({ current_period_end: new Date(Date.now() - 60_000).toISOString() }).eq('restaurant_id', shop.restaurant.id);
     await subs.renewDue();
-    await admin().rpc('sweep');
+    await db.rpc('sweep');
     expect((await subOf(shop.restaurant.id)).status).toBe('expired');
-    expect((await paymentsOf(shop.restaurant.id))).toHaveLength(2);
-    const live = (await admin().from('offers').select('status').eq('restaurant_id', shop.restaurant.id)).data!;
-    expect(live.map((o) => o.status)).toEqual(['paused']);
+    expect(await paymentsOf(shop.restaurant.id)).toHaveLength(2);
+    expect((await db.from('offers').select('status').eq('restaurant_id', shop.restaurant.id)).data!.map((o) => o.status)).toEqual(['paused']);
     expect((await shop.post()).error?.message).toMatch(/Choose a Bite Wise plan/);
   });
 
-  it('keeps the plan for a grace period when a renewal fails, and charges the new card', async () => {
+  it('makes the plan delinquent as soon as a payment is declined, until a payment succeeds', async () => {
+    const db = admin();
     const shop = await newRestaurant();
     await subs.subscribe(shop.restaurant.id, { plan: 'monthly', token: card('4242'), autoRenew: true });
-    await admin().from('restaurant_subscriptions').update({ card_ref: 'pm_mock_test_0002', current_period_end: new Date(Date.now() - 60_000).toISOString() })
-      .eq('restaurant_id', shop.restaurant.id);
+    expect((await shop.post()).error).toBeNull();
+    // The bank declines the default card at renewal.
+    await db.from('payment_methods').update({ provider_ref: 'pm_mock_test_0002' }).eq('user_id', shop.owner.id);
+    await db.from('restaurant_subscriptions').update({ current_period_end: new Date(Date.now() - 60_000).toISOString() }).eq('restaurant_id', shop.restaurant.id);
     await subs.renewDue();
-    const failed = await subOf(shop.restaurant.id);
-    expect(failed.status).toBe('past_due');
-    expect(failed.last_payment_error).toMatch(/declined/);
-    expect((await shop.post()).error).toBeNull(); // still inside the 7-day grace period
 
-    await subs.updateCard(shop.restaurant.id, card('4444'));
-    const fixed = await subOf(shop.restaurant.id);
-    expect(fixed).toMatchObject({ status: 'active', last_payment_error: '', card_label: 'VISA •••• 4444' });
-    expect(Date.parse(fixed.current_period_end!)).toBeGreaterThan(Date.now() + 20 * 86_400_000);
+    const late = await subOf(shop.restaurant.id);
+    expect(late.status).toBe('past_due');
+    expect(late.last_payment_error).toMatch(/declined/);
+    expect((await db.from('offers').select('status').eq('restaurant_id', shop.restaurant.id)).data!.map((o) => o.status)).toEqual(['paused']);
+    expect((await shop.post()).error?.message).toMatch(/delinquent/);
+    // It stays delinquent: the sweep never lets it lapse, and paying with the declined card fails again.
+    await db.rpc('sweep');
+    expect((await subOf(shop.restaurant.id)).status).toBe('past_due');
+    await expect(subs.payNow(shop.restaurant.id)).rejects.toThrow(/declined/);
+    expect((await shop.post()).error?.message).toMatch(/delinquent/);
+
+    // Paying with a good card makes it active again straight away, with a new period from today.
+    const good = await subs.addCard(shop.restaurant.id, card('4444'), true);
+    const before = Date.now();
+    await subs.payNow(shop.restaurant.id, good.id);
+    const paid = await subOf(shop.restaurant.id);
+    expect(paid).toMatchObject({ status: 'active', last_payment_error: '', card_label: 'VISA •••• 4444' });
+    expect(Date.parse(paid.current_period_start!)).toBeGreaterThanOrEqual(before - 1000);
+    expect((await shop.post()).error).toBeNull();
+    await expect(subs.payNow(shop.restaurant.id)).rejects.toThrow(/nothing to pay/);
   });
 
   it('lets owners read only their own plan', async () => {

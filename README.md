@@ -44,11 +44,11 @@ Bite Wise is a marketplace where restaurants in greater Seattle sell food that w
 
 **Counter kiosk:** every approved restaurant gets a private kiosk link for its counter tablet (see "Restaurant onboarding and the counter kiosk").
 
-**Restaurant plans:** $15 a month or $150 a year (save $30), and the first 50 restaurants approved are **Founding Partners**, free for as long as they stay partners. Paid plans renew automatically (restaurants can turn that off) — see "Restaurant plans and auto-renewal".
+**Restaurant plans:** $15 a month or $150 a year (save $30), and the first 50 restaurants approved are **Founding Partners**, free for as long as they stay partners. Restaurants keep cards on file, paid plans renew automatically with the default card (restaurants can turn that off), a declined payment pauses their offers until paid, and the admin can change the fees any time — see "Restaurant plans and auto-renewal".
 
 **Real emails only:** sign-up refuses disposable inboxes (Mailinator, 10-Minute Mail, Guerrilla Mail, ...), reserved test domains and domains that don't exist or take no email (checked with a DNS lookup of the domain's mail servers).
 
-**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval, plan prices and founding spots) and an audit log of every admin action.
+**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), restaurant plans (subscription fees, founding spots, delinquent plans), settings (service fee, default tax, approval) and an audit log of every admin action.
 
 ## Money flow
 
@@ -237,13 +237,15 @@ An approved restaurant needs a plan to post offers. It chooses one in the dashbo
 | **Monthly** | $15 / month | Paid in advance. |
 | **Annual** | $150 / year | Paid in advance; $30 less than 12 months. |
 
-Prices and the number of founding spots are in the owner console's **Settings**. Plans are charged to a card saved with the plan (Stripe, or the mock processor without Stripe keys), with an invoice number (`BW-SUB-000001`) and an emailed receipt.
+**Changing the fees:** owner console → **Plans** tab → *Subscription fees*. Change the monthly and annual price and the number of founding spots whenever you need to: new prices apply to new plans straight away and to existing plans from their next renewal. The tab also shows monthly recurring revenue, every restaurant's plan (delinquent ones first) and a **Charge default card** button for delinquent plans. Every change is in the audit log.
 
-**Auto-renewal** is on by default and can be turned off any time in the Plan tab; the plan then ends at the end of the paid period. Restaurants can also switch between monthly and annual from their next renewal and change their card. Annual plans get a reminder email a week before renewing. If a renewal payment fails, the restaurant is emailed and the payment is retried daily; after 7 days the plan lapses and its offers are paused until it pays.
+**Cards on file:** restaurants keep one or more cards on file in the Plan tab (Stripe SetupIntents, or the mock processor without Stripe keys) and choose a **default** card. A plan is paid with a saved card or a new one (which is saved), and **auto-renewal charges the default card** at the end of each period, with an invoice number (`BW-SUB-000001`) and an emailed receipt. Auto-renewal is on by default and can be turned off any time (the plan then ends at the end of the paid period); the last card of an auto-renewing plan can't be removed. Restaurants can switch between monthly and annual from their next renewal, and annual plans get a reminder email a week before renewing.
+
+**Declined payments make the plan delinquent at once:** its live offers are paused and it can't post or turn on offers until a payment succeeds. The restaurant is emailed and sees a red **Pay now** banner; it can pay with any saved or new card, and its new period starts on the day it pays. The default card is also retried automatically once a day for 7 days. A delinquent plan never lapses by itself: it stays delinquent until it is paid.
 
 Renewals are charged by the app's **scheduled jobs**, which also void card holds. A long-running server (`npm start` or the Linux service) runs them by itself every 5 minutes (`src/instrumentation.ts`). On Vercel, `vercel.json` calls `/api/cron/sweep` instead (set `CRON_SECRET`).
 
-Databases set up before plans existed give their already-approved restaurants the first founding spots. `npm run seed` puts the demo restaurants on paid plans instead (they never use founding spots).
+Databases set up before plans existed give their already-approved restaurants the first founding spots. `npm run seed` puts the demo restaurants on paid plans with a test card on file instead (they never use founding spots).
 
 ## Suspensions and bans
 
@@ -256,7 +258,7 @@ Both are in the owner console (**Customers** and **Restaurants** tabs), need the
 
 ## Legal documents
 
-Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-10-06.1`, which added the restaurant subscription fees and permanent bans) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
+Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-10-07.1`, which added the restaurant subscription fees, delinquent plans and permanent bans) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
 
 ## Upgrading from the first version
 

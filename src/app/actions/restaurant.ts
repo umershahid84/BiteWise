@@ -200,11 +200,12 @@ export async function createPlanSetupIntent() {
   });
 }
 
+// Starts a paid plan, paid with a card on file (cardId) or a new card (token, saved to the cards on file).
 export async function subscribePlan(input: unknown) {
   return action(async () => {
     const { restaurant } = await requireRestaurant();
     if (restaurant.status === 'banned') throw new AppError(403, 'Your restaurant has been removed from Bite Wise.');
-    const d = parse(z.object({ plan: paidPlan, token: z.unknown(), autoRenew: z.boolean().default(true) }), input);
+    const d = parse(z.object({ plan: paidPlan, cardId: z.number().int().positive().nullish(), token: z.unknown(), autoRenew: z.boolean().default(true) }), input);
     return subscriptions.subscribe(restaurant.id, d);
   });
 }
@@ -225,9 +226,36 @@ export async function setPlanAtRenewal(plan: unknown) {
   });
 }
 
-export async function updatePlanCard(token: unknown) {
+// Pays a delinquent plan now, with a card on file (or the default card).
+export async function payPlanNow(cardId?: number | null) {
   return action(async () => {
     const { restaurant } = await requireRestaurant();
-    return subscriptions.updateCard(restaurant.id, token);
+    return subscriptions.payNow(restaurant.id, parse(z.number().int().positive().nullish(), cardId));
+  });
+}
+
+// ---- cards on file (auto-renewal charges the default card)
+
+export async function addPlanCard(token: unknown, makeDefault: boolean) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    const card = await subscriptions.addCard(restaurant.id, token, parse(z.boolean(), makeDefault));
+    return { id: card.id };
+  });
+}
+
+export async function setDefaultPlanCard(cardId: number) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    await subscriptions.setDefaultCard(restaurant.id, parse(z.number().int().positive(), cardId));
+    return null;
+  });
+}
+
+export async function removePlanCard(cardId: number) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    await subscriptions.removeCard(restaurant.id, parse(z.number().int().positive(), cardId));
+    return null;
   });
 }
