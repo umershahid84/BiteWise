@@ -254,7 +254,9 @@ Databases set up before plans existed give their already-approved restaurants th
 | **Suspend** (5, 10, 15, 20 or 30 days) | can't log in; lifted automatically | offers hidden, can't post; staff can still hand over orders already placed; lifted automatically |
 | **Ban** (permanent) | can't log in, open orders cancelled (not charged), email can't sign up again | removed from the site: offers end, open orders cancelled, kiosk link stops working, owner banned too |
 
-Both are in the owner console (**Customers** and **Restaurants** tabs), need the name typed to confirm a ban, and are written to the audit log. **Lift ban** undoes a ban made by mistake. Sales, payout and tax records are always kept.
+**Delete** (Customers and Restaurants tabs) closes an account for good: open orders are cancelled first, and a restaurant is taken off the site with its owner's account. Accounts and restaurants with no history are removed completely; ones with sales, payouts or plan payments keep those records for tax reporting, with the person's name, email and cards erased (deleted restaurants show under the **Deleted** status filter).
+
+Suspensions and bans are in the owner console (**Customers** and **Restaurants** tabs), need the name typed to confirm a ban, and are written to the audit log. **Lift ban** undoes a ban made by mistake. Sales, payout and tax records are always kept.
 
 ## Legal documents
 

@@ -136,7 +136,7 @@ export async function restaurants(params: URLSearchParams) {
   const acct = new Map(accounts.map((a) => [a.restaurant_id, a]));
   const count = <T extends { restaurant_id: number }>(list: T[], id: number, f: (x: T) => number = () => 1) =>
     list.filter((x) => x.restaurant_id === id).reduce((n, x) => n + f(x), 0);
-  const rank = { pending: 0, suspended: 1, approved: 2, banned: 3 };
+  const rank = { pending: 0, suspended: 1, approved: 2, banned: 3, deleted: 4 };
   return rows
     .map((r) => ({
       id: r.id, name: r.name, cuisine: r.cuisine, address: r.address, city: r.city, zip: r.zip, phone: r.phone, status: r.status,
@@ -149,7 +149,8 @@ export async function restaurants(params: URLSearchParams) {
       activeOffers: count(offers, r.id), orders: count(sold, r.id), foodCents: count(sold, r.id, (x) => x.subtotal_cents),
       stripeReady: !!acct.get(r.id)?.charges_enabled, stripeAccount: acct.get(r.id)?.stripe_account_id ?? null,
     }))
-    .filter((r) => (!status || r.status === status) && (!q || [r.name, r.city, r.zip, r.ownerEmail].join(' ').toLowerCase().includes(q)))
+    // Deleted restaurants only show when asked for.
+    .filter((r) => (status ? r.status === status : r.status !== 'deleted') && (!q || [r.name, r.city, r.zip, r.ownerEmail].join(' ').toLowerCase().includes(q)))
     .sort((a, b) => rank[a.status] - rank[b.status]);
 }
 
@@ -335,7 +336,7 @@ export async function plans() {
   const email = new Map(owners.map((o) => [o.id, o.email]));
   const yearAgo = Date.now() - 365 * 86_400_000;
   const list = rows
-    .filter((r) => r.status === 'approved' || sub.has(r.id))
+    .filter((r) => r.status !== 'deleted' && (r.status === 'approved' || sub.has(r.id)))
     .map((r) => {
       const s = sub.get(r.id);
       return {

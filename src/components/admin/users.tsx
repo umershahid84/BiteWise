@@ -186,7 +186,8 @@ function DeleteForm({ user, onDone }: { user: User; onDone: () => void }) {
         {user.orders + user.noShows > 0
           ? <>This account has order history, which is kept for sales and tax records. Its login, name, email and saved cards are erased and it can never be used again; past orders will show <b>Deleted user</b>.</>
           : <>The account and everything in it (profile{user.role === 'restaurant' ? ', restaurant, menu and offers' : ''}) are removed for good.</>}
-        {user.role === 'restaurant' && ' The restaurant is taken off the site.'}
+        {' '}Open orders are cancelled first (customers aren&apos;t charged).
+        {user.role === 'restaurant' && ' The restaurant is taken off the site and its plan stops renewing.'}
       </p>
       <Field label={`Type ${user.username} to confirm`} htmlFor="d-confirm">
         <Input id="d-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" />

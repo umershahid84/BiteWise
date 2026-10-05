@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { setRestaurantStatus } from '@/app/actions/admin';
+import { deleteRestaurant, setRestaurantStatus } from '@/app/actions/admin';
 import { ErrorText } from '@/components/ui/alert';
 import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { DaysPicker } from './users';
 
 type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_due' | 'expired'; foundingNumber: number | null; autoRenew: boolean; periodEnd: string | null };
 type Row = {
-  id: number; name: string; cuisine: string; address: string; city: string; zip: string; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned';
+  id: number; name: string; cuisine: string; address: string; city: string; zip: string; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
   adminNote: string; taxRateBps: number; createdAt: string; suspendedUntil: string | null; ownerEmail: string; ownerUsername: string; activeOffers: number; orders: number;
   foodCents: number; stripeReady: boolean; stripeAccount: string | null; plan: Plan | null;
 };
@@ -43,6 +43,7 @@ export function RestaurantsPanel() {
   const [q, setQ] = useState('');
   const [suspendFor, setSuspendFor] = useState<Row | null>(null);
   const [banFor, setBanFor] = useState<Row | null>(null);
+  const [deleteFor, setDeleteFor] = useState<Row | null>(null);
   const { data, isLoading } = useAdmin<Row[]>(['restaurants', status, q], 'restaurants', { status, q });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
   const approve = async (r: Row) => {
@@ -56,7 +57,7 @@ export function RestaurantsPanel() {
         <Input className="max-w-sm" placeholder="Search name, city, ZIP or owner email" value={q} onChange={(e) => setQ(e.target.value)} />
         <Select className="max-w-52" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option><option value="pending">Pending approval</option><option value="approved">Approved</option>
-          <option value="suspended">Suspended</option><option value="banned">Banned</option>
+          <option value="suspended">Suspended</option><option value="banned">Banned</option><option value="deleted">Deleted</option>
         </Select>
       </div>
       <Card className="p-2">
@@ -65,7 +66,7 @@ export function RestaurantsPanel() {
             <thead><tr><th>Restaurant</th><th>Owner</th><th>Activity</th><th>Plan</th><th>Payouts</th><th>Status</th><th /></tr></thead>
             <tbody>
               {(data ?? []).map((r) => (
-                <tr key={r.id} className={r.status === 'banned' ? 'opacity-70' : undefined}>
+                <tr key={r.id} className={r.status === 'banned' || r.status === 'deleted' ? 'opacity-70' : undefined}>
                   <td><b>{r.name}</b><div className="text-xs text-muted">{r.cuisine} · {r.address}, {r.city} {r.zip} · tax {pct(r.taxRateBps)}</div>{r.adminNote && <div className="text-xs text-accent-ink">Note: {r.adminNote}</div>}</td>
                   <td className="text-sm">{r.ownerUsername}<div className="text-xs text-muted">{r.ownerEmail} · joined {day(r.createdAt)}</div></td>
                   <td className="text-sm">{r.activeOffers} live offers<div className="text-xs text-muted">{r.orders} orders · {money(r.foodCents)}</div></td>
@@ -77,9 +78,10 @@ export function RestaurantsPanel() {
                   </td>
                   <td className="whitespace-nowrap">
                     <div className="flex gap-1.5">
-                      {r.status !== 'approved' && <Button size="sm" variant="green" onClick={() => approve(r)}>{r.status === 'pending' ? 'Approve' : r.status === 'banned' ? 'Lift ban' : 'Reinstate'}</Button>}
-                      {r.status !== 'suspended' && r.status !== 'banned' && <Button size="sm" variant="danger" onClick={() => setSuspendFor(r)}>Suspend</Button>}
-                      {r.status !== 'banned' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(r)}>Ban</Button>}
+                      {r.status !== 'approved' && r.status !== 'deleted' && <Button size="sm" variant="green" onClick={() => approve(r)}>{r.status === 'pending' ? 'Approve' : r.status === 'banned' ? 'Lift ban' : 'Reinstate'}</Button>}
+                      {(r.status === 'approved' || r.status === 'pending') && <Button size="sm" variant="danger" onClick={() => setSuspendFor(r)}>Suspend</Button>}
+                      {r.status !== 'banned' && r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(r)}>Ban</Button>}
+                      {r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(r)}>Delete</Button>}
                     </div>
                   </td>
                 </tr>
@@ -90,6 +92,9 @@ export function RestaurantsPanel() {
       </Card>
       <Dialog open={!!suspendFor} onOpenChange={(o) => !o && setSuspendFor(null)}>
         {suspendFor && <SuspendRestaurant restaurant={suspendFor} onDone={() => { setSuspendFor(null); refresh(); }} />}
+      </Dialog>
+      <Dialog open={!!deleteFor} onOpenChange={(o) => !o && setDeleteFor(null)}>
+        {deleteFor && <DeleteRestaurant restaurant={deleteFor} onDone={() => { setDeleteFor(null); refresh(); }} />}
       </Dialog>
       <Dialog open={!!banFor} onOpenChange={(o) => !o && setBanFor(null)}>
         {banFor && <BanRestaurant restaurant={banFor} onDone={() => { setBanFor(null); refresh(); }} />}
@@ -143,6 +148,36 @@ function BanRestaurant({ restaurant, onDone }: { restaurant: Row; onDone: () => 
         toast.success(`${restaurant.name} is banned`);
         onDone();
       }}>Ban permanently</Button>
+    </DialogContent>
+  );
+}
+
+function DeleteRestaurant({ restaurant, onDone }: { restaurant: Row; onDone: () => void }) {
+  const [confirmText, setConfirmText] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const hasHistory = restaurant.orders > 0 || !!restaurant.plan && restaurant.plan.plan !== 'founding';
+  return (
+    <DialogContent title={`Delete ${restaurant.name}?`} description="This can't be undone.">
+      <ul className="mt-0 mb-4 list-disc pl-5 text-sm text-ink-2">
+        <li>The restaurant is taken off Bite Wise: its offers end, open orders are cancelled (customers aren&apos;t charged) and its kiosk link stops working.</li>
+        <li>The owner&apos;s account ({restaurant.ownerUsername}, {restaurant.ownerEmail}) is deleted too, with its saved cards. A paid plan stops renewing.</li>
+        <li>
+          {hasHistory
+            ? <>It has sales or plan payments, which are kept for sales and tax records: the restaurant moves to <b>Deleted</b> (see the status filter) and the owner&apos;s name and email are erased.</>
+            : <>It has no sales history, so the restaurant, its menu and its offers are removed completely.</>}
+        </li>
+      </ul>
+      <Field label={`Type ${restaurant.name} to confirm`} htmlFor="rd-confirm"><Input id="rd-confirm" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} autoComplete="off" /></Field>
+      <ErrorText error={error} />
+      <Button block variant="danger" disabled={busy || confirmText.trim().toLowerCase() !== restaurant.name.toLowerCase()} onClick={async () => {
+        setBusy(true);
+        const res = await deleteRestaurant({ id: restaurant.id });
+        setBusy(false);
+        if (!res.ok) return setError(res.error);
+        toast.success(res.data.anonymized ? `${restaurant.name} is deleted (sales records kept)` : `${restaurant.name} is deleted`);
+        onDone();
+      }}>Delete restaurant</Button>
     </DialogContent>
   );
 }

@@ -881,7 +881,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_status": "active"|"suspended"|"deleted"|"banned","credit_kind": "refund"|"goodwill"|"redeem"|"restore"|"adjustment","offer_reason": "wrong_order"|"delayed_order"|"unclaimed_order"|"overproduction"|"end_of_day"|"other","offer_status": "active"|"paused"|"ended","order_status": "pending_payment"|"reserved"|"picked_up"|"cancelled"|"expired"|"failed","payout_kind": "transfer"|"reversal"|"manual","refund_method": "original"|"credit","restaurant_status": "pending"|"approved"|"suspended"|"banned","subscription_plan": "founding"|"monthly"|"annual","subscription_status": "active"|"past_due"|"expired","user_role": "customer"|"restaurant"|"admin"
+            "account_status": "active"|"suspended"|"deleted"|"banned","credit_kind": "refund"|"goodwill"|"redeem"|"restore"|"adjustment","offer_reason": "wrong_order"|"delayed_order"|"unclaimed_order"|"overproduction"|"end_of_day"|"other","offer_status": "active"|"paused"|"ended","order_status": "pending_payment"|"reserved"|"picked_up"|"cancelled"|"expired"|"failed","payout_kind": "transfer"|"reversal"|"manual","refund_method": "original"|"credit","restaurant_status": "pending"|"approved"|"suspended"|"banned"|"deleted","subscription_plan": "founding"|"monthly"|"annual","subscription_status": "active"|"past_due"|"expired","user_role": "customer"|"restaurant"|"admin"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -997,7 +997,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "account_status": ["active", "suspended", "deleted", "banned"],"credit_kind": ["refund", "goodwill", "redeem", "restore", "adjustment"],"offer_reason": ["wrong_order", "delayed_order", "unclaimed_order", "overproduction", "end_of_day", "other"],"offer_status": ["active", "paused", "ended"],"order_status": ["pending_payment", "reserved", "picked_up", "cancelled", "expired", "failed"],"payout_kind": ["transfer", "reversal", "manual"],"refund_method": ["original", "credit"],"restaurant_status": ["pending", "approved", "suspended", "banned"],"subscription_plan": ["founding", "monthly", "annual"],"subscription_status": ["active", "past_due", "expired"],"user_role": ["customer", "restaurant", "admin"]
+            "account_status": ["active", "suspended", "deleted", "banned"],"credit_kind": ["refund", "goodwill", "redeem", "restore", "adjustment"],"offer_reason": ["wrong_order", "delayed_order", "unclaimed_order", "overproduction", "end_of_day", "other"],"offer_status": ["active", "paused", "ended"],"order_status": ["pending_payment", "reserved", "picked_up", "cancelled", "expired", "failed"],"payout_kind": ["transfer", "reversal", "manual"],"refund_method": ["original", "credit"],"restaurant_status": ["pending", "approved", "suspended", "banned", "deleted"],"subscription_plan": ["founding", "monthly", "annual"],"subscription_status": ["active", "past_due", "expired"],"user_role": ["customer", "restaurant", "admin"]
           }
         }
 } as const

@@ -220,4 +220,38 @@ describe.skipIf(!available)('suspensions and bans', () => {
     await moderation.setUserStatus(shop.owner.id, { status: 'active' });
     expect((await admin().from('restaurants').select('status').eq('id', shop.restaurant.id).single()).data!.status).toBe('approved');
   });
+
+  it('deletes a restaurant with no history completely, and keeps the records of one with sales', async () => {
+    const db = admin();
+    const fresh = await restaurantWithOffer();
+    expect((await moderation.deleteRestaurant(fresh.restaurant.id)).anonymized).toBe(false);
+    expect((await db.from('restaurants').select('id').eq('id', fresh.restaurant.id)).data).toEqual([]);
+    expect(await canLogIn(fresh.owner.email)).toBe(false);
+
+    const busy = await restaurantWithOffer();
+    const token = await ensureKioskToken(busy.restaurant.id);
+    const c = await signUp('customer');
+    const { orderId } = await orders.checkout(c.id, { offerId: busy.offer.id, quantity: 1, creditCents: 0, newCard: visa });
+    const res = await moderation.deleteRestaurant(busy.restaurant.id);
+    expect(res.anonymized).toBe(true);
+    expect(res.details).toMatch(/1 restaurant order cancelled/);
+    expect((await orders.getOrder(orderId)).status).toBe('cancelled');
+    expect((await db.from('restaurants').select('status').eq('id', busy.restaurant.id).single()).data!.status).toBe('deleted');
+    expect((await db.from('offers').select('status').eq('id', busy.offer.id).single()).data!.status).toBe('ended');
+    expect(await kioskByToken(token)).toBeNull();
+    expect((await db.from('profiles').select('status, email').eq('id', busy.owner.id).single()).data).toMatchObject({ status: 'deleted' });
+    expect(await canLogIn(busy.owner.email)).toBe(false);
+    await expect(moderation.deleteRestaurant(busy.restaurant.id)).rejects.toThrow(/Not found/);
+  });
+
+  it("cancels a customer's open orders when the account is deleted", async () => {
+    const shop = await restaurantWithOffer();
+    const c = await signUp('customer');
+    const { orderId } = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 0, newCard: visa });
+    const res = await moderation.deleteAccount(c.id);
+    expect(res).toMatchObject({ anonymized: true });
+    expect(res.details).toMatch(/1 open order cancelled/);
+    const o = await orders.getOrder(orderId);
+    expect(o).toMatchObject({ status: 'cancelled', customer_username: 'Deleted user' });
+  });
 });

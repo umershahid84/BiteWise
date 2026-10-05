@@ -1,6 +1,6 @@
 import 'server-only';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { AppError, maybe, must } from '@/lib/errors';
+import { AppError, check, maybe, must } from '@/lib/errors';
 import * as orders from '@/lib/orders';
 import { claimFounding } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -88,4 +88,55 @@ export async function setUserStatus(id: string, d: { status: 'active' | 'suspend
   }
   if (d.note) details += `: ${d.note}`;
   return { action: d.status === 'active' && before.status === 'banned' ? 'user.unban' : `user.${d.status}`, details };
+}
+
+// Deletes an account. First its open orders are cancelled (no charge) and, for a restaurant owner, the restaurant is
+// taken off the site (offers end, its own open orders are cancelled, the kiosk stops, its plan stops renewing).
+// An account with no history is then removed completely. One with orders, payouts, credit or plan payments can't be
+// removed without losing sales and tax records, so it is closed for good instead: the login is erased, the name,
+// email and saved cards are removed (past orders say "Deleted user"), and its restaurant gets status 'deleted'.
+export async function deleteAccount(id: string) {
+  const u = must(await db().from('profiles').select('username, role').eq('id', id).neq('status', 'deleted').maybeSingle());
+  const cancelled = await cancelOpenOrders('user_id', id);
+  const restaurants = u.role === 'restaurant' ? must(await db().from('restaurants').select('id, name').eq('owner_id', id)) : [];
+  let restaurantOrders = 0;
+  for (const r of restaurants) {
+    restaurantOrders += await cancelOpenOrders('restaurant_id', r.id);
+    await closeRestaurant(r.id);
+    check(await db().from('restaurant_subscriptions').update({ status: 'expired', auto_renew: false, updated_at: new Date().toISOString() })
+      .eq('restaurant_id', r.id).neq('plan', 'founding'));
+  }
+  const extra = [cancelled && `${cancelled} open order${cancelled === 1 ? '' : 's'} cancelled`, restaurantOrders && `${restaurantOrders} restaurant order${restaurantOrders === 1 ? '' : 's'} cancelled`]
+    .filter(Boolean).join(', ');
+  const note = (what: string) => `${u.username} (${u.role})${restaurants.length ? ` · ${restaurants.map((r) => r.name).join(', ')}` : ''}: ${what}${extra ? `; ${extra}` : ''}`;
+
+  // Plan payments are financial records too; the database would delete them with the restaurant.
+  const paidPlans = restaurants.length
+    ? (await db().from('subscription_payments').select('id', { count: 'exact', head: true }).in('restaurant_id', restaurants.map((r) => r.id)).eq('status', 'paid')).count ?? 0
+    : 0;
+  if (!paidPlans) {
+    const removed = await db().auth.admin.deleteUser(id);
+    if (!removed.error) return { anonymized: false, details: note('removed completely') };
+  }
+
+  // Kept for its records: anonymize.
+  const tag = `deleted_${id.slice(0, 8)}`;
+  const closed = await db().auth.admin.updateUserById(id, {
+    email: `${tag}@deleted.invalid`, email_confirm: true, password: crypto.randomUUID() + crypto.randomUUID(),
+    user_metadata: {}, ban_duration: BAN,
+  });
+  if (closed.error) throw new AppError(500, closed.error.message);
+  must(await db().from('profiles').update({ username: tag, email: `${tag}@deleted.invalid`, status: 'deleted', suspended_until: null, stripe_customer_id: null }).eq('id', id).select('id'));
+  must(await db().from('payment_methods').delete().eq('user_id', id).select('id'));
+  must(await db().from('orders').update({ customer_username: 'Deleted user' }).eq('user_id', id).select('id'));
+  for (const r of restaurants) {
+    must(await db().from('restaurants').update({ status: 'deleted', suspended_until: null, admin_note: 'Deleted' }).eq('id', r.id).select('id'));
+  }
+  return { anonymized: true, details: note('personal details erased, sales and tax records kept') };
+}
+
+// Deletes a restaurant together with its owner's account (see deleteAccount).
+export async function deleteRestaurant(restaurantId: number) {
+  const r = must(await db().from('restaurants').select('owner_id').eq('id', restaurantId).neq('status', 'deleted').maybeSingle());
+  return deleteAccount(r.owner_id);
 }
