@@ -42,6 +42,8 @@ Bite Wise is a marketplace where restaurants in greater Seattle sell food that w
 
 **Demo videos:** short narrated walkthroughs (the customer one includes an animated story of ordering, driving over and picking up; a friendly voice-over and upbeat background music, with optional subtitles) for customers and restaurants play on the home page ("See it in action"), behind **How it works** on the deals page and **Watch the tour** on the restaurant dashboard. They live in `public/videos/`; see `scripts/demo-video/README.md` to change the narration or re-record them.
 
+**Counter kiosk:** every approved restaurant gets a private kiosk link for its counter tablet (see "Restaurant onboarding and the counter kiosk").
+
 **Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals and suspensions, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), settings (service fee, default tax, approval) and an audit log of every admin action.
 
 ## Money flow
@@ -201,6 +203,25 @@ Keep **Authentication → URL Configuration → Site URL** set to your site's ad
 **Free Supabase projects** can only change the email design after connecting their own email provider (below); until then `npm run email:template` says so.
 
 **Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Bite Wise <hello@your-domain>`. The template stays the same.
+
+## Restaurant onboarding and the counter kiosk
+
+A restaurant that signs up gets three emails:
+
+1. **Confirm your email** (Supabase Auth, the branded template above).
+2. **Application pending**, as soon as the email is confirmed, while it waits for approval in the owner console.
+3. **Welcome**, when an admin approves it: its **electronically signed Restaurant Partner Agreement** as a PDF (the full text plus a signature record: who accepted, when, IP address, device, document version and SHA-256 fingerprint, and Bite Wise's acceptance on approval), and its **kiosk link** with buttons for Android tablets and iPads.
+
+Emails 2 and 3 are sent by the app through the SMTP account in `.env.local` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`; the same Gmail app password as Supabase works). Each is sent once (`restaurant_onboarding`); without SMTP they are only logged, and go out on the next event once SMTP is set. If approval is turned off in Settings, restaurants get the welcome email right after confirming.
+
+**The kiosk** (`/kiosk/<secret>`) is a full-screen page for the restaurant's counter tablet: orders awaiting pickup (polled every 5 seconds, with the bell for new ones) and a large PIN pad to hand them over. There is no login; the long random link is the kiosk's key and only works for that restaurant's orders, with the same wrong-PIN lock as the dashboard. Each kiosk has its own web app manifest, so it can be added to the tablet's home screen and opens full-screen:
+
+- **Android (Chrome):** the kiosk's **Add to home screen** button opens Chrome's install prompt (one tap to confirm).
+- **iPad / iPhone (Safari):** Apple doesn't let websites add home-screen icons themselves, so the kiosk shows the steps (Share → Add to Home Screen → Add).
+
+No website or email can put an icon on a home screen without the person confirming it. The welcome email's buttons open the kiosk with the right guide for each device.
+
+Restaurants find their link, a QR code to open it on the tablet, and a **Get a new link** button (the old link stops working at once) in the dashboard's **Kiosk** tab, along with **Download signed agreement (PDF)**.
 
 ## Legal documents
 

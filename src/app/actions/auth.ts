@@ -7,6 +7,7 @@ import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
 import { homeFor } from '@/lib/constants';
 import { action, AppError, fromDb } from '@/lib/errors';
+import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
 import { parse, signupSchema } from '@/lib/validate';
@@ -75,6 +76,11 @@ export async function signUp(input: unknown) {
     if (error) {
       if (/already registered|already exists/i.test(error.message)) throw new AppError(409, 'An account with this email already exists.');
       throw new AppError(400, error.message.includes('Database error') ? 'We could not create your account. Please check your details.' : error.message);
+    }
+    // With email confirmation off, the email counts as confirmed at once: send the restaurant's onboarding email now.
+    if (res.session && data.role === 'restaurant' && res.user) {
+      const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', res.user.id).maybeSingle();
+      if (r) await sendOnboardingEmails(r.id);
     }
     // With email confirmation on (recommended in production) there is no session until the link is clicked.
     return { needsConfirmation: !res.session, next: homeFor(data.role) };

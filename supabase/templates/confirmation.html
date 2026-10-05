@@ -13,9 +13,9 @@
   before the site is online. See "Branded emails" in README.md.
 -->
 </head>
-<body style="margin:0;padding:0;background:#FFF7ED;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#FFF7ED;">One tap to confirm your email and start rescuing good food.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF7ED;">
+<body style="margin:0;padding:0;background:#F1F5F9;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F1F5F9;">One tap to confirm your email and start rescuing good food.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F5F9;">
   <tr>
     <td align="center" style="padding:32px 12px;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
@@ -25,22 +25,22 @@
           <td align="center" style="padding:0 0 22px;">
             <a href="{{ .SiteURL }}" style="text-decoration:none;">
               <img src="{{ .SiteURL }}/assets/email-logo.png" width="280" height="69" alt="Bite Wise"
-                style="display:block;width:280px;height:auto;border:0;font:800 26px Arial,Helvetica,sans-serif;color:#EA580C;">
+                style="display:block;width:280px;height:auto;border:0;font:800 26px Arial,Helvetica,sans-serif;color:#14284B;">
             </a>
           </td>
         </tr>
 
         <!-- Card -->
         <tr>
-          <td style="background:#FFFFFF;border-radius:24px;overflow:hidden;box-shadow:0 8px 30px rgba(194,65,12,0.10);">
+          <td style="background:#FFFFFF;border-radius:24px;overflow:hidden;box-shadow:0 8px 30px rgba(20,40,75,0.10);">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td bgcolor="#F97316" style="background:#F97316;background-image:linear-gradient(135deg,#FDBA74 0%,#F97316 50%,#C2410C 100%);border-radius:24px 24px 0 0;padding:36px 32px 32px;text-align:center;">
+                <td bgcolor="#14284B" style="background:#14284B;background-image:linear-gradient(135deg,#1F3A66 0%,#14284B 60%,#0B1730 100%);border-radius:24px 24px 0 0;padding:36px 32px 32px;text-align:center;">
                   <div style="font-size:48px;line-height:1;">🍃</div>
                   <h1 style="margin:14px 0 0;font:800 28px/1.2 Arial,Helvetica,sans-serif;color:#FFFFFF;letter-spacing:-0.3px;">
                     Welcome{{ if .Data.username }}, {{ .Data.username }}{{ end }}!
                   </h1>
-                  <p style="margin:10px 0 0;font:600 16px/1.5 Arial,Helvetica,sans-serif;color:#FFF7ED;">
+                  <p style="margin:10px 0 0;font:600 16px/1.5 Arial,Helvetica,sans-serif;color:#BBF7D0;">
                     {{ if eq .Data.role "restaurant" }}Turn surplus food into revenue, in under a minute.{{ else }}Great restaurant food at up to 70% off.{{ end }}
                   </p>
                 </td>
@@ -49,7 +49,7 @@
                 <td style="padding:32px 36px 8px;font:16px/1.6 Arial,Helvetica,sans-serif;color:#1C1917;">
                   <p style="margin:0 0 14px;">
                     {{ if eq .Data.role "restaurant" }}Thanks for signing up{{ if .Data.restaurant }} <b>{{ .Data.restaurant.name }}</b>{{ end }} with Bite Wise.
-                    Confirm your email to open your restaurant dashboard and post your first offer.{{ else }}Thanks for joining Bite Wise. Confirm your email and you're ready to grab
+                    Confirm your email and we will review your application. Once you are approved, we will email you your welcome pack with your signed agreement and your own counter kiosk.{{ else }}Thanks for joining Bite Wise. Confirm your email and you're ready to grab
                     wrong orders, end-of-day extras and more from restaurants near you.{{ end }}
                   </p>
                 </td>
@@ -60,7 +60,7 @@
                 <td align="center" style="padding:10px 36px 8px;">
                   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                      <td align="center" bgcolor="#EA580C" style="border-radius:999px;background:#EA580C;">
+                      <td align="center" bgcolor="#4E9F3D" style="border-radius:999px;background:#4E9F3D;">
                         <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
                           style="display:inline-block;padding:16px 38px;font:800 17px Arial,Helvetica,sans-serif;color:#FFFFFF;text-decoration:none;border-radius:999px;">
                           Confirm my email
@@ -75,7 +75,7 @@
               <!-- How it works -->
               <tr>
                 <td style="padding:26px 28px 6px;">
-                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFF7ED;border-radius:18px;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F5F9;border-radius:18px;">
                     <tr>
                       {{ if eq .Data.role "restaurant" }}
                       <td width="33%" align="center" valign="top" style="padding:18px 8px;font:13px/1.4 Arial,Helvetica,sans-serif;color:#44403C;">
@@ -106,7 +106,7 @@
               <tr>
                 <td style="padding:22px 36px 30px;font:13px/1.6 Arial,Helvetica,sans-serif;color:#78716C;">
                   Button not working? Copy this link into your browser:<br>
-                  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="color:#EA580C;word-break:break-all;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email</a>
+                  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email" style="color:#2563EB;word-break:break-all;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email</a>
                 </td>
               </tr>
             </table>

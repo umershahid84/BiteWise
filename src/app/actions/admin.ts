@@ -6,6 +6,7 @@ import { requireActor } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
 import { money } from '@/lib/format';
 import * as orders from '@/lib/orders';
+import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { dollars, int, parse } from '@/lib/validate';
@@ -20,6 +21,7 @@ export async function setRestaurantStatus(input: unknown) {
     const d = parse(z.object({ id: z.number().int(), status: z.enum(['approved', 'suspended', 'pending']), note: note('Note').default('') }), input);
     const r = must(await db().from('restaurants').update({ status: d.status, admin_note: d.note }).eq('id', d.id).select('id, name').maybeSingle());
     await log(me.id, `restaurant.${d.status}`, 'restaurant', r.id, `${r.name}${d.note ? `: ${d.note}` : ''}`);
+    if (d.status === 'approved') await sendOnboardingEmails(r.id); // welcome email: signed agreement + kiosk link
     return null;
   });
 }
@@ -72,7 +74,10 @@ export async function deleteUser(input: unknown) {
     must(await db().from('orders').update({ customer_username: 'Deleted user' }).eq('user_id', d.id).select('id'));
     if (u.role === 'restaurant') {
       const r = must(await db().from('restaurants').update({ status: 'suspended', admin_note: 'Owner account deleted' }).eq('owner_id', d.id).select('id'));
-      for (const { id } of r) must(await db().from('offers').update({ status: 'ended' }).eq('restaurant_id', id).neq('status', 'ended').select('id'));
+      for (const { id } of r) {
+        must(await db().from('offers').update({ status: 'ended' }).eq('restaurant_id', id).neq('status', 'ended').select('id'));
+        must(await db().from('restaurant_kiosks').delete().eq('restaurant_id', id).select('restaurant_id')); // the kiosk link stops working
+      }
     }
     await log(me.id, 'user.delete', 'user', d.id, `${u.username} (${u.role}): personal details erased, order history kept`);
     return { anonymized: true };

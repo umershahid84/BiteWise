@@ -10,10 +10,10 @@ const nextConfig: NextConfig = {
   // scripts/server/update.sh builds into a separate folder while the live site keeps running from .next.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   // pdfkit reads its font metrics from disk, so it must not be bundled.
-  serverExternalPackages: ['pdfkit'],
-  // Fonts for PDF receipts and reports are read at runtime.
+  serverExternalPackages: ['pdfkit', 'nodemailer'],
+  // Fonts and logos for PDFs (receipts, reports, agreements) and emails are read at runtime.
   outputFileTracingIncludes: {
-    '/api/**/*': ['./assets/pdf-fonts/**/*', './public/assets/logo.png'],
+    '/**/*': ['./assets/pdf-fonts/**/*', './public/assets/logo.png', './public/assets/email-logo.png'],
   },
   images: {
     remotePatterns: [new URL(`${supabaseUrl}/storage/v1/object/public/**`)],

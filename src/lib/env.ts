@@ -28,6 +28,15 @@ export const serverEnv = {
     email: process.env.SUPPORT_EMAIL || 'support@bitewise.app',
     address: process.env.LEGAL_ADDRESS || 'Seattle, Washington',
   },
+  // Emails the app sends itself (restaurant application pending, welcome with the signed agreement). Use the same
+  // SMTP account as Supabase Auth (e.g. Gmail with an app password). Without SMTP_HOST, emails are only logged.
+  smtp: {
+    host: process.env.SMTP_HOST ?? '',
+    port: int(process.env.SMTP_PORT, 587),
+    user: process.env.SMTP_USER ?? '',
+    password: process.env.SMTP_PASSWORD ?? '',
+    from: process.env.EMAIL_FROM || (process.env.SMTP_USER ? `Bite Wise <${process.env.SMTP_USER}>` : 'Bite Wise <no-reply@bitewise.app>'),
+  },
   // Orders not picked up are released (never charged) this long after the discard timer ends.
   pickupGraceMinutes: int(process.env.PICKUP_GRACE_MINUTES, 10),
 };

@@ -1,9 +1,11 @@
 'use server';
 
 import { randomBytes } from 'node:crypto';
+import QRCode from 'qrcode';
 import { z } from 'zod';
 import { requireRestaurant } from '@/lib/auth';
 import { publicEnv } from '@/lib/env';
+import { ensureKioskToken, kioskUrls, rotateKioskToken } from '@/lib/kiosk';
 import { action, AppError, check, maybe, must } from '@/lib/errors';
 import { payments } from '@/lib/payments';
 import * as orders from '@/lib/orders';
@@ -146,5 +148,31 @@ export async function stripeDashboardLink() {
     const url = await payments().dashboardLink(acct.stripe_account_id);
     if (!url) throw new AppError(409, payments().mode === 'mock' ? 'The Stripe dashboard is not available in test mode.' : 'Finish Stripe onboarding to open your dashboard.');
     return { url };
+  });
+}
+
+// ---------------------------------------------------------------- kiosk
+
+async function kioskInfo(restaurantId: number, token: string) {
+  const urls = kioskUrls(token);
+  const qr = await QRCode.toString(urls.kioskUrl, { type: 'svg', margin: 1, color: { dark: '#14284B', light: '#FFFFFF' } });
+  return { ...urls, qr };
+}
+
+// The restaurant's kiosk link (created on first use), with a QR code to open it on the tablet.
+export async function getKiosk() {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    if (restaurant.status !== 'approved') return null;
+    return kioskInfo(restaurant.id, await ensureKioskToken(restaurant.id));
+  });
+}
+
+// A new kiosk link: the old one stops working at once.
+export async function newKioskLink() {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    if (restaurant.status !== 'approved') throw new AppError(409, 'Your kiosk is available once your restaurant is approved.');
+    return kioskInfo(restaurant.id, await rotateKioskToken(restaurant.id));
   });
 }

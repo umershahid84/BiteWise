@@ -311,6 +311,56 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"restaurant_kiosks": {
+                  Row: {
+                    "created_at": string,"restaurant_id": number,"token": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"restaurant_id": number,"token": string
+                  }
+                  Update: {
+                    "created_at"?: string,"restaurant_id"?: number,"token"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "restaurant_kiosks_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: true
+      referencedRelation: "restaurant_balances"
+      referencedColumns: ["restaurant_id"]
+    },{
+      foreignKeyName: "restaurant_kiosks_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: true
+      referencedRelation: "restaurants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"restaurant_onboarding": {
+                  Row: {
+                    "pending_email_sent_at": string | null,"restaurant_id": number,"welcome_email_sent_at": string | null
+                  }
+                  Insert: {
+                    "pending_email_sent_at"?: string | null,"restaurant_id": number,"welcome_email_sent_at"?: string | null
+                  }
+                  Update: {
+                    "pending_email_sent_at"?: string | null,"restaurant_id"?: number,"welcome_email_sent_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "restaurant_onboarding_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: true
+      referencedRelation: "restaurant_balances"
+      referencedColumns: ["restaurant_id"]
+    },{
+      foreignKeyName: "restaurant_onboarding_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: true
+      referencedRelation: "restaurants"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"restaurant_payment_accounts": {
                   Row: {
                     "bank_summary": string,"charges_enabled": boolean,"details_submitted": boolean,"payouts_enabled": boolean,"restaurant_id": number,"stripe_account_id": string | null,"updated_at": string
@@ -499,11 +549,17 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"begin_pickup_for":
+{ Args: { "p_order_id": number,"p_pin": string,"p_restaurant_id": number }; Returns: Json
+                           },
 "clear_void":
 { Args: { "p_order_id": number }; Returns: undefined
                            },
 "credit_balance":
 { Args: { "p_user": string }; Returns: number
+                           },
+"find_pickup_for":
+{ Args: { "p_pin": string,"p_restaurant_id": number }; Returns: Json
                            },
 "finish_pickup":
 { Args: { "p_order_id": number }; Returns: {
