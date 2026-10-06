@@ -8,5 +8,6 @@ export function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: nu
   return 3958.8 * 2 * Math.asin(Math.sqrt(a));
 }
 
-// Puget Sound, for the default map view.
-export const REGION_CENTER: [number, number] = [47.45, -122.3];
+// The map's starting view before there is a location or any deals to show: the United States and Canada.
+export const REGION_CENTER: [number, number] = [45, -98];
+export const REGION_ZOOM = 3;

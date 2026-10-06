@@ -159,7 +159,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
 
       <form className="mb-3 grid gap-3 rounded-card border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.2fr_repeat(3,minmax(10.5rem,1fr))_auto]" onSubmit={(e) => e.preventDefault()}>
         <Input placeholder="Search dishes, restaurants, cuisines…" aria-label="Search" value={filters.q} onChange={set('q')} />
-        <Input placeholder="City or ZIP (e.g. Tacoma, 98198)" aria-label="City or ZIP" list="area-list" value={filters.area} onChange={set('area')} />
+        <Input placeholder="City or ZIP code" aria-label="City or ZIP" list="area-list" value={filters.area} onChange={set('area')} />
         <datalist id="area-list">
           {cities.map(([c, county]) => <option key={c} value={c}>{county} County</option>)}
           {(areas.data ?? []).map((z) => <option key={z.zip} value={z.zip}>{z.city}</option>)}

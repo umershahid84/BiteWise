@@ -29,7 +29,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
         <header className="pos-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="pos-logo" src="/assets/logo.svg" alt="Bite Wise" />
-          <div className="pos-tag">Rescued food · Greater Seattle</div>
+          <div className="pos-tag">Rescued food · Eat well, waste less</div>
           <div className="pos-store">{rest.name}</div>
           <div>{rest.address}<br />{rest.city}, WA {rest.zip}{rest.phone && <><br />Tel {displayPhone(rest.phone)}</>}</div>
         </header>

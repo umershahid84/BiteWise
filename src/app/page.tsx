@@ -25,7 +25,7 @@ export default function LandingPage() {
         <div className="container-page relative grid items-center gap-12 md:grid-cols-[1.15fr_.85fr]">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1.5 text-[0.8rem] font-bold text-primary-ink">
-              🌱 Now serving greater Seattle
+              🌱 Launching across the United States &amp; Canada
             </span>
             <h1 className="my-[18px] text-[clamp(2.4rem,5.6vw,4.1rem)] leading-[1.05] font-extrabold tracking-[-0.035em]">
               Rescue great food.
@@ -57,7 +57,7 @@ export default function LandingPage() {
               </div>
               <div className="p-5">
                 <h3 className="m-0 text-lg font-bold">Large Beef Pho</h3>
-                <div className="text-sm text-muted">Harbor Pho House · Seattle</div>
+                <div className="text-sm text-muted">Harbor Pho House · 0.4 mi away</div>
                 <div className="mt-2 flex gap-4 text-sm text-ink-2"><span>🕒 Today 5:00 – 8:00 PM</span><span>📍 0.4 mi</span></div>
                 <div className="mt-3 flex gap-2">
                   <span className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-bold text-accent-ink">Wrong order</span>

@@ -34,7 +34,7 @@ function layout(o: { preview: string; emoji: string; title: string; subtitle: st
       </table>
     </td></tr>
     <tr><td align="center" style="padding:22px 20px 0;font:12px/1.6 ${FONT};color:#94A3B8;">
-      <b style="color:#64748B;">Bite Wise</b> · Eat well, waste less · Greater Seattle, WA<br>
+      <b style="color:#64748B;">Bite Wise</b> · Eat well, waste less · United States &amp; Canada<br>
       Questions? <a href="mailto:${esc(serverEnv.legal.email)}" style="color:#94A3B8;">${esc(serverEnv.legal.email)}</a>
     </td></tr>
   </table>

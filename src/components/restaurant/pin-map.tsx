@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { MapConfig } from '@/components/offers/types';
-import { REGION_CENTER } from '@/lib/geo';
+import { REGION_CENTER, REGION_ZOOM } from '@/lib/geo';
 
 // Leaflet's default marker images don't survive bundling; use a styled pin instead.
 const pinIcon = L.divIcon({ className: '', html: '<div class="map-pin"><span>📍</span><b>Here</b></div>', iconSize: [70, 30], iconAnchor: [35, 34] });
@@ -22,7 +22,7 @@ export default function PinMap({ lat, lng, config, onChange }: { lat: number | n
   useEffect(() => {
     if (!el.current || map.current) return;
     const start: L.LatLngTuple = lat != null && lng != null ? [lat, lng] : REGION_CENTER;
-    const m = L.map(el.current, { scrollWheelZoom: false }).setView(start, lat != null ? 15 : 9);
+    const m = L.map(el.current, { scrollWheelZoom: false }).setView(start, lat != null ? 15 : REGION_ZOOM);
     L.tileLayer(config.tileUrl, { attribution: config.attribution, maxZoom: 19 }).addTo(m);
     const mk = L.marker(start, { draggable: true, title: 'Drag to your location', icon: pinIcon }).addTo(m);
     mk.on('dragend', () => {

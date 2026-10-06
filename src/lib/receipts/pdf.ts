@@ -95,7 +95,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   const logoW = 140;
   doc.image(LOGO, L + (W - logoW) / 2, y, { width: logoW });
   y += logoW * LOGO_RATIO + 4;
-  center('RESCUED FOOD · GREATER SEATTLE', 'mono', 6.2, { spacing: 0.4, after: 7 });
+  center('RESCUED FOOD · EAT WELL, WASTE LESS', 'mono', 6.2, { spacing: 0.4, after: 7 });
   center(rc.restaurant.name.toUpperCase(), 'monoBold', 9.5, { after: 1 });
   center(`${rc.restaurant.address}\n${rc.restaurant.city}, WA ${rc.restaurant.zip}${rc.restaurant.phone ? `\nTel ${displayPhone(rc.restaurant.phone)}` : ''}`, 'mono', 7.2, { after: 2 });
   dashes();

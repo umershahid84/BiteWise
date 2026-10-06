@@ -96,7 +96,7 @@ function narrator(tour) {
 
 // End screen: fades in over the last page, pops in the Bite Wise logo piece by piece and says goodbye.
 const OUTRO = {
-  customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join · Greater Seattle' },
+  customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join · United States & Canada' },
   restaurant: { headline: 'Happy selling!', line: 'Less waste. More revenue.', pill: 'Free to join · Paid through Stripe' },
 };
 

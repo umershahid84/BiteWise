@@ -65,7 +65,7 @@
     "typescript": "^5",
     "vitest": "^5.0.2"
   },
-  "description": "Bite Wise: rescue surplus restaurant food around greater Seattle.",
+  "description": "Bite Wise: rescue surplus restaurant food across the United States and Canada.",
   "engines": {
     "node": ">=20.9"
   }

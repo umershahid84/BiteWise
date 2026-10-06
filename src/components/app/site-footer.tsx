@@ -13,7 +13,7 @@ export function SiteFooter() {
           <Link href="/legal/restaurant-agreement" className="text-muted hover:text-ink">Restaurant Partner Agreement</Link>
           <Link href="/legal/privacy" className="text-muted hover:text-ink">Privacy Policy</Link>
         </nav>
-        <span>© Bite Wise · Greater Seattle, WA</span>
+        <span>© Bite Wise · United States &amp; Canada</span>
       </div>
     </footer>
   );

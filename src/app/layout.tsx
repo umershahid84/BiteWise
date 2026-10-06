@@ -38,7 +38,7 @@ const plexMono = localFont({
 
 export const metadata: Metadata = {
   title: { default: 'Bite Wise: Rescue good food, save money', template: '%s · Bite Wise' },
-  description: 'Bite Wise: rescue good restaurant food at a discount around greater Seattle.',
+  description: 'Bite Wise: rescue good restaurant food at a discount near you, across the United States and Canada.',
 };
 
 export const viewport: Viewport = { themeColor: '#07110d' };

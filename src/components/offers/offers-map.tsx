@@ -5,7 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cuisineEmoji } from '@/lib/constants';
 import { money, timeLeft } from '@/lib/format';
-import { REGION_CENTER } from '@/lib/geo';
+import { REGION_CENTER, REGION_ZOOM } from '@/lib/geo';
 import type { MapConfig, OfferRow, Origin } from './types';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
@@ -30,7 +30,7 @@ export default function OffersMap({ offers, origin, config, fitKey, onOpen }: {
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    const m = L.map(el.current, { zoomControl: true, scrollWheelZoom: true, minZoom: 7, maxZoom: 18 }).setView(REGION_CENTER, 9);
+    const m = L.map(el.current, { zoomControl: true, scrollWheelZoom: true, minZoom: 3, maxZoom: 18 }).setView(REGION_CENTER, REGION_ZOOM);
     L.tileLayer(config.tileUrl, { attribution: config.attribution, maxZoom: 19 }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     m.on('popupopen', (e) => {
