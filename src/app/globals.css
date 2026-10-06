@@ -57,6 +57,12 @@
   margin-inline: auto;
 }
 
+/* Wider pages full of tables (the owner console). */
+@utility container-wide {
+  width: min(1480px, 100% - 32px);
+  margin-inline: auto;
+}
+
 @utility grad-text {
   background: linear-gradient(135deg, #34d399 0%, #059669 55%, #047857 100%);
   -webkit-background-clip: text;

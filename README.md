@@ -147,6 +147,8 @@ Create your real owner account (admins can't sign up on the website):
 npm run create-admin -- --email you@yourcompany.com --username owner
 ```
 
+**Test accounts:** the integration tests create throwaway accounts (`t_xxxxxxxx@example.com`, restaurants called "Test Kitchen t_xxxxxxxx") in the local database and remove them when they finish. If any ended up in a database (for example from running the tests against a hosted project before they refused to), `npm run remove-test-data` lists them and `npm run remove-test-data -- --yes` deletes them with their orders, offers and payouts. Demo (`@bitewise.test`) and real accounts are never touched.
+
 Other commands: `npm run lint`, `npm run typecheck`, `npm test` (unit + integration; integration tests need `db:start`, and the Stripe checks need `docker run -d -p 12111:12111 stripe/stripe-mock`), `npm run db:reset` (fresh database), `npm run db:types` (regenerate `src/lib/database.types.ts` after changing migrations), `npm run build`.
 
 ## Keep it running on your own server (systemd)

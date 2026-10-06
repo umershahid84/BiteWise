@@ -34,7 +34,7 @@ export function AdminConsole({ adminId }: { adminId: string }) {
     history.replaceState(null, '', `#${t}`);
   };
   return (
-    <main className="container-page py-8">
+    <main className="container-wide py-8">
       <h1 className="text-3xl font-extrabold">Owner console</h1>
       <p className="-mt-1 mb-5 text-muted">Everything about Bite Wise in one place: revenue, restaurants, customers, orders, refunds, payouts and taxes.</p>
       <Tabs value={tab} onValueChange={go}>

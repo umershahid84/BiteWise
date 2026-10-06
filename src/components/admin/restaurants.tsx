@@ -28,7 +28,7 @@ function PlanBadge({ plan }: { plan: Plan | null }) {
   if (plan.plan === 'founding') return <Badge tone="green">🌱 Founding #{plan.foundingNumber ?? '–'}</Badge>;
   const name = plan.plan === 'annual' ? 'Annual' : 'Monthly';
   if (plan.status === 'expired') return <Badge tone="red">{name}: lapsed</Badge>;
-  if (plan.status === 'past_due') return <Badge tone="amber">{name}: payment failed</Badge>;
+  if (plan.status === 'past_due') return <Badge tone="red">{name}: delinquent</Badge>;
   return (
     <span>
       <Badge tone="green">{name}</Badge>
@@ -63,21 +63,22 @@ export function RestaurantsPanel() {
       <Card className="p-2">
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
           <Table>
-            <thead><tr><th>Restaurant</th><th>Owner</th><th>Activity</th><th>Plan</th><th>Payouts</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Restaurant</th><th>Owner</th><th>Activity</th><th>Plan</th><th>Status</th><th /></tr></thead>
             <tbody>
               {(data ?? []).map((r) => (
                 <tr key={r.id} className={r.status === 'banned' || r.status === 'deleted' ? 'opacity-70' : undefined}>
                   <td><b>{r.name}</b><div className="text-xs text-muted">{r.cuisine} · {r.address}, {r.city} {r.zip} · tax {pct(r.taxRateBps)}</div>{r.adminNote && <div className="text-xs text-accent-ink">Note: {r.adminNote}</div>}</td>
-                  <td className="text-sm">{r.ownerUsername}<div className="text-xs text-muted">{r.ownerEmail} · joined {day(r.createdAt)}</div></td>
+                  <td className="text-sm">{r.ownerUsername}<div className="text-xs break-all text-muted">{r.ownerEmail}</div><div className="text-xs text-muted">joined {day(r.createdAt)}</div></td>
                   <td className="text-sm">{r.activeOffers} live offers<div className="text-xs text-muted">{r.orders} orders · {money(r.foodCents)}</div></td>
                   <td><PlanBadge plan={r.plan} /></td>
-                  <td>{r.stripeReady ? <Badge tone="green">Stripe ready</Badge> : <Badge tone="amber">Not connected</Badge>}</td>
                   <td>
                     <StatusBadge status={r.status} label={r.status === 'pending' ? 'Pending approval' : undefined} />
+                    <div className="mt-1">{r.stripeReady ? <Badge tone="green">Stripe ready</Badge> : <Badge tone="neutral">Stripe not connected</Badge>}</div>
                     {r.status === 'suspended' && <div className="mt-1 text-xs text-muted">{r.suspendedUntil ? `until ${day(r.suspendedUntil)}` : 'until reinstated'}</div>}
                   </td>
-                  <td className="whitespace-nowrap">
-                    <div className="flex gap-1.5">
+                  <td className="w-[210px] min-w-[210px]">
+                    {/* Two buttons per row at most, so every action stays visible without scrolling sideways. */}
+                    <div className="grid grid-cols-2 gap-1.5 [&>*]:w-full">
                       {r.status !== 'approved' && r.status !== 'deleted' && <Button size="sm" variant="green" onClick={() => approve(r)}>{r.status === 'pending' ? 'Approve' : r.status === 'banned' ? 'Lift ban' : 'Reinstate'}</Button>}
                       {(r.status === 'approved' || r.status === 'pending') && <Button size="sm" variant="danger" onClick={() => setSuspendFor(r)}>Suspend</Button>}
                       {r.status !== 'banned' && r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(r)}>Ban</Button>}

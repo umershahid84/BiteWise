@@ -10,7 +10,7 @@ export function TabsList({ className, ...props }: React.ComponentProps<typeof T.
   return (
     <T.List
       // One scrolling row on phones; on wider screens the tabs wrap onto a second row instead of being cut off.
-      className={cn('no-print mb-6 flex gap-0.5 overflow-x-auto rounded-[1.75rem] border border-line bg-surface p-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible', className)}
+      className={cn('no-print mb-6 flex gap-0.5 overflow-x-auto rounded-[1.75rem] border border-line bg-surface p-1 [scrollbar-width:none] md:flex-wrap md:justify-center md:overflow-visible', className)}
       {...props}
     />
   );

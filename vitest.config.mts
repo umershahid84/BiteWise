@@ -13,6 +13,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/support/env.ts'],
+    globalSetup: ['tests/support/cleanup.ts'],
     testTimeout: 30_000,
     hookTimeout: 60_000,
     fileParallelism: false,

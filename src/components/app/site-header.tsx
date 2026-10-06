@@ -31,6 +31,7 @@ function NavLink({ href, children, onClick, exact }: { href: string; children: R
 
 export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   const [open, setOpen] = useState(false);
+  const wide = usePathname().startsWith('/admin'); // the owner console uses a wider page
   const close = () => setOpen(false);
   let links: React.ReactNode;
   if (!viewer) {
@@ -79,7 +80,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   }
   return (
     <header className="no-print sticky top-0 z-[500] border-b border-line/70 bg-bg/75 backdrop-blur-md backdrop-saturate-150">
-      <div className="container-page flex h-[72px] items-center gap-4">
+      <div className={cn(wide ? 'container-wide' : 'container-page', 'flex h-[72px] items-center gap-4')}>
         <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="Bite Wise home" className="shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/logo-dark-compact.svg" alt="Bite Wise" className="block h-[46px] md:h-[54px]" />
