@@ -48,7 +48,7 @@ Bite Wise is a marketplace where restaurants in greater Seattle sell food that w
 
 **Real emails only:** sign-up refuses disposable inboxes (Mailinator, 10-Minute Mail, Guerrilla Mail, ...), reserved test domains and domains that don't exist or take no email (checked with a DNS lookup of the domain's mail servers).
 
-**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), restaurant plans (subscription fees, Pioneer spots, delinquent plans), settings (service fee, default tax, approval) and an audit log of every admin action.
+**Owner console (`/admin`)**: overview with revenue and a daily chart, **income** (Bite Wise's own earnings today, this month and this year, and for any date range by day, month or year, with a chart, income by restaurant and CSV), **alerts** (customers the platform suspended or banned for missed pickups), restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation (an offer with nothing left shows **Sold out**), payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax on orders and plan fees by location (CSV for the WA excise tax return), restaurant plans (subscription fees, Pioneer spots, delinquent plans), settings (service fee, default tax, approval) and an audit log of every admin action.
 
 ## Money flow
 
@@ -238,8 +238,10 @@ An approved restaurant needs a plan to post offers. It chooses one in the dashbo
 | Plan | Price | Notes |
 |---|---|---|
 | **Pioneer Member** | free | The first 50 restaurants to choose a plan (setting `founding_spots`), monthly or annual, even before approval. No card is asked for; a congratulations message confirms the plan is FREE. Every month or year they get an invoice (`/restaurant/invoices/[id]`, also emailed) listing the plan price, minus the **Pioneer Members Discount**, for a total of **$0.00**. They can switch between monthly and annual and stay free. |
-| **Monthly** | $15 / month | Paid in advance. |
-| **Annual** | $150 / year | Paid in advance; $30 less than 12 months. |
+| **Monthly** | $15 / month + sales tax | Paid in advance. |
+| **Annual** | $150 / year + sales tax | Paid in advance; $30 less than 12 months. |
+
+**Sales tax on plans:** Washington sales tax is added to every plan payment at the restaurant's own rate (its `tax_rate_bps`, the same rate as its food sales; 10.35% in Seattle), so $15.00 is charged as $16.55. Checkout, invoices (web, PDF and email), renewal reminders and the billing history show the tax separately. Pioneer Members' $0.00 invoices have no tax. The **Sales tax** tab lists it next to the tax on food orders.
 
 **Changing the fees:** owner console → **Plans** tab → *Change subscription fees*. Enter the new monthly and annual fees and the date they take effect (at **12:01 AM Pacific Time**), and choose who pays them:
 - **Keep existing restaurants at their current fees:** restaurants with a plan keep paying what they pay now (their price is locked when the change takes effect); only plans started from that date pay the new fees.
@@ -269,6 +271,12 @@ Restaurants that were Founding Partners become free monthly Pioneer Members. Pai
 |---|---|---|
 | **Suspend** (5, 10, 15, 20 or 30 days) | can't log in; lifted automatically | offers hidden, can't post; staff can still hand over orders already placed; lifted automatically |
 | **Ban** (permanent) | can't log in, open orders cancelled (not charged), email can't sign up again | removed from the site: offers end, open orders cancelled, kiosk link stops working, owner banned too |
+
+**Missed pickups (automatic):** an order that isn't picked up or cancelled before its discard timer ends is a missed pickup (the food is wasted). The platform counts each customer's missed pickups in a row (a pickup resets the count; cancelled orders never count) and acts by itself:
+- **3 in a row:** the account is **suspended for 30 days** (login blocked, open orders cancelled) and **reactivated automatically** when the 30 days are over.
+- **After that suspension, the first missed pickup bans the account permanently.**
+- The customer is emailed after every missed pickup (how many in a row, what happens next) and when suspended or banned. **Every admin is emailed** for each suspension and ban, and it shows in the owner console's **Alerts** tab (with a red count on the tab). The Customers tab shows missed pickups in a row and "final warning" for accounts that were suspended before.
+- Reactivating a customer or lifting a ban in the Customers tab clears their missed-pickup record (a fresh start). The limits are the settings `no_show_limit` (3) and `no_show_suspension_days` (30). The rules are in the Customer Terms, section 5.4.
 
 **Delete** (Customers and Restaurants tabs) closes an account for good: open orders are cancelled first, and a restaurant is taken off the site with its owner's account. Accounts and restaurants with no history are removed completely; ones with sales, payouts or plan payments keep those records for tax reporting, with the person's name, email and cards erased (deleted restaurants show under the **Deleted** status filter).
 

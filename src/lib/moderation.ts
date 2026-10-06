@@ -14,7 +14,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 //     too (and the other way round). An admin can lift a ban made by mistake.
 
 const db = () => supabaseAdmin();
-const BAN = '876000h'; // Supabase Auth has no "forever": 100 years.
+export const BAN = '876000h'; // Supabase Auth has no "forever": 100 years.
 const until = (days?: number) => (days ? new Date(Date.now() + days * 86_400_000).toISOString() : null);
 
 function checkDays(status: string, days: number | undefined) {
@@ -22,13 +22,13 @@ function checkDays(status: string, days: number | undefined) {
   if (!days || !(SUSPENSION_DAYS as readonly number[]).includes(days)) throw new AppError(400, 'Choose how many days to suspend for.');
 }
 
-async function setLoginBan(userId: string, duration: string) {
+export async function setLoginBan(userId: string, duration: string) {
   const { error } = await db().auth.admin.updateUserById(userId, { ban_duration: duration });
   if (error) throw new AppError(500, error.message);
 }
 
 // Cancels a person's or a restaurant's open orders (no charge; card holds are voided). Returns how many.
-async function cancelOpenOrders(column: 'user_id' | 'restaurant_id', id: string | number) {
+export async function cancelOpenOrders(column: 'user_id' | 'restaurant_id', id: string | number) {
   const open = must(await db().from('orders').select('id, status').eq(column, id).in('status', ['reserved', 'pending_payment']));
   for (const o of open) await orders.release(o.id, o.status, 'cancelled', true);
   return open.length;
@@ -65,7 +65,9 @@ export async function setUserStatus(id: string, d: { status: 'active' | 'suspend
   checkDays(d.status, d.days);
   const before = must(await db().from('profiles').select('username, role, status').eq('id', id).neq('status', 'deleted').maybeSingle());
   if (before.role === 'admin' && d.status === 'banned') throw new AppError(400, 'Admins cannot be banned. Remove their admin role first.');
-  must(await db().from('profiles').update({ status: d.status, suspended_until: d.status === 'suspended' ? until(d.days) : null }).eq('id', id).select('id'));
+  // Lifting a suspension or ban also clears the customer's missed-pickup record (a fresh start).
+  const forgive = d.status === 'active' && (before.status === 'suspended' || before.status === 'banned') ? { no_show_strikes: 0, no_show_probation: false } : {};
+  must(await db().from('profiles').update({ status: d.status, suspended_until: d.status === 'suspended' ? until(d.days) : null, ...forgive }).eq('id', id).select('id'));
   await setLoginBan(id, d.status === 'suspended' ? `${d.days! * 24}h` : d.status === 'banned' ? BAN : 'none');
 
   let details = `${before.username} (${before.role})${d.days ? ` for ${d.days} days` : ''}`;

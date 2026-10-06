@@ -7,7 +7,7 @@ import { StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Spinner, Table } from '@/components/ui/misc';
-import { OFFER_REASONS, type OfferReason } from '@/lib/constants';
+import { OFFER_REASONS, offerStatus, type OfferReason } from '@/lib/constants';
 import { money } from '@/lib/format';
 import { run, useAdmin } from './shared';
 
@@ -38,7 +38,7 @@ export function OffersPanel() {
               <td>{money(o.price_cents)} <span className="text-xs text-muted line-through">{money(o.original_price_cents)}</span></td>
               <td>{o.quantity_available} / {o.quantity_total}</td>
               <td className="text-sm"><Countdown until={o.pickup_end} /></td>
-              <td><StatusBadge status={o.status} /></td>
+              <td><StatusBadge status={offerStatus(o)} /></td>
               <td><Button size="sm" variant="danger" onClick={() => remove(o)}>Remove</Button></td>
             </tr>
           ))}

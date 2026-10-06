@@ -319,6 +319,16 @@ export function planInvoicePdf(inv: PlanInvoice) {
     y += 26;
     rule(doc, L, R, y);
   }
+  if (inv.showTax) {
+    for (const [k, v] of [['Subtotal', money(inv.subtotalCents)], [inv.taxLabel, money(inv.taxCents)]]) {
+      y += 12;
+      doc.font('regular').fontSize(11).fillColor(INK).text(k, L, y, { width: W - 120 });
+      doc.text(v, L, y, { width: W, align: 'right' });
+      y += 14;
+    }
+    y += 12;
+    rule(doc, L, R, y);
+  }
   y += 18;
   doc.font('head').fontSize(13).fillColor(INK).text(inv.free ? 'Total due' : inv.paid ? 'Total paid' : 'Total due', L, y + 4);
   const total = money(inv.totalCents);

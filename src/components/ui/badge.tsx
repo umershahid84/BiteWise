@@ -20,7 +20,7 @@ export function Badge({ className, tone, ...props }: React.ComponentProps<'span'
 
 const STATUS_TONES: Record<string, VariantProps<typeof badge>['tone']> = {
   reserved: 'amber', pending_payment: 'amber', pending: 'amber', paused: 'amber',
-  picked_up: 'green', active: 'green', approved: 'green',
+  picked_up: 'green', active: 'green', approved: 'green', sold_out: 'green',
   cancelled: 'neutral', ended: 'neutral', expired: 'red', failed: 'red', suspended: 'red', banned: 'red', past_due: 'red',
 };
 

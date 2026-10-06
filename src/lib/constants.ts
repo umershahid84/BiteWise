@@ -46,3 +46,8 @@ const CUISINE_HUE: Record<string, number> = {
   cafe: 35, dessert: 300, salad: 100,
 };
 export const cuisineHue = (c?: string | null) => CUISINE_HUE[String(c ?? '').toLowerCase()] ?? 150;
+
+// What to show for an offer: an active offer with nothing left is "Sold out" (it stays active in the database, so a
+// cancelled order can put the food back on sale).
+export const offerStatus = (o: { status: string; quantity_available: number }) =>
+  o.status === 'active' && o.quantity_available <= 0 ? 'sold_out' : o.status;

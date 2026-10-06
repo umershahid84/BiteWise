@@ -277,3 +277,15 @@ export async function chargeDelinquentPlan(input: unknown) {
     }
   });
 }
+
+// Marks missed-pickup alerts as seen (one, or all of them).
+export async function markAlertsRead(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(z.object({ id: z.number().int().optional() }), input);
+    let q = db().from('admin_alerts').update({ read_at: new Date().toISOString(), read_by: me.id }).is('read_at', null);
+    if (d.id) q = q.eq('id', d.id);
+    check(await q);
+    return null;
+  });
+}

@@ -26,7 +26,11 @@ async function paying(plan: 'monthly' | 'annual') {
 }
 const subOf = async (rid: number) => (await admin().from('restaurant_subscriptions').select('*').eq('restaurant_id', rid).single()).data!;
 const endNow = (rid: number) => admin().from('restaurant_subscriptions').update({ current_period_end: new Date(Date.now() - 60_000).toISOString() }).eq('restaurant_id', rid);
-const lastPaid = async (rid: number) => (await admin().from('subscription_payments').select('amount_cents').eq('restaurant_id', rid).eq('status', 'paid').order('id', { ascending: false }).limit(1).single()).data!.amount_cents;
+// The plan fee of the last payment (the amount charged, less sales tax).
+const lastPaid = async (rid: number) => {
+  const x = (await admin().from('subscription_payments').select('amount_cents, tax_cents').eq('restaurant_id', rid).eq('status', 'paid').order('id', { ascending: false }).limit(1).single()).data!;
+  return x.amount_cents - x.tax_cents;
+};
 
 async function resetPrices() {
   const db = admin();
@@ -101,7 +105,7 @@ describe.skipIf(!available)('fee changes', () => {
     sent.length = 0;
     await subs.renewDue();
     const reminder = sent.find((e) => e.to === r.owner.email)!;
-    expect(reminder.subject).toMatch(/renews on .*: \$150\.00 will be charged/);
+    expect(reminder.subject).toMatch(/renews on .*: \$165\.53 will be charged/); // $150.00 + $15.53 WA sales tax (10.35%)
     expect(reminder.text).toContain('VISA •••• 4242');
     expect(reminder.text).toContain(renewsOn.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/Los_Angeles' }));
     sent.length = 0;

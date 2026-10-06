@@ -17,6 +17,8 @@ const RESOURCES: Record<string, (p: URLSearchParams) => Promise<unknown>> = {
   tax: admin.tax,
   settings: async () => ({ settings: await admin.settings(), paymentMode: paymentMode() }),
   audit: () => admin.audit(),
+  alerts: admin.alerts,
+  income: admin.income,
 };
 
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/[resource]'>) {

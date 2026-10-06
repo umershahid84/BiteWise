@@ -52,6 +52,13 @@ export async function prices() {
 }
 export const priceOf = (p: Awaited<ReturnType<typeof prices>>, plan: PaidPlan) => (plan === 'annual' ? p.annualCents : p.monthlyCents);
 
+// Washington sales tax on a plan fee, at the restaurant's location rate (the same rate as its food sales).
+export const salesTax = (cents: number, rateBps: number) => Math.round((cents * rateBps) / 10000);
+const withTax = (cents: number, rateBps: number) => cents + salesTax(cents, rateBps);
+async function taxRate(restaurantId: number) {
+  return must(await db().from('restaurants').select('tax_rate_bps').eq('id', restaurantId).single()).tax_rate_bps;
+}
+
 // One month or one year later. Month ends stay month ends (Jan 31 -> Feb 28), instead of spilling into the next month.
 export function addPeriod(start: Date, plan: PaidPlan) {
   const d = new Date(start);
@@ -81,21 +88,28 @@ export async function cardsOf(userId: string) {
     .order('is_default', { ascending: false }).order('created_at', { ascending: false })) as Card[];
 }
 
+// The plan a paid subscription renews on (null for Pioneer Members, who pay nothing).
+const nextPlan = (sub: Subscription) => (sub.plan !== 'founding' && !isPioneer(sub) ? ((sub.renew_plan ?? sub.plan) as PaidPlan) : null);
+
 // What the restaurant's Plan tab shows.
 export async function planSummary(restaurantId: number) {
   const { owner } = await ownerOf(restaurantId);
-  const [sub, p, history, ok, cards, ctx] = await Promise.all([
+  const [sub, p, history, ok, cards, ctx, rateBps] = await Promise.all([
     getSubscription(restaurantId),
     prices(),
     db().from('subscription_payments').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }).limit(24),
     db().rpc('restaurant_plan_ok', { p_restaurant_id: restaurantId }),
     cardsOf(owner.id),
     priceContext(),
+    taxRate(restaurantId),
   ]);
   const pioneer = isPioneer(sub);
-  const nextPlan = sub && sub.plan !== 'founding' && !pioneer ? ((sub.renew_plan ?? sub.plan) as PaidPlan) : null;
+  const nextPriceCents = sub && nextPlan(sub)
+    ? planPrice(ctx, sub, nextPlan(sub)!, sub.status === 'past_due' ? new Date() : new Date(sub.current_period_end ?? Date.now()))
+    : 0;
   return {
     prices: p,
+    taxRateBps: rateBps,
     canPost: Boolean(ok.data),
     cards: cards.map((c) => ({ id: c.id, brand: c.brand, last4: c.last4, expMonth: c.exp_month, expYear: c.exp_year, isDefault: c.is_default })),
     subscription: sub && {
@@ -104,9 +118,9 @@ export async function planSummary(restaurantId: number) {
       lastPaymentError: sub.last_payment_error,
       // What the next payment will cost: a renewal on its date, or a delinquent plan paid now. Includes a locked
       // (grandfathered) price and a scheduled fee change.
-      nextAmountCents: nextPlan
-        ? planPrice(ctx, sub, nextPlan, sub.status === 'past_due' ? new Date() : new Date(sub.current_period_end ?? Date.now()))
-        : 0,
+      // (Plus sales tax: nextTaxCents.)
+      nextAmountCents: nextPriceCents + salesTax(nextPriceCents, rateBps),
+      nextTaxCents: salesTax(nextPriceCents, rateBps),
       grandfathered: !!(sub.locked_monthly_cents || sub.locked_annual_cents),
       // What a Pioneer Member's plan would cost without the discount.
       listPriceCents: pioneer ? priceOf(p, (sub.renew_plan ?? sub.plan) as PaidPlan) : 0,
@@ -119,7 +133,7 @@ export async function planSummary(restaurantId: number) {
     payments: must(history).map((x) => ({
       id: x.id, plan: x.plan, amountCents: x.amount_cents, status: x.status, invoiceNumber: x.invoice_number, cardLabel: x.card_label,
       periodEnd: x.period_end, error: x.error, createdAt: x.created_at,
-      listPriceCents: x.list_price_cents, discountCents: x.discount_cents, discountLabel: x.discount_label,
+      listPriceCents: x.list_price_cents, discountCents: x.discount_cents, discountLabel: x.discount_label, taxCents: x.tax_cents,
     })),
   };
 }
@@ -171,39 +185,44 @@ async function customerRef(owner: { id: string; email: string; username: string;
 // ---------------------------------------------------------------- charging
 
 // Charges one period of a plan and records the payment (paid or failed).
+// `priceCents` is the plan price; sales tax is added on top, and the total is charged.
 async function chargePeriod(o: {
-  restaurantId: number; name: string; plan: PaidPlan; amountCents: number; customerId: string; card: Card | null; start: Date; key: string;
+  restaurantId: number; name: string; plan: PaidPlan; priceCents: number; customerId: string; card: Card | null; start: Date; key: string;
 }) {
   const end = addPeriod(o.start, o.plan);
+  const rateBps = await taxRate(o.restaurantId);
+  const taxCents = salesTax(o.priceCents, rateBps);
+  const total = o.priceCents + taxCents;
   const record = async (row: { status: 'paid' | 'failed'; invoice_number?: string; transaction_id?: string; error?: string }) =>
     must(await db().from('subscription_payments').insert({
-      restaurant_id: o.restaurantId, plan: o.plan, amount_cents: o.amountCents, period_start: o.start.toISOString(), period_end: end.toISOString(),
-      card_label: o.card ? label(o.card) : '', ...row,
+      restaurant_id: o.restaurantId, plan: o.plan, amount_cents: total, list_price_cents: o.priceCents, tax_rate_bps: rateBps, tax_cents: taxCents,
+      period_start: o.start.toISOString(), period_end: end.toISOString(), card_label: o.card ? label(o.card) : '', ...row,
     }).select('id'));
+  const amounts = { totalCents: total, taxCents, taxRateBps: rateBps };
   if (!o.card) {
     await record({ status: 'failed', error: 'No card on file.' });
-    return { ok: false as const, error: 'No card on file.' };
+    return { ok: false as const, error: 'No card on file.', ...amounts };
   }
   try {
     const charge = await payments().charge({
-      amountCents: o.amountCents, customerId: o.customerId, paymentRef: o.card.provider_ref,
+      amountCents: total, customerId: o.customerId, paymentRef: o.card.provider_ref,
       description: `Bite Wise ${o.plan} plan · ${o.name}`,
       metadata: { restaurant_id: String(o.restaurantId), plan: o.plan, period_start: o.start.toISOString() },
       idempotencyKey: o.key,
     });
     const invoice = must(await db().rpc('next_subscription_invoice')) as string;
     await record({ status: 'paid', invoice_number: invoice, transaction_id: charge.id });
-    return { ok: true as const, end, invoice };
+    return { ok: true as const, end, invoice, ...amounts };
   } catch (err) {
     if (!(err instanceof PaymentError)) throw err;
     await record({ status: 'failed', error: err.message.slice(0, 300) });
-    return { ok: false as const, error: err.message };
+    return { ok: false as const, error: err.message, ...amounts };
   }
 }
 
 async function receipt(o: {
   to: string; restaurant: string; plan: PaidPlan; amountCents: number; invoice: string; cardLabel: string; start?: Date; end: Date; autoRenew: boolean;
-  renewal: boolean; listPriceCents?: number; discountCents?: number; discountLabel?: string;
+  renewal: boolean; listPriceCents?: number; discountCents?: number; discountLabel?: string; taxCents?: number; taxRateBps?: number;
 }) {
   try {
     // The invoice as a PDF, and a link to it (it can be printed from there).
@@ -213,7 +232,7 @@ async function receipt(o: {
       ...subscriptionReceiptEmail({
         restaurant: o.restaurant, plan: o.plan, amountCents: o.amountCents, invoiceNumber: o.invoice, cardLabel: o.cardLabel,
         periodStart: o.start?.toISOString(), periodEnd: o.end.toISOString(), autoRenew: o.autoRenew, renewal: o.renewal, planUrl: planUrl(),
-        listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel,
+        listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel, taxCents: o.taxCents, taxRateBps: o.taxRateBps,
         invoiceUrl: `${publicEnv.siteUrl}/restaurant/invoices/${inv.id}`,
       }),
       attachments: [{ filename: `Bite-Wise-invoice-${o.invoice}.pdf`, content: await planInvoicePdf(inv), contentType: 'application/pdf' }],
@@ -229,11 +248,12 @@ async function receipt(o: {
 // emails it.
 async function pioneerInvoice(restaurantId: number, plan: PaidPlan, start: Date, end: Date, renewal: boolean) {
   const listPrice = priceOf(await prices(), plan);
+  const rateBps = await taxRate(restaurantId); // shown on the invoice; $0.00 has no tax
   const invoice = must(await db().rpc('next_subscription_invoice')) as string;
   must(await db().from('subscription_payments').insert({
     restaurant_id: restaurantId, plan, amount_cents: 0, status: 'paid', period_start: start.toISOString(), period_end: end.toISOString(),
     invoice_number: invoice, transaction_id: 'pioneer', card_label: 'No charge',
-    list_price_cents: listPrice, discount_cents: listPrice, discount_label: PIONEER_DISCOUNT,
+    list_price_cents: listPrice, discount_cents: listPrice, discount_label: PIONEER_DISCOUNT, tax_rate_bps: rateBps, tax_cents: 0,
   }).select('id'));
   const { restaurant, owner } = await ownerOf(restaurantId);
   await receipt({
@@ -312,7 +332,7 @@ export async function subscribe(restaurantId: number, input: { plan: PaidPlan; c
   // A lapsed plan restarts at the price new plans pay (any lock went with it).
   const amountCents = planPrice(await priceContext(), null, input.plan, start);
   const res = await chargePeriod({
-    restaurantId, name: restaurant.name, plan: input.plan, amountCents, customerId, card, start,
+    restaurantId, name: restaurant.name, plan: input.plan, priceCents: amountCents, customerId, card, start,
     key: `sub-start-${restaurantId}-${cardId}-${Math.floor(start.getTime() / 60_000)}`,
   });
   if (!res.ok) {
@@ -325,7 +345,10 @@ export async function subscribe(restaurantId: number, input: { plan: PaidPlan; c
     customer_ref: customerId, card_ref: card!.provider_ref, card_label: label(card!), last_payment_error: '', retry_at: null, renewing_at: null,
     reminder_sent_for: null, locked_monthly_cents: null, locked_annual_cents: null, updated_at: new Date().toISOString(),
   }).select('restaurant_id'));
-  await receipt({ to: owner.email, restaurant: restaurant.name, plan: input.plan, amountCents, invoice: res.invoice, cardLabel: label(card!), end: res.end, autoRenew: input.autoRenew, renewal: false });
+  await receipt({
+    to: owner.email, restaurant: restaurant.name, plan: input.plan, amountCents: res.totalCents, invoice: res.invoice, cardLabel: label(card!), start, end: res.end,
+    autoRenew: input.autoRenew, renewal: false, listPriceCents: amountCents, taxCents: res.taxCents, taxRateBps: res.taxRateBps,
+  });
   return { invoiceNumber: res.invoice, periodEnd: res.end.toISOString() };
 }
 
@@ -390,7 +413,7 @@ async function charge(restaurantId: number, o: { manual: boolean; cardId?: numbe
     // A renewal continues where the last period ended; a delinquent plan starts again from the day it is paid.
     const start = delinquent ? now : periodEnd;
     const res = await chargePeriod({
-      restaurantId, name: restaurant.name, plan, amountCents, customerId, card, start,
+      restaurantId, name: restaurant.name, plan, priceCents: amountCents, customerId, card, start,
       key: `sub-${restaurantId}-${periodEnd.toISOString()}-${card?.id ?? 0}-${o.manual ? now.toISOString().slice(0, 16) : now.toISOString().slice(0, 10)}`,
     });
     if (res.ok) {
@@ -398,7 +421,10 @@ async function charge(restaurantId: number, o: { manual: boolean; cardId?: numbe
         plan, renew_plan: null, status: 'active', price_cents: amountCents, current_period_start: start.toISOString(),
         current_period_end: res.end.toISOString(), last_payment_error: '', retry_at: null, card_ref: card!.provider_ref, card_label: label(card!),
       });
-      await receipt({ to: owner.email, restaurant: restaurant.name, plan, amountCents, invoice: res.invoice, cardLabel: label(card!), end: res.end, autoRenew: claimed.auto_renew, renewal: true });
+      await receipt({
+        to: owner.email, restaurant: restaurant.name, plan, amountCents: res.totalCents, invoice: res.invoice, cardLabel: label(card!), start, end: res.end,
+        autoRenew: claimed.auto_renew, renewal: true, listPriceCents: amountCents, taxCents: res.taxCents, taxRateBps: res.taxRateBps,
+      });
       return 'renewed';
     }
     // Declined: the plan is delinquent at once. The default card is retried daily for RETRY_DAYS after the renewal date.
@@ -409,7 +435,7 @@ async function charge(restaurantId: number, o: { manual: boolean; cardId?: numbe
     });
     await pauseOffers(restaurantId);
     if (!delinquent) {
-      await sendEmail({ to: owner.email, ...paymentFailedEmail({ restaurant: restaurant.name, amountCents, error: res.error, planUrl: planUrl() }) })
+      await sendEmail({ to: owner.email, ...paymentFailedEmail({ restaurant: restaurant.name, amountCents: res.totalCents, error: res.error, planUrl: planUrl() }) })
         .catch((err) => console.error('payment declined email:', err));
     }
     if (o.manual) throw new AppError(402, `The card was declined: ${res.error} Please try another card.`);
@@ -465,7 +491,7 @@ export async function renewDue() {
       const sent = await sendEmail({
         to: owner.email,
         ...renewalReminderEmail({
-          restaurant: restaurant.name, plan, amountCents: planPrice(ctx, s, plan, renewsOn), renewsOn: s.current_period_end!,
+          restaurant: restaurant.name, plan, amountCents: withTax(planPrice(ctx, s, plan, renewsOn), await taxRate(s.restaurant_id)), renewsOn: s.current_period_end!,
           cardLabel: card ? label(card) : 'your card on file', planUrl: planUrl(),
         }),
       });

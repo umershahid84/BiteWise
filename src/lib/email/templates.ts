@@ -144,12 +144,14 @@ const PLAN_NAMES = { monthly: 'Monthly', annual: 'Annual' } as const;
 export function subscriptionReceiptEmail(o: {
   restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; invoiceNumber: string; cardLabel: string; periodStart?: string;
   periodEnd: string; autoRenew: boolean; renewal: boolean; planUrl: string; listPriceCents?: number; discountCents?: number; discountLabel?: string;
-  invoiceUrl?: string;
+  invoiceUrl?: string; taxCents?: number; taxRateBps?: number;
 }) {
   const row = (k: string, v: string, strong = false, color?: string) => `<tr><td style="padding:7px 0;color:${color ?? '#64748B'};font:${strong ? '800 15px' : '14px'} ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:${strong ? '800 16px' : '700 14px'} ${FONT};color:${color ?? '#1E293B'};">${v}</td></tr>`;
   const discount = o.discountCents ?? 0;
   const free = o.amountCents === 0 && discount > 0;
-  const list = o.listPriceCents ?? o.amountCents + discount;
+  const tax = o.taxCents ?? 0;
+  const list = o.listPriceCents ?? o.amountCents + discount - tax;
+  const taxLabel = `WA sales tax (${((o.taxRateBps ?? 0) / 100).toFixed(2).replace(/\.?0+$/, '')}%)`;
   const period = `${o.periodStart ? `${date(o.periodStart)} – ` : 'through '}${date(o.periodEnd)}`;
   const next = free ? `Your next free period starts on ${date(o.periodEnd)}` : o.autoRenew ? `Renews automatically on ${date(o.periodEnd)}` : `Ends on ${date(o.periodEnd)} (auto-renewal is off)`;
   return {
@@ -168,6 +170,7 @@ export function subscriptionReceiptEmail(o: {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
           ${row(`${PLAN_NAMES[o.plan]} plan`, usd(list))}
           ${discount ? row(esc(o.discountLabel || 'Discount'), `−${usd(discount)}`, false, '#3E8230') : ''}
+          ${tax ? `${row('Subtotal', usd(list - discount))}${row(taxLabel, usd(tax))}` : ''}
           ${row(free ? 'Total due' : 'Amount paid', free ? `${usd(0)} <span style="color:#3E8230;">FREE</span>` : usd(o.amountCents), true)}
           ${free ? '' : row('Card', esc(o.cardLabel))}
         </table>
@@ -175,7 +178,7 @@ export function subscriptionReceiptEmail(o: {
         ${o.invoiceUrl ? button(o.invoiceUrl, 'View my invoice', '#14284B') : button(o.planUrl, 'View my plan', '#14284B')}`,
     }),
     text: `Bite Wise invoice ${o.invoiceNumber} for ${o.restaurant} (${period})
-${PLAN_NAMES[o.plan]} plan: ${usd(list)}${discount ? `\n${o.discountLabel || 'Discount'}: -${usd(discount)}` : ''}
+${PLAN_NAMES[o.plan]} plan: ${usd(list)}${discount ? `\n${o.discountLabel || 'Discount'}: -${usd(discount)}` : ''}${tax ? `\nSubtotal: ${usd(list - discount)}\n${taxLabel}: ${usd(tax)}` : ''}
 ${free ? 'Total due: $0.00 (FREE)' : `Amount paid: ${usd(o.amountCents)} with ${o.cardLabel}`}
 ${next}.
 ${o.invoiceUrl ? `Your invoice: ${o.invoiceUrl}\n` : ''}Your plan: ${o.planUrl}`,
@@ -218,7 +221,7 @@ export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 
       body: `<p style="margin:0 0 16px;">This is a friendly reminder that your Bite Wise ${plan} plan renews automatically on <b>${when}</b>.</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:16px;margin:0 0 18px;">
           <tr><td style="padding:16px 20px;font:15px/1.7 ${FONT};color:#334155;">
-            <b style="color:#14284B;">Amount:</b> ${usd(o.amountCents)}<br>
+            <b style="color:#14284B;">Amount:</b> ${usd(o.amountCents)} (including WA sales tax)<br>
             <b style="color:#14284B;">Charged on:</b> ${when}<br>
             <b style="color:#14284B;">Card on file:</b> ${esc(o.cardLabel)}
           </td></tr>
@@ -227,7 +230,7 @@ export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 
         ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
     }),
     text: `Your Bite Wise ${plan} plan for ${o.restaurant} renews automatically on ${when}.
-Your card on file (${o.cardLabel}) will be charged ${usd(o.amountCents)} on ${when}.
+Your card on file (${o.cardLabel}) will be charged ${usd(o.amountCents)} (including WA sales tax) on ${when}.
 Manage your plan: ${o.planUrl}`,
   };
 }
@@ -255,7 +258,7 @@ export function feeChangeEmail(o: {
               ${row('Monthly plan (per month)', o.oldMonthlyCents, o.newMonthlyCents)}
               ${row('Annual plan (per year)', o.oldAnnualCents, o.newAnnualCents)}
             </table>
-            <p style="margin:8px 0 0;font:13px ${FONT};color:#64748B;">New prices from ${esc(o.effective)}.</p>
+            <p style="margin:8px 0 0;font:13px ${FONT};color:#64748B;">New prices from ${esc(o.effective)}. Prices exclude Washington sales tax, which is added at your location's rate.</p>
           </td></tr>
         </table>
         ${button(o.planUrl, 'View my plan', '#14284B')}`,
@@ -264,7 +267,7 @@ export function feeChangeEmail(o: {
 
 Monthly plan: ${usd(o.oldMonthlyCents)} → ${usd(o.newMonthlyCents)} per month
 Annual plan: ${usd(o.oldAnnualCents)} → ${usd(o.newAnnualCents)} per year
-New prices from ${o.effective}.
+New prices from ${o.effective}. Prices exclude Washington sales tax, which is added at your location's rate.
 
 Your plan: ${o.planUrl}`,
   };
@@ -313,5 +316,93 @@ Sales tax: ${usd(rc.taxCents)}
 Total paid: ${usd(rc.totalCents)}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
 
 Your receipt: ${o.receiptUrl}`,
+  };
+}
+
+// ---------------------------------------------------------------- missed pickups (src/lib/no-shows.ts)
+
+const box = (html: string, color = '#FEF3C7', border = '#FCD34D') =>
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${color};border:1px solid ${border};border-radius:14px;margin:0 0 18px;"><tr><td style="padding:14px 18px;font:15px/1.55 ${FONT};color:#1E293B;">${html}</td></tr></table>`;
+
+// A customer missed a pickup: how many in a row, and what happens next.
+export function noShowWarningEmail(o: { username: string; orderId: number; item: string; restaurant: string; strikes: number; limit: number; probation: boolean; ordersUrl: string }) {
+  const left = Math.max(0, o.limit - o.strikes);
+  const next = o.probation
+    ? '<b>Your account was suspended before for missed pickups, so the next missed pickup will close your account permanently.</b>'
+    : left === 1
+      ? `<b>One more missed pickup in a row and your account will be suspended for 30 days.</b>`
+      : `If you miss ${left} more pickups in a row, your account will be suspended for 30 days.`;
+  return {
+    subject: `You missed your Bite Wise pickup (order #${o.orderId})`,
+    html: layout({
+      preview: `Order #${o.orderId} at ${o.restaurant} wasn't picked up. You were not charged.`,
+      emoji: '⏰',
+      title: 'You missed your pickup',
+      subtitle: `Order #${o.orderId} · ${esc(o.restaurant)}`,
+      body: `<p style="margin:0 0 14px;">Hi ${esc(o.username)}, your order of <b>${esc(o.item)}</b> at <b>${esc(o.restaurant)}</b> wasn't picked up before the
+        discard timer ran out. You were not charged, but the food couldn't be sold to anyone else and went to waste.</p>
+        ${box(`${o.probation ? '' : `Missed pickups in a row: <b>${o.strikes} of ${o.limit}</b>.<br>`}${next}`)}
+        <p style="margin:0 0 18px;font-size:15px;color:#475569;">Can't make it? Cancel the order from My Orders before the timer ends: it's free, and the food goes back on sale. A pickup resets the count.</p>
+        ${button(o.ordersUrl, 'My orders', '#14284B')}`,
+    }),
+    text: `Hi ${o.username}, your order #${o.orderId} (${o.item}) at ${o.restaurant} wasn't picked up before the discard timer ran out. You were not charged, but the food went to waste.
+${o.probation ? '' : `Missed pickups in a row: ${o.strikes} of ${o.limit}.\n`}${next.replace(/<[^>]+>/g, '')}
+Can't make it? Cancel from My Orders before the timer ends: it's free. A pickup resets the count.
+${o.ordersUrl}`,
+  };
+}
+
+export function noShowSuspendedEmail(o: { username: string; strikes: number; days: number; until: string }) {
+  return {
+    subject: `Your Bite Wise account is suspended for ${o.days} days`,
+    html: layout({
+      preview: `${o.strikes} missed pickups in a row: suspended until ${date(o.until)}.`,
+      emoji: '⏸️',
+      title: `Account suspended for ${o.days} days`,
+      subtitle: `Until ${date(o.until)}`,
+      body: `<p style="margin:0 0 14px;">Hi ${esc(o.username)}, you missed <b>${o.strikes} pickups in a row</b>. Each time, the food was held for you and then had
+        to be thrown away. As our Customer Terms (Section 5.4) explain, your account has been <b>suspended automatically for ${o.days} days</b>, until
+        <b>${date(o.until)}</b>. Any open orders were cancelled without charge.</p>
+        ${box('<b>When the suspension ends, your account is reactivated automatically.</b> After that, the first missed pickup closes your account permanently.', '#FEE2E2', '#FCA5A5')}
+        <p style="margin:0;font-size:15px;color:#475569;">If you think this is a mistake, reply to this email or write to <a href="mailto:${esc(serverEnv.legal.email)}">${esc(serverEnv.legal.email)}</a>.</p>`,
+    }),
+    text: `Hi ${o.username}, you missed ${o.strikes} pickups in a row, so your Bite Wise account is suspended automatically for ${o.days} days, until ${date(o.until)} (Customer Terms, Section 5.4). Open orders were cancelled without charge.
+When the suspension ends, your account is reactivated automatically. After that, the first missed pickup closes your account permanently.
+Questions: ${serverEnv.legal.email}`,
+  };
+}
+
+export function noShowBannedEmail(o: { username: string }) {
+  return {
+    subject: 'Your Bite Wise account has been closed',
+    html: layout({
+      preview: 'Another missed pickup after a suspension: your account is closed permanently.',
+      emoji: '🚫',
+      title: 'Your account has been closed',
+      subtitle: 'Missed pickup after a suspension',
+      body: `<p style="margin:0 0 14px;">Hi ${esc(o.username)}, your account was suspended earlier for missed pickups, and you have missed another one. As our
+        Customer Terms (Section 5.4) explain, your Bite Wise account has been <b>closed permanently</b>. Any open orders were cancelled without
+        charge, and this email address can't be used to open a new account.</p>
+        <p style="margin:0;font-size:15px;color:#475569;">If you think this is a mistake, write to <a href="mailto:${esc(serverEnv.legal.email)}">${esc(serverEnv.legal.email)}</a>.</p>`,
+    }),
+    text: `Hi ${o.username}, your account was suspended earlier for missed pickups and you have missed another one, so your Bite Wise account has been closed permanently (Customer Terms, Section 5.4). Open orders were cancelled without charge.
+Questions: ${serverEnv.legal.email}`,
+  };
+}
+
+// Tells the admins the platform suspended or banned a customer.
+export function adminAlertEmail(o: { title: string; message: string; customer: string; email: string; noShowsTotal: number; consoleUrl: string }) {
+  return {
+    subject: `Bite Wise alert: ${o.title}`,
+    html: layout({
+      preview: o.message,
+      emoji: '🚨',
+      title: o.title,
+      subtitle: `${esc(o.customer)} · ${esc(o.email)}`,
+      body: `<p style="margin:0 0 14px;">${esc(o.message)}</p>
+        ${box(`Missed pickups in total: <b>${o.noShowsTotal}</b>. This was done automatically by the platform; you can review it, or lift it, in the owner console.`)}
+        ${button(o.consoleUrl, 'Open alerts', '#14284B')}`,
+    }),
+    text: `${o.title}\n${o.message}\nCustomer: ${o.customer} (${o.email}). Missed pickups in total: ${o.noShowsTotal}.\nDone automatically by the platform. Review it in the owner console: ${o.consoleUrl}`,
   };
 }

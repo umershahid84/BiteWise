@@ -31,4 +31,13 @@ describe('invoice emails', () => {
     expect(e.html).toContain('View my invoice');
     expect(e.text).toContain('Your invoice: https://bitewise.app/restaurant/invoices/7');
   });
+
+  it('shows Washington sales tax on a paid plan: price, subtotal, tax and total', () => {
+    const e = subscriptionReceiptEmail({
+      restaurant: 'Pho & Co', plan: 'monthly', amountCents: 1655, invoiceNumber: 'BW-SUB-000002', cardLabel: 'VISA •••• 4242', periodEnd: '2026-11-06T00:00:00Z',
+      autoRenew: true, renewal: false, planUrl: 'https://bitewise.app/restaurant?tab=plan', listPriceCents: 1500, taxCents: 155, taxRateBps: 1035,
+    });
+    expect(e.html).toMatch(/\$15\.00[\s\S]*Subtotal[\s\S]*WA sales tax \(10\.35%\)[\s\S]*\$1\.55[\s\S]*\$16\.55/);
+    expect(e.text).toContain('WA sales tax (10.35%): $1.55');
+  });
 });

@@ -17,8 +17,8 @@ export async function adminGet<T>(resource: string, params: Record<string, strin
   return data as T;
 }
 
-export function useAdmin<T>(key: QueryKey, resource: string, params: Record<string, string | number | undefined> = {}) {
-  return useQuery({ queryKey: ['admin', ...key], queryFn: () => adminGet<T>(resource, params) });
+export function useAdmin<T>(key: QueryKey, resource: string, params: Record<string, string | number | undefined> = {}, o: { refetchInterval?: number } = {}) {
+  return useQuery({ queryKey: ['admin', ...key], queryFn: () => adminGet<T>(resource, params), refetchInterval: o.refetchInterval });
 }
 
 // Runs a server action and shows the outcome. Returns true on success.

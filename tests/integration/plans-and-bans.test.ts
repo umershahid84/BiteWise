@@ -79,7 +79,9 @@ describe.skipIf(!available)('restaurant plans', () => {
     const s = await subOf(shop.restaurant.id);
     expect(s).toMatchObject({ plan: 'annual', status: 'active', price_cents: 15000, auto_renew: true, card_label: 'VISA •••• 4242' });
     expect((Date.parse(s.current_period_end!) - Date.parse(s.current_period_start!)) / 86_400_000).toBeGreaterThanOrEqual(365);
-    expect((await paymentsOf(shop.restaurant.id)).map((p) => [p.status, p.amount_cents])).toEqual([['failed', 1500], ['paid', 15000]]);
+    // The plan fee plus Washington sales tax at the restaurant's rate (10.35% in Seattle).
+    expect((await paymentsOf(shop.restaurant.id)).map((p) => [p.status, p.list_price_cents, p.tax_rate_bps, p.tax_cents, p.amount_cents]))
+      .toEqual([['failed', 1500, 1035, 155, 1655], ['paid', 15000, 1035, 1553, 16553]]);
     expect((await subs.cardsOf(shop.owner.id)).map((c) => [c.last4, c.is_default])).toEqual([['4242', true]]);
     expect((await shop.post()).error).toBeNull();
     await expect(subs.subscribe(shop.restaurant.id, { plan: 'monthly', token: card('4242'), autoRenew: true })).rejects.toThrow(/already have an active plan/);
@@ -121,7 +123,7 @@ describe.skipIf(!available)('restaurant plans', () => {
     const renewed = await subOf(shop.restaurant.id);
     expect(renewed).toMatchObject({ plan: 'annual', renew_plan: null, status: 'active', price_cents: 12000 });
     expect(Date.parse(renewed.current_period_start!)).toBe(Date.parse(ended)); // the new period starts where the old one ended
-    expect((await paymentsOf(shop.restaurant.id)).filter((p) => p.status === 'paid').map((p) => [p.plan, p.amount_cents])).toEqual([['monthly', 1500], ['annual', 12000]]);
+    expect((await paymentsOf(shop.restaurant.id)).filter((p) => p.status === 'paid').map((p) => [p.plan, p.amount_cents - p.tax_cents])).toEqual([['monthly', 1500], ['annual', 12000]]);
 
     // Auto-renewal off: nothing is charged and the plan lapses; live offers are paused.
     expect((await shop.post()).error).toBeNull();

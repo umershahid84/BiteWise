@@ -8,7 +8,7 @@ import { StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Spinner, Table } from '@/components/ui/misc';
-import { OFFER_REASONS } from '@/lib/constants';
+import { OFFER_REASONS, offerStatus } from '@/lib/constants';
 import { fmtTime, money } from '@/lib/format';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import type { Ctx, Offer } from './types';
@@ -113,7 +113,7 @@ export function OffersPanel({ ctx, onEdit, onNew }: { ctx: Ctx; onEdit: (id: num
                     </>
                   )}
                 </td>
-                <td><StatusBadge status={o.status} /></td>
+                <td><StatusBadge status={offerStatus(o)} /></td>
                 <td className="whitespace-nowrap">
                   {o.status !== 'ended' && (
                     <div className="flex gap-1.5">

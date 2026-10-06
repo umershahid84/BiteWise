@@ -68,6 +68,12 @@ export default async function InvoicePage({ params }: PageProps<'/restaurant/inv
             {inv.discountCents > 0 && (
               <tr className="border-b border-[#F1F5F9] text-[#3E8230]"><td className="py-3">{inv.discountLabel}</td><td className="py-3 text-right">−{money(inv.discountCents)}</td></tr>
             )}
+            {inv.showTax && (
+              <>
+                <tr className="border-b border-[#F1F5F9]"><td className="py-2">Subtotal</td><td className="py-2 text-right">{money(inv.subtotalCents)}</td></tr>
+                <tr className="border-b border-[#F1F5F9]"><td className="py-2">{inv.taxLabel}</td><td className="py-2 text-right">{money(inv.taxCents)}</td></tr>
+              </>
+            )}
             <tr>
               <td className="pt-4 text-base font-extrabold">{inv.free || !inv.paid ? 'Total due' : 'Total paid'}</td>
               <td className="pt-4 text-right text-xl font-extrabold">{money(inv.totalCents)}{inv.free && <span className="ml-2 text-sm text-[#3E8230]">FREE</span>}</td>

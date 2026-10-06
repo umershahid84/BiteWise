@@ -173,10 +173,30 @@ export async function users(params: URLSearchParams) {
       return {
         id: u.id, email: u.email, username: u.username, role: u.role, status: u.status, suspendedUntil: u.suspended_until, createdAt: u.created_at,
         orders: done.length, spentCents: done.reduce((n, o) => n + o.total_cents - o.refunded_cents, 0), noShows: mine.length - done.length,
+        noShowStreak: u.no_show_strikes, noShowProbation: u.no_show_probation,
         creditCents: credit.filter((c) => c.user_id === u.id).reduce((n, c) => n + c.amount_cents, 0),
         termsAcceptedAt: terms.filter((t) => t.user_id === u.id).map((t) => t.accepted_at).sort().at(-1) ?? null,
       };
     });
+}
+
+// ---------------------------------------------------------------- alerts
+
+// Missed-pickup alerts (src/lib/no-shows.ts). ?all=1 includes single no-shows; by default only suspensions and bans.
+export async function alerts(params: URLSearchParams) {
+  let q = db().from('admin_alerts').select('*, profiles!admin_alerts_user_id_fkey(username, email, status, suspended_until, no_shows_total, no_show_strikes, no_show_probation)')
+    .order('created_at', { ascending: false }).limit(300);
+  if (params.get('all') !== '1') q = q.neq('kind', 'no_show');
+  const rows = must(await q);
+  const unread = (await db().from('admin_alerts').select('id', { count: 'exact', head: true }).neq('kind', 'no_show').is('read_at', null)).count ?? 0;
+  return {
+    unread,
+    alerts: rows.map((a) => ({
+      id: a.id, kind: a.kind, message: a.message, strikes: a.strikes, orderId: a.order_id, createdAt: a.created_at, readAt: a.read_at,
+      userId: a.user_id, username: a.profiles?.username ?? 'Deleted user', email: a.profiles?.email ?? '', status: a.profiles?.status ?? 'deleted',
+      suspendedUntil: a.profiles?.suspended_until ?? null, noShowsTotal: a.profiles?.no_shows_total ?? 0,
+    })),
+  };
 }
 
 // ---------------------------------------------------------------- orders
@@ -285,12 +305,14 @@ export async function payoutsCsv() {
 
 // ---------------------------------------------------------------- sales tax
 
-// Retail sales tax collected on completed orders, by restaurant location (for the WA excise tax return).
+// Retail sales tax collected on completed orders and on restaurant plan fees, by restaurant location (for the WA
+// excise tax return).
 export async function tax(params: URLSearchParams) {
   const r = range(params, 30);
-  const [sold, rest] = await Promise.all([
+  const [sold, rest, plans] = await Promise.all([
     pickedUpBetween(r.start, r.end),
     all<{ id: number; city: string; zip: string }>((a, b) => db().from('restaurants').select('id, city, zip').range(a, b)),
+    paidPlansBetween(r.start, r.end),
   ]);
   const loc = new Map(rest.map((x) => [x.id, x]));
   const groups = new Map<string, { city: string; zip: string; rateBps: number; orders: number; taxableCents: number; taxCents: number }>();
@@ -303,21 +325,56 @@ export async function tax(params: URLSearchParams) {
     g.taxCents += o.tax_cents - taxRefund(o);
     groups.set(key, g);
   }
-  const rows = [...groups.values()].sort((a, b) => a.city.localeCompare(b.city) || a.zip.localeCompare(b.zip));
+  const sort = <T extends { city: string; zip: string }>(xs: T[]) => xs.sort((a, b) => a.city.localeCompare(b.city) || a.zip.localeCompare(b.zip));
+  const rows = sort([...groups.values()]);
+  // Plan fees (the plan price after any discount; Pioneer Members' $0.00 invoices have no tax).
+  const planGroups = new Map<string, { city: string; zip: string; rateBps: number; invoices: number; taxableCents: number; taxCents: number }>();
+  for (const x of plans) {
+    // Payments from before plan fees were taxed (no rate) and $0.00 Pioneer invoices aren't taxable sales.
+    if (!x.tax_rate_bps || x.amount_cents - x.tax_cents <= 0) continue;
+    const l = loc.get(x.restaurant_id);
+    const key = `${l?.city}|${l?.zip}|${x.tax_rate_bps}`;
+    const g = planGroups.get(key) ?? { city: l?.city ?? '', zip: l?.zip ?? '', rateBps: x.tax_rate_bps, invoices: 0, taxableCents: 0, taxCents: 0 };
+    g.invoices += 1;
+    g.taxableCents += x.amount_cents - x.tax_cents;
+    g.taxCents += x.tax_cents;
+    planGroups.set(key, g);
+  }
+  const planRows = sort([...planGroups.values()]);
+  const total = <T extends { taxableCents: number; taxCents: number }>(xs: T[]) =>
+    ({ taxableCents: xs.reduce((n, x) => n + x.taxableCents, 0), taxCents: xs.reduce((n, x) => n + x.taxCents, 0) });
+  const food = total(rows);
+  const fees = total(planRows);
   return {
     range: { from: r.from, to: r.to },
     rows,
-    totals: { taxableCents: rows.reduce((n, x) => n + x.taxableCents, 0), taxCents: rows.reduce((n, x) => n + x.taxCents, 0) },
+    planRows,
+    totals: food,
+    planTotals: fees,
+    allTotals: { taxableCents: food.taxableCents + fees.taxableCents, taxCents: food.taxCents + fees.taxCents },
   };
 }
+
+type PlanPayment = Database['public']['Tables']['subscription_payments']['Row'];
+const paidPlansBetween = (start: string, end: string) =>
+  all<PlanPayment>((a, b) => db().from('subscription_payments').select('*').eq('status', 'paid').gte('created_at', start).lt('created_at', end).range(a, b));
 
 export async function taxCsv(params: URLSearchParams) {
   const t = await tax(params);
   return {
     name: `BiteWise-sales-tax-${t.range.from}-to-${t.range.to}.csv`,
     csv: toCsv([
+      ['Food orders'],
       ['City', 'ZIP', 'Rate %', 'Orders', 'Taxable sales', 'Sales tax collected'],
       ...t.rows.map((x) => [x.city, x.zip, (x.rateBps / 100).toFixed(2), x.orders, dollars(x.taxableCents), dollars(x.taxCents)]),
+      ['Total', '', '', '', dollars(t.totals.taxableCents), dollars(t.totals.taxCents)],
+      [],
+      ['Restaurant plan fees'],
+      ['City', 'ZIP', 'Rate %', 'Invoices', 'Taxable fees', 'Sales tax collected'],
+      ...t.planRows.map((x) => [x.city, x.zip, (x.rateBps / 100).toFixed(2), x.invoices, dollars(x.taxableCents), dollars(x.taxCents)]),
+      ['Total', '', '', '', dollars(t.planTotals.taxableCents), dollars(t.planTotals.taxCents)],
+      [],
+      ['All sales tax collected', '', '', '', dollars(t.allTotals.taxableCents), dollars(t.allTotals.taxCents)],
     ]),
   };
 }
@@ -331,7 +388,7 @@ export async function plans() {
     all<{ id: number; name: string; city: string; status: string; owner_id: string; created_at: string }>((a, b) => db().from('restaurants').select('id, name, city, status, owner_id, created_at').range(a, b)),
     all<Database['public']['Tables']['restaurant_subscriptions']['Row']>((a, b) => db().from('restaurant_subscriptions').select('*').range(a, b)),
     all<{ id: string; email: string }>((a, b) => db().from('profiles').select('id, email').eq('role', 'restaurant').range(a, b)),
-    all<{ restaurant_id: number; amount_cents: number; created_at: string }>((a, b) => db().from('subscription_payments').select('restaurant_id, amount_cents, created_at').eq('status', 'paid').range(a, b)),
+    all<{ restaurant_id: number; amount_cents: number; tax_cents: number; created_at: string }>((a, b) => db().from('subscription_payments').select('restaurant_id, amount_cents, tax_cents, created_at').eq('status', 'paid').range(a, b)),
   ]);
   const sub = new Map(subs.map((x) => [x.restaurant_id, x]));
   const email = new Map(owners.map((o) => [o.id, o.email]));
@@ -346,7 +403,7 @@ export async function plans() {
         priceCents: s?.price_cents ?? 0, periodEnd: s?.current_period_end ?? null,
         // A grandfathered (locked) price for the plan it renews on, if any.
         lockedCents: s ? ((s.renew_plan ?? s.plan) === 'annual' ? s.locked_annual_cents : s.locked_monthly_cents) : null, cardLabel: s?.card_label ?? '', lastPaymentError: s?.last_payment_error ?? '',
-        paid12mCents: paid.filter((x) => x.restaurant_id === r.id && Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents, 0),
+        paid12mCents: paid.filter((x) => x.restaurant_id === r.id && Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents - x.tax_cents, 0), // fees, without sales tax
       };
     });
   const rank = (x: (typeof list)[number]) => (x.status === 'past_due' ? 0 : !x.plan ? 1 : x.status === 'expired' ? 2 : 3);
@@ -368,7 +425,7 @@ export async function plans() {
       noPlan: list.filter((x) => !x.plan).length,
       // Monthly recurring revenue: monthly plans plus annual plans spread over 12 months.
       mrrCents: active.reduce((n, x) => n + (x.plan === 'annual' ? Math.round(x.price_cents / 12) : x.price_cents), 0),
-      paid12mCents: paid.filter((x) => Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents, 0),
+      paid12mCents: paid.filter((x) => Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents - x.tax_cents, 0), // fees, without sales tax
     },
     rows: list,
   };
@@ -392,4 +449,128 @@ export async function audit() {
 
 export async function log(adminId: string, action: string, targetType: string, targetId: string | number | null, details = '') {
   await db().from('audit_log').insert({ admin_id: adminId, action, target_type: targetType, target_id: targetId === null ? null : String(targetId), details: details.slice(0, 500) });
+}
+
+// ---------------------------------------------------------------- platform income
+
+// What Bite Wise itself earns, by day, month or year, for a date range (Pacific Time):
+//   + service fees on completed orders (by pickup date; less the fee share of refunds to the original payment)
+//   + restaurant plan fees (by payment date; without sales tax; Pioneer Members pay $0.00)
+//   - platform credit Bite Wise funds: refunds issued as credit and goodwill credit (by the date it was issued)
+//   = net income (before payment processing fees).
+// Sales tax (on orders and plan fees) is collected for Washington State and is not income; it is shown separately.
+// Also returns today, this month and this year, whatever range is chosen, and income by restaurant.
+export type IncomeBy = 'day' | 'month' | 'year';
+type IncomeLine = {
+  orders: number; meals: number; gmvCents: number; serviceFeesCents: number; planFeesCents: number; planInvoices: number; pioneerDiscountsCents: number;
+  creditCostCents: number; netCents: number; orderTaxCents: number; planTaxCents: number;
+};
+const emptyLine = (): IncomeLine => ({
+  orders: 0, meals: 0, gmvCents: 0, serviceFeesCents: 0, planFeesCents: 0, planInvoices: 0, pioneerDiscountsCents: 0, creditCostCents: 0, netCents: 0, orderTaxCents: 0, planTaxCents: 0,
+});
+
+export async function income(params: URLSearchParams) {
+  const r = range(params, 30);
+  const by: IncomeBy = (['day', 'month', 'year'] as const).find((b) => b === params.get('by')) ?? 'day';
+  const today = todayIn(tz());
+  // One load covers the range and this year (for the today / this month / this year cards).
+  const yearStart = dayRange(`${today.slice(0, 4)}-01-01`, tz()).start;
+  const start = r.start < yearStart ? r.start : yearStart;
+  const end = r.end > dayRange(today, tz()).end ? r.end : dayRange(today, tz()).end;
+  const [sold, plans, creditRefunds, goodwill, rest] = await Promise.all([
+    pickedUpBetween(start, end),
+    paidPlansBetween(start, end),
+    all<{ amount_cents: number; created_at: string; order_id: number }>((a, b) => db().from('refunds').select('amount_cents, created_at, order_id').eq('method', 'credit').gte('created_at', start).lt('created_at', end).range(a, b)),
+    all<{ amount_cents: number; created_at: string }>((a, b) => db().from('credit_ledger').select('amount_cents, created_at').in('kind', ['goodwill', 'adjustment']).gte('created_at', start).lt('created_at', end).range(a, b)),
+    all<{ id: number; name: string; city: string }>((a, b) => db().from('restaurants').select('id, name, city').range(a, b)),
+  ]);
+
+  // Every event with its Pacific day and what it adds.
+  type Event = { day: string; restaurantId: number | null; add: (l: IncomeLine) => void };
+  const events: Event[] = [
+    ...sold.map((o) => ({
+      day: dayKey(o.picked_up_at!, tz()), restaurantId: o.restaurant_id,
+      add: (l: IncomeLine) => {
+        l.orders += 1;
+        l.meals += o.quantity;
+        l.gmvCents += o.total_cents - o.refunded_cents;
+        l.serviceFeesCents += o.service_fee_cents - feeRefund(o);
+        l.orderTaxCents += o.tax_cents - taxRefund(o);
+      },
+    })),
+    ...plans.map((x) => ({
+      day: dayKey(x.created_at, tz()), restaurantId: x.restaurant_id,
+      add: (l: IncomeLine) => {
+        l.planInvoices += 1;
+        l.planFeesCents += x.amount_cents - x.tax_cents;
+        l.planTaxCents += x.tax_cents;
+        l.pioneerDiscountsCents += x.discount_cents;
+      },
+    })),
+    ...creditRefunds.map((x) => ({ day: dayKey(x.created_at, tz()), restaurantId: null, add: (l: IncomeLine) => { l.creditCostCents += x.amount_cents; } })),
+    ...goodwill.map((x) => ({ day: dayKey(x.created_at, tz()), restaurantId: null, add: (l: IncomeLine) => { l.creditCostCents += x.amount_cents; } })),
+  ];
+  const finish = (l: IncomeLine) => ({ ...l, netCents: l.serviceFeesCents + l.planFeesCents - l.creditCostCents });
+  const sumWhere = (keep: (day: string) => boolean) => {
+    const l = emptyLine();
+    for (const e of events) if (keep(e.day)) e.add(l);
+    return finish(l);
+  };
+
+  // The periods in the range, in order, including empty ones.
+  const keyOf = (day: string) => (by === 'day' ? day : by === 'month' ? day.slice(0, 7) : day.slice(0, 4));
+  const keys: string[] = [];
+  for (let t = Date.parse(`${r.from}T12:00:00Z`); t <= Date.parse(`${r.to}T12:00:00Z`); t += 86_400_000) {
+    const k = keyOf(new Date(t).toISOString().slice(0, 10));
+    if (keys.at(-1) !== k) keys.push(k);
+  }
+  const lines = new Map(keys.map((k) => [k, emptyLine()]));
+  const perRestaurant = new Map<number, IncomeLine>();
+  const inRange = (day: string) => day >= r.from && day <= r.to;
+  for (const e of events) {
+    if (!inRange(e.day)) continue;
+    e.add(lines.get(keyOf(e.day))!);
+    if (e.restaurantId) {
+      const l = perRestaurant.get(e.restaurantId) ?? emptyLine();
+      e.add(l);
+      perRestaurant.set(e.restaurantId, l);
+    }
+  }
+  const names = new Map(rest.map((x) => [x.id, x]));
+  return {
+    range: { from: r.from, to: r.to },
+    by,
+    totals: sumWhere(inRange),
+    quick: {
+      today: sumWhere((d) => d === today),
+      month: sumWhere((d) => d.slice(0, 7) === today.slice(0, 7)),
+      year: sumWhere((d) => d.slice(0, 4) === today.slice(0, 4)),
+    },
+    periods: keys.map((k) => ({ key: k, ...finish(lines.get(k)!) })),
+    restaurants: [...perRestaurant.entries()]
+      .map(([id, l]) => ({ id, name: names.get(id)?.name ?? 'Deleted restaurant', city: names.get(id)?.city ?? '', ...finish(l) }))
+      .sort((a, b) => b.netCents - a.netCents),
+  };
+}
+
+export async function incomeCsv(params: URLSearchParams) {
+  const x = await income(params);
+  const head = ['Orders', 'Meals', 'Total charged to customers', 'Service fees', 'Plan fees', 'Plan invoices', 'Pioneer discounts given',
+    'Platform credit cost', 'Net income', 'Sales tax on orders', 'Sales tax on plans'];
+  const vals = (l: IncomeLine) => [l.orders, l.meals, dollars(l.gmvCents), dollars(l.serviceFeesCents), dollars(l.planFeesCents), l.planInvoices,
+    dollars(l.pioneerDiscountsCents), dollars(l.creditCostCents), dollars(l.netCents), dollars(l.orderTaxCents), dollars(l.planTaxCents)];
+  return {
+    name: `BiteWise-income-${x.range.from}-to-${x.range.to}-by-${x.by}.csv`,
+    csv: toCsv([
+      [x.by === 'day' ? 'Date' : x.by === 'month' ? 'Month' : 'Year', ...head],
+      ...x.periods.map((p) => [p.key, ...vals(p)]),
+      ['Total', ...vals(x.totals)],
+      [],
+      ['Income by restaurant'],
+      ['Restaurant', 'City', ...head],
+      ...x.restaurants.map((p) => [p.name, p.city, ...vals(p)]),
+      [],
+      ['Net income = service fees + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is collected for Washington State and is not income.'],
+    ]),
+  };
 }

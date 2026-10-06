@@ -257,8 +257,11 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
       card_ref: 'pm_mock_demo_4242', card_label: 'VISA •••• 4242', last_payment_error: '', retry_at: null, renewing_at: null,
     }).select('restaurant_id'), 'plan');
     const invoice = must(await db.rpc('next_subscription_invoice'), 'invoice number');
+    // Plus Washington sales tax at the restaurant's rate, like a real payment.
+    const rate = must(await db.from('restaurants').select('tax_rate_bps').eq('id', rid).single(), 'tax rate').tax_rate_bps;
+    const tax = Math.round((price * rate) / 10000);
     must(await db.from('subscription_payments').insert({
-      restaurant_id: rid, plan, amount_cents: price, status: 'paid', period_start: start.toISOString(), period_end: end.toISOString(),
+      restaurant_id: rid, plan, amount_cents: price + tax, list_price_cents: price, tax_rate_bps: rate, tax_cents: tax, status: 'paid', period_start: start.toISOString(), period_end: end.toISOString(),
       invoice_number: invoice, transaction_id: `pi_mock_demo_sub_${rid}`, card_label: 'VISA •••• 4242',
     }).select('id'), 'plan payment');
   }

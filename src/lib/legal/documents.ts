@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-10.1';
-export const EFFECTIVE = 'October 10, 2026';
+export const LEGAL_VERSION = '2026-10-11.1';
+export const EFFECTIVE = 'October 11, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -86,6 +86,20 @@ not be charged.</p>
 receive your order, and your card will be charged when the Restaurant enters it. Bite Wise is not responsible for orders collected by
 someone using a PIN you shared.</p>
 <p>5.3 You may cancel an order at no charge from the My Orders page at any time before it is picked up.</p>
+<p>5.4 <b>Missed pickups.</b> An order that you do not pick up and do not cancel before the discard timer ends is a <b>missed pickup</b>: the
+food was held for you, could not be sold to anyone else, and is usually thrown away. To prevent food waste, Bite Wise counts missed pickups
+automatically, and the following steps are taken automatically by the platform, without further notice:</p>
+<ul>
+  <li><b>Three missed pickups in a row:</b> your account is <b>suspended for 30 days</b>. While it is suspended you cannot log in or place
+  orders, and any open orders are cancelled without charge. When the 30 days are over, your account is <b>reactivated automatically</b>.</li>
+  <li><b>After a suspension:</b> the <b>first missed pickup</b> after your account is reactivated results in the <b>permanent closure (ban)</b>
+  of your account, as described in Section 12.</li>
+  <li>Picking up an order resets the count of missed pickups in a row. Orders you cancel before the timer ends, and orders the Restaurant
+  cancels or declines, are not missed pickups.</li>
+  <li>We email you after each missed pickup, and when your account is suspended or closed. Bite Wise administrators are notified as well
+  and may review or reverse a suspension or ban. If you believe a missed pickup was recorded in error, contact us at
+  <a href="mailto:${c.email}">${c.email}</a>.</li>
+</ul>
 
 <h2>6. Problems with an order and refunds</h2>
 <p>6.1 If your food was not provided, was materially different from its description, or appeared unsafe, contact us at
@@ -121,7 +135,7 @@ to your account.</p>
 
 <h2>7. Acceptable use</h2>
 <p>You agree not to: (a) use the Service for anything unlawful, fraudulent or harmful; (b) resell food bought through Bite Wise;
-(c) place orders you do not intend to pick up, or repeatedly abuse cancellations or holds; (d) harass, threaten or abuse Restaurant
+(c) place orders you do not intend to pick up (see Section 5.4), or repeatedly abuse cancellations or holds; (d) harass, threaten or abuse Restaurant
 staff or other users; (e) try to guess PINs, access other accounts, or interfere with the security or operation of the Service;
 (f) scrape, copy or reverse-engineer the Service except as allowed by law; or (g) use someone else's payment card without permission.
 We may suspend or close accounts that break these rules.</p>
@@ -153,7 +167,8 @@ from your misuse of the Service or your violation of these Terms or the law.</p>
 
 <h2>12. Suspension and termination</h2>
 <p>You may close your account at any time by contacting us. We may suspend your access for a set number of days, or terminate it
-permanently (a ban), if you violate these Terms, if required by law, or to protect users, Restaurants or the Service. A banned
+permanently (a ban), if you violate these Terms, if required by law, or to protect users, Restaurants or the Service. Missed pickups lead
+to an automatic suspension and then an automatic ban as described in Section 5.4. A banned
 person may not open a new account, and any open orders are cancelled without charge. Sections that by their nature should survive termination
 (including Sections 3, 6, 9, 10, 11 and 14) will survive.</p>
 
@@ -278,10 +293,13 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   invoice that shows the plan price, a Pioneer Members Discount of the same amount, and a total of $0.00; no card is needed. Pioneer
   status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
-  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude any applicable taxes.</li>
+  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude taxes.</li>
+  <li><b>Sales tax.</b> Washington retail sales tax is added to every plan payment at the combined state and local rate for your
+  restaurant's location, and is shown separately on each invoice. Bite Wise collects it and remits it to the Washington State Department
+  of Revenue. A Pioneer Member's $0.00 plan has no sales tax.</li>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
   renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
-  is charged the plan price then in effect. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
+  is charged the plan price then in effect, plus sales tax. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
   ends at the end of the period you have paid for. Before each renewal we email you a reminder (about 30 days ahead for annual plans and 7 days ahead for monthly plans) with the amount, the date and the card that will be charged. We will email you at least 30 days before any price change takes effect (at 12:01 AM Pacific Time on the
   effective date) and tell you whether it applies to your plan. If it does, it applies from your first renewal on or after
   that date; if we tell you that existing partners keep their current price, your price stays the same for as long as your

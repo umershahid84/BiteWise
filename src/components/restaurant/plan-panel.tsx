@@ -15,7 +15,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
-import { fmtDate, money } from '@/lib/format';
+import { fmtDate, money, pct } from '@/lib/format';
 import type { PlanSummary } from '@/lib/subscriptions';
 import { cn } from '@/lib/utils';
 
@@ -160,6 +160,7 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
                         <div className="text-xs text-primary-ink">−{money(x.discountCents)} {x.discountLabel}</div>
                       </>
                     ) : <b>{money(x.amountCents)}</b>}
+                    {x.taxCents > 0 && <div className="text-xs text-muted">incl. {money(x.taxCents)} sales tax</div>}
                   </td>
                   <td>
                     {x.status === 'paid' ? <Badge tone="green">{x.amountCents === 0 && x.discountCents > 0 ? 'FREE' : 'Paid'}</Badge> : <Badge tone="red" title={x.error}>Declined</Badge>}
@@ -197,6 +198,7 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
             plan={subscribeTo}
             cards={data.cards}
             amountCents={subscribeTo === 'annual' ? p.annualCents : p.monthlyCents}
+            taxRateBps={data.taxRateBps}
             onDone={() => { setSubscribeTo(null); refresh(); }}
           />
         )}
@@ -251,8 +253,8 @@ function PlanChooser({ prices, pioneer, busy, onChoose }: { prices: PlanSummary[
   const saving = prices.monthlyCents * 12 - prices.annualCents;
   const perks = ['Unlimited offers and menu items', 'Counter kiosk for your tablet', 'Live order bell and daily reports', 'Payouts at every pickup (Stripe)', 'No commission on your sales'];
   const plans: { plan: PaidPlan; price: string; per: string; note: string; best?: boolean }[] = [
-    { plan: 'monthly', price: usd(prices.monthlyCents), per: '/ month', note: pioneer ? 'A $0.00 invoice every month.' : 'Billed monthly. Cancel any time.' },
-    { plan: 'annual', price: usd(prices.annualCents), per: '/ year', note: pioneer ? 'A $0.00 invoice every year.' : `Billed yearly: ${usd(Math.round(prices.annualCents / 12))} a month.`, best: saving > 0 },
+    { plan: 'monthly', price: usd(prices.monthlyCents), per: pioneer ? '/ month' : '/ month + tax', note: pioneer ? 'A $0.00 invoice every month.' : 'Billed monthly. Cancel any time.' },
+    { plan: 'annual', price: usd(prices.annualCents), per: pioneer ? '/ year' : '/ year + tax', note: pioneer ? 'A $0.00 invoice every year.' : `Billed yearly: ${usd(Math.round(prices.annualCents / 12))} a month.`, best: saving > 0 },
   ];
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -311,7 +313,7 @@ function CurrentPlan({ data, onChanged }: { data: PlanSummary; onChanged: () => 
             {sub.status === 'past_due'
               ? <>Delinquent since {fmtDate(sub.periodEnd)}: pay to post offers again.</>
               : sub.autoRenew
-                ? <>Renews automatically on <b>{fmtDate(sub.periodEnd)}</b> for {usd(sub.nextAmountCents)} ({NAMES[nextPlan].toLowerCase()}), charged to {defaultCard ? cardLabel(defaultCard) : 'your default card'}.</>
+                ? <>Renews automatically on <b>{fmtDate(sub.periodEnd)}</b> for {usd(sub.nextAmountCents)} including {usd(sub.nextTaxCents)} WA sales tax ({NAMES[nextPlan].toLowerCase()}), charged to {defaultCard ? cardLabel(defaultCard) : 'your default card'}.</>
                 : <>Auto-renewal is off: your plan ends on <b>{fmtDate(sub.periodEnd)}</b>.</>}
           </p>
         </div>
@@ -411,7 +413,12 @@ function CardPicker({ payment, cards, choice, onChoice, entryRef }: {
   );
 }
 
-function SubscribeForm({ payment, plan, cards, amountCents, onDone }: { payment: PaymentConfig; plan: PaidPlan; cards: SavedCard[]; amountCents: number; onDone: () => void }) {
+// `amountCents` is the plan price; Washington sales tax (the restaurant's rate) is added at checkout.
+function SubscribeForm({ payment, plan, cards, amountCents, taxRateBps, onDone }: {
+  payment: PaymentConfig; plan: PaidPlan; cards: SavedCard[]; amountCents: number; taxRateBps: number; onDone: () => void;
+}) {
+  const tax = Math.round((amountCents * taxRateBps) / 10000);
+  const total = amountCents + tax;
   const ref = useRef<CardEntryHandle>(null);
   const [choice, setChoice] = useState<number | 'new'>(cards.find((c) => c.isDefault)?.id ?? cards[0]?.id ?? 'new');
   const [autoRenew, setAutoRenew] = useState(true);
@@ -434,13 +441,18 @@ function SubscribeForm({ payment, plan, cards, amountCents, onDone }: { payment:
     }
   };
   return (
-    <DialogContent title={`${NAMES[plan]} plan · ${usd(amountCents)} / ${plan === 'annual' ? 'year' : 'month'}`} description="Paid now, in advance. Your offers can go live straight away.">
+    <DialogContent title={`${NAMES[plan]} plan · ${usd(amountCents)} / ${plan === 'annual' ? 'year' : 'month'}`} description="Paid now, in advance, plus Washington sales tax. Your offers can go live straight away.">
+      <div className="mb-3 grid grid-cols-[1fr_auto] gap-y-1 rounded-xl bg-surface-2 px-4 py-3 text-sm">
+        <span>{NAMES[plan]} plan</span><span className="text-right">{usd(amountCents)}</span>
+        <span className="text-muted">WA sales tax ({pct(taxRateBps)})</span><span className="text-right text-muted">{usd(tax)}</span>
+        <b>Total today</b><b className="text-right">{usd(total)}</b>
+      </div>
       <CardPicker payment={payment} cards={cards} choice={choice} onChoice={setChoice} entryRef={ref} />
       {choice === 'new' && <p className="mt-0 mb-2 text-xs text-muted">This card is saved to your cards on file as your default card.</p>}
       <Checkbox className="my-3" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)}
         label={<>Renew automatically every {plan === 'annual' ? 'year' : 'month'} with my default card (turn off any time)</>} />
       <ErrorText error={error} />
-      <Button variant="green" block disabled={busy} onClick={submit}>{busy ? 'Processing…' : `Pay ${usd(amountCents)} and start my plan`}</Button>
+      <Button variant="green" block disabled={busy} onClick={submit}>{busy ? 'Processing…' : `Pay ${usd(total)} and start my plan`}</Button>
     </DialogContent>
   );
 }

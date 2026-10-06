@@ -16,7 +16,7 @@ import { money } from '@/lib/format';
 import { day, run, useAdmin } from './shared';
 
 type User = {
-  id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number;
+  id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number; noShowStreak: number; noShowProbation: boolean;
   noShows: number; creditCents: number; termsAcceptedAt: string | null;
 };
 
@@ -50,7 +50,12 @@ export function UsersPanel({ adminId }: { adminId: string }) {
               {(data ?? []).map((u) => (
                 <tr key={u.id}>
                   <td><b>{u.username}</b><div className="text-xs text-muted">{u.email} · joined {day(u.createdAt)}</div></td>
-                  <td>{u.orders}</td><td>{money(u.spentCents)}</td><td>{u.noShows}</td>
+                  <td>{u.orders}</td><td>{money(u.spentCents)}</td>
+                  <td>
+                    {u.noShows}
+                    {u.noShowStreak > 0 && u.status === 'active' && <div className="text-xs text-accent-ink">{u.noShowStreak} in a row</div>}
+                    {u.noShowProbation && u.status !== 'banned' && <div className="text-xs text-danger" title="Suspended before for missed pickups: the next one bans the account">final warning</div>}
+                  </td>
                   <td className="text-accent-ink">{u.creditCents ? money(u.creditCents) : '–'}</td>
                   <td className="text-xs">{day(u.termsAcceptedAt) || '–'}</td>
                   <td>
