@@ -2,7 +2,10 @@
 // scheduled jobs every 5 minutes, so card holds are voided and restaurant plans renew without a separate cron.
 // Serverless hosts (Vercel) don't keep the process running: there vercel.json calls /api/cron/sweep instead.
 export async function register() {
-  if (process.env.NEXT_RUNTIME !== 'nodejs' || process.env.VERCEL || process.env.DISABLE_SCHEDULED_JOBS) return;
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  // Old sign-in cookies are handled (the visitor is logged out); don't fill the log with them.
+  (await import('@/lib/quiet-auth-logs')).quietStaleSessionLogs();
+  if (process.env.VERCEL || process.env.DISABLE_SCHEDULED_JOBS) return;
   const { databaseNotReady, runScheduledJobs } = await import('@/lib/jobs');
   let warned = '';
   const run = async () => {
