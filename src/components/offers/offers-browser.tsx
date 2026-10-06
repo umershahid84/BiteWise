@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { List, LocateFixed, Map as MapIcon } from 'lucide-react';
@@ -114,8 +114,9 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
     setView(v);
     writeSession('bw-view', v);
   };
-  const locate = () => {
-    if (!navigator.geolocation) return setGeoError('Location is not available in this browser.');
+  // `auto`: asked by the page itself when it opens. If the customer says no, we just show a gentle hint.
+  const locate = useCallback((auto = false) => {
+    if (!navigator.geolocation) return auto ? undefined : setGeoError('Location is not available in this browser.');
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -125,16 +126,43 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
         setLocating(false);
         setGeoError(null);
       },
-      () => {
+      (err) => {
         setLocating(false);
-        setGeoError('We could not get your location. You can search by city or ZIP instead.');
+        setGeoError(auto && err.code === err.PERMISSION_DENIED
+          ? 'Turn on location to see deals around you, or search by city or ZIP code.'
+          : 'We could not get your location. You can search by city or ZIP code instead.');
       },
       { timeout: 10000, maximumAge: 600000 },
     );
-  };
+  }, []);
+
+  // When the page opens, ask for the customer's location (the browser shows its "Allow location" prompt), so the
+  // map and the list start around them. Not again if they already said no; and if they allow it later in the
+  // browser's settings, the map moves to them straight away.
+  useEffect(() => {
+    if (readSession<Origin | null>('bw-origin', null) || !navigator.geolocation) return;
+    let status: PermissionStatus | null = null;
+    let cancelled = false;
+    const onChange = () => { if (status?.state === 'granted') locate(true); };
+    (navigator.permissions?.query({ name: 'geolocation' }) ?? Promise.reject(new Error('no Permissions API')))
+      .then((st) => {
+        if (cancelled) return;
+        status = st;
+        st.addEventListener('change', onChange);
+        if (st.state !== 'denied') locate(true);
+        else setGeoError('Turn on location to see deals around you, or search by city or ZIP code.');
+      })
+      .catch(() => { if (!cancelled) locate(true); }); // e.g. older Safari: just ask
+    return () => {
+      cancelled = true;
+      status?.removeEventListener('change', onChange);
+    };
+  }, [locate]);
 
   const list = offers.data?.offers ?? [];
-  const fitKey = JSON.stringify([f, origin]);
+  // The map re-fits once per search, when that search's results have arrived (not to the previous results shown
+  // while the new ones load, e.g. right after the customer allows their location).
+  const fitKey = offers.isPlaceholderData || !offers.data ? null : JSON.stringify([f, origin]);
   return (
     <main className="container-page py-8">
       <div className="mb-5 flex flex-wrap items-end gap-3">
@@ -179,7 +207,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
           <option value="price">Lowest price</option>
           <option value="ending">Ending soon</option>
         </Select>
-        <Button type="button" variant="ghost" onClick={locate} disabled={locating}>
+        <Button type="button" variant="ghost" onClick={() => locate()} disabled={locating}>
           <LocateFixed /> {locating ? 'Locating…' : origin ? 'Location on' : 'Use my location'}
         </Button>
       </form>
