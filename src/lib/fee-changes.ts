@@ -15,6 +15,8 @@ export type PriceChange = Database['public']['Tables']['subscription_price_chang
 export type FeeTemplate = Database['public']['Tables']['fee_email_templates']['Row'];
 type Sub = Database['public']['Tables']['restaurant_subscriptions']['Row'];
 type PaidPlan = 'monthly' | 'annual';
+// Pioneer Members (and the old founding plan) pay nothing, so fee changes don't touch them.
+const pioneer = (sub: Pick<Sub, 'plan' | 'founding_number'> | null | undefined) => !!sub && (sub.plan === 'founding' || sub.founding_number != null);
 
 const db = () => supabaseAdmin();
 export const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -74,7 +76,8 @@ export async function pendingChange() {
 // What a plan costs when it is charged at `at`: a locked (grandfathered) price, else the price in effect then. A
 // scheduled change counts from its effective time, for new plans always, and for existing plans only if it applies
 // to them (otherwise they keep today's price, which gets locked when the change takes effect).
-export function planPrice(ctx: PriceContext, sub: Pick<Sub, 'plan' | 'status' | 'locked_monthly_cents' | 'locked_annual_cents'> | null, plan: PaidPlan, at: Date) {
+export function planPrice(ctx: PriceContext, sub: Pick<Sub, 'plan' | 'status' | 'founding_number' | 'locked_monthly_cents' | 'locked_annual_cents'> | null, plan: PaidPlan, at: Date) {
+  if (pioneer(sub) && sub!.status === 'active') return 0;
   const locked = plan === 'annual' ? sub?.locked_annual_cents : sub?.locked_monthly_cents;
   if (locked) return locked;
   const current = plan === 'annual' ? ctx.annualCents : ctx.monthlyCents;
@@ -111,7 +114,7 @@ export type FeeChangeInput = {
 
 type Recipient = { restaurantId: number; name: string; email: string; sub: Sub | null };
 
-// Restaurants that are told about a fee change: everyone still on Bite Wise (not banned or deleted), except Founding
+// Restaurants that are told about a fee change: everyone still on Bite Wise (not banned or deleted), except Pioneer
 // Partners unless asked (their plan stays free).
 async function recipients(includeFounding: boolean): Promise<Recipient[]> {
   const rows = must(await db().from('restaurants').select('id, name, status, profiles!restaurants_owner_id_fkey(email, status), restaurant_subscriptions(*)')
@@ -119,19 +122,19 @@ async function recipients(includeFounding: boolean): Promise<Recipient[]> {
   return rows
     .filter((r) => r.profiles && r.profiles.status !== 'deleted' && r.profiles.status !== 'banned')
     .map((r) => ({ restaurantId: r.id, name: r.name, email: r.profiles!.email, sub: (r.restaurant_subscriptions as Sub | null) ?? null }))
-    .filter((r) => includeFounding || r.sub?.plan !== 'founding');
+    .filter((r) => includeFounding || !pioneer(r.sub));
 }
 
 export async function recipientCounts() {
   const all = await recipients(true);
-  const founding = all.filter((r) => r.sub?.plan === 'founding').length;
+  const founding = all.filter((r) => pioneer(r.sub)).length;
   return { withoutFounding: all.length - founding, founding };
 }
 
 // What the change means for this restaurant ({{your_plan}}).
 function yourPlan(r: Recipient, c: FeeChangeInput & { previousMonthlyCents: number; previousAnnualCents: number }, when: string) {
   const s = r.sub;
-  if (s?.plan === 'founding') return 'As a Founding Partner, your plan stays free: nothing changes for you.';
+  if (pioneer(s)) return 'As a Pioneer Member, your plan stays FREE: nothing changes for you.';
   const paid = s && s.status !== 'expired';
   const per = (plan: PaidPlan) => (plan === 'annual' ? 'year' : 'month');
   if (!paid) return `If you choose a plan on or after ${when}, the new prices apply: ${usd(c.monthlyCents)} a month or ${usd(c.annualCents)} a year.`;
@@ -177,7 +180,7 @@ export async function preview(c: FeeChangeInput) {
   checkInput(c);
   const ctx = await priceContext();
   const list = await recipients(c.includeFounding);
-  const sample = list.find((r) => r.sub && r.sub.plan !== 'founding' && r.sub.status !== 'expired') ?? list[0]
+  const sample = list.find((r) => r.sub && !pioneer(r.sub) && r.sub.status !== 'expired') ?? list[0]
     ?? { restaurantId: 0, name: 'Your Restaurant', email: 'owner@example.com', sub: null };
   const email = render(sample, { ...c, previousMonthlyCents: ctx.monthlyCents, previousAnnualCents: ctx.annualCents });
   // In the browser the logo comes from the site (emails carry it as an attachment).
@@ -233,7 +236,7 @@ export async function applyDuePriceChanges() {
     .lte('effective_at', new Date().toISOString()).order('effective_at'));
   for (const c of due) {
     const existing = (patch: Partial<Sub>) =>
-      db().from('restaurant_subscriptions').update(patch).neq('plan', 'founding').in('status', ['active', 'past_due']);
+      db().from('restaurant_subscriptions').update(patch).neq('plan', 'founding').is('founding_number', null).in('status', ['active', 'past_due']);
     if (c.applies_to_existing) {
       check(await existing({ locked_monthly_cents: null, locked_annual_cents: null }));
     } else {

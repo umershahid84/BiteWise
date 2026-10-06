@@ -25,7 +25,7 @@ type Row = {
 
 function PlanBadge({ plan }: { plan: Plan | null }) {
   if (!plan) return <Badge tone="neutral">No plan</Badge>;
-  if (plan.plan === 'founding') return <Badge tone="green">🌱 Founding #{plan.foundingNumber ?? '–'}</Badge>;
+  if (plan.plan === 'founding' || plan.foundingNumber) return <Badge tone="green">🎉 Pioneer #{plan.foundingNumber ?? '–'}{plan.plan !== 'founding' && ` · ${plan.plan === 'annual' ? 'annual' : 'monthly'}`}</Badge>;
   const name = plan.plan === 'annual' ? 'Annual' : 'Monthly';
   if (plan.status === 'expired') return <Badge tone="red">{name}: lapsed</Badge>;
   if (plan.status === 'past_due') return <Badge tone="red">{name}: delinquent</Badge>;
@@ -157,7 +157,7 @@ function DeleteRestaurant({ restaurant, onDone }: { restaurant: Row; onDone: () 
   const [confirmText, setConfirmText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const hasHistory = restaurant.orders > 0 || !!restaurant.plan && restaurant.plan.plan !== 'founding';
+  const hasHistory = restaurant.orders > 0 || (!!restaurant.plan && restaurant.plan.plan !== 'founding' && !restaurant.plan.foundingNumber);
   return (
     <DialogContent title={`Delete ${restaurant.name}?`} description="This can't be undone.">
       <ul className="mt-0 mb-4 list-disc pl-5 text-sm text-ink-2">

@@ -351,7 +351,8 @@ export async function plans() {
     });
   const rank = (x: (typeof list)[number]) => (x.status === 'past_due' ? 0 : !x.plan ? 1 : x.status === 'expired' ? 2 : 3);
   list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
-  const active = subs.filter((x) => x.plan !== 'founding' && x.status === 'active');
+  const isPioneer = (x: (typeof subs)[number]) => x.plan === 'founding' || x.founding_number != null;
+  const active = subs.filter((x) => !isPioneer(x) && x.status === 'active');
   const [templates, pending, changes, audience] = await Promise.all([feeChanges.listTemplates(), feeChanges.pendingChange(), feeChanges.history(), feeChanges.recipientCounts()]);
   return {
     prices: p,
@@ -360,7 +361,7 @@ export async function plans() {
     changes: changes.map((c) => ({ ...c, effectiveLabel: feeChanges.effectiveLabel(c.effective_at) })),
     audience,
     summary: {
-      founding: subs.filter((x) => x.plan === 'founding').length,
+      founding: subs.filter(isPioneer).length,
       monthly: active.filter((x) => x.plan === 'monthly').length,
       annual: active.filter((x) => x.plan === 'annual').length,
       delinquent: subs.filter((x) => x.status === 'past_due').length,

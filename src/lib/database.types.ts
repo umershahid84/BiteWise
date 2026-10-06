@@ -458,13 +458,13 @@ isOneToOne: true
                   ]
                 },"subscription_payments": {
                   Row: {
-                    "amount_cents": number,"card_label": string,"created_at": string,"error": string,"id": number,"invoice_number": string | null,"period_end": string | null,"period_start": string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"transaction_id": string
+                    "amount_cents": number,"card_label": string,"created_at": string,"discount_cents": number,"discount_label": string,"error": string,"id": number,"invoice_number": string | null,"list_price_cents": number | null,"period_end": string | null,"period_start": string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"transaction_id": string
                   }
                   Insert: {
-                    "amount_cents": number,"card_label"?: string,"created_at"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"period_end"?: string | null,"period_start"?: string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"transaction_id"?: string
+                    "amount_cents": number,"card_label"?: string,"created_at"?: string,"discount_cents"?: number,"discount_label"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"list_price_cents"?: number | null,"period_end"?: string | null,"period_start"?: string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"transaction_id"?: string
                   }
                   Update: {
-                    "amount_cents"?: number,"card_label"?: string,"created_at"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"period_end"?: string | null,"period_start"?: string | null,"plan"?: Database["public"]['Enums']["subscription_plan"],"restaurant_id"?: number,"status"?: string,"transaction_id"?: string
+                    "amount_cents"?: number,"card_label"?: string,"created_at"?: string,"discount_cents"?: number,"discount_label"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"list_price_cents"?: number | null,"period_end"?: string | null,"period_start"?: string | null,"plan"?: Database["public"]['Enums']["subscription_plan"],"restaurant_id"?: number,"status"?: string,"transaction_id"?: string
                   }
                   Relationships: [
                     {
@@ -637,8 +637,8 @@ isOneToOne: false
 "begin_pickup_for":
 { Args: { "p_order_id": number,"p_pin": string,"p_restaurant_id": number }; Returns: Json
                            },
-"claim_founding_spot":
-{ Args: { "p_restaurant_id": number }; Returns: number
+"claim_pioneer_spot":
+{ Args: { "p_plan": Database["public"]['Enums']["subscription_plan"],"p_restaurant_id": number }; Returns: number
                            },
 "clear_void":
 { Args: { "p_order_id": number }; Returns: undefined

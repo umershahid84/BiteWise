@@ -7,6 +7,7 @@ import { must } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { company } from './company';
 import { renderDocument } from './documents';
+import { displayPhone } from '@/lib/phone';
 
 // The restaurant's copy of its Restaurant Partner Agreement as a PDF: the full text, then an electronic signature
 // record built from the acceptance stored at sign-up (who, when, from which IP and device, which version) and
@@ -87,7 +88,7 @@ export async function signedAgreementPdf(restaurantId: number, approvedAt?: stri
   pdf.moveDown(1);
 
   const rows: [string, string][] = [
-    ['Restaurant', `${r.name}\n${r.address}, ${r.city}, WA ${r.zip}${r.phone ? `\nTel ${r.phone}` : ''}`],
+    ['Restaurant', `${r.name}\n${r.address}, ${r.city}, WA ${r.zip}${r.phone ? `\nTel ${displayPhone(r.phone)}` : ''}`],
     ['Signed by', `${owner.username} <${owner.email}>`],
     ['Signed on', accepted ? when(accepted.accepted_at) : 'No acceptance record found'],
     ['IP address', accepted?.ip || 'not recorded'],

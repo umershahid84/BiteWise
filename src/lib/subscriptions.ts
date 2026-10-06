@@ -10,7 +10,9 @@ import { PaymentError, payments } from '@/lib/payments';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Restaurant subscriptions (supabase/migrations/20261006000200_bans_and_subscriptions.sql, 20261007000100_delinquent_plans.sql).
-//   * Founding Partners: the first `founding_spots` (50) approved restaurants, free for as long as they are partners.
+//   * Pioneer Members: the first `founding_spots` (50) restaurants to choose a plan get it free (choosePlan): a monthly
+//     or annual plan with a pioneer number (founding_number) and no card. Every period they get a $0.00 invoice that
+//     shows the plan price and the Pioneer Members Discount (renewDue renews them).
 //   * Paid plans: monthly or annual, charged in advance. Prices are settings the admin can change at any time; a new
 //     price applies to new plans and from each plan's next renewal.
 //   * Cards on file: restaurant owners keep cards in payment_methods (like customers). Auto-renewal charges the
@@ -22,6 +24,8 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 export type Subscription = Database['public']['Tables']['restaurant_subscriptions']['Row'];
 export type PaidPlan = 'monthly' | 'annual';
 const RETRY_DAYS = 7;
+export const PIONEER_DISCOUNT = 'Pioneer Members Discount';
+export const isPioneer = (sub: Pick<Subscription, 'founding_number'> | null | undefined) => sub?.founding_number != null;
 const DAY = 86_400_000;
 
 const db = () => supabaseAdmin();
@@ -58,11 +62,6 @@ export function addPeriod(start: Date, plan: PaidPlan) {
   return d;
 }
 
-// Makes the restaurant a Founding Partner if a free spot is left and it has no plan yet. Returns its number, or null.
-export async function claimFounding(restaurantId: number) {
-  return maybe(await db().rpc('claim_founding_spot', { p_restaurant_id: restaurantId })) as number | null;
-}
-
 export async function getSubscription(restaurantId: number) {
   return maybe(await db().from('restaurant_subscriptions').select('*').eq('restaurant_id', restaurantId).maybeSingle());
 }
@@ -91,13 +90,14 @@ export async function planSummary(restaurantId: number) {
     cardsOf(owner.id),
     priceContext(),
   ]);
-  const nextPlan = sub && sub.plan !== 'founding' ? ((sub.renew_plan ?? sub.plan) as PaidPlan) : null;
+  const pioneer = isPioneer(sub);
+  const nextPlan = sub && sub.plan !== 'founding' && !pioneer ? ((sub.renew_plan ?? sub.plan) as PaidPlan) : null;
   return {
     prices: p,
     canPost: Boolean(ok.data),
     cards: cards.map((c) => ({ id: c.id, brand: c.brand, last4: c.last4, expMonth: c.exp_month, expYear: c.exp_year, isDefault: c.is_default })),
     subscription: sub && {
-      plan: sub.plan, renewPlan: sub.renew_plan, status: sub.status, foundingNumber: sub.founding_number, autoRenew: sub.auto_renew,
+      plan: sub.plan, renewPlan: sub.renew_plan, status: sub.status, foundingNumber: sub.founding_number, pioneer, autoRenew: sub.auto_renew,
       priceCents: sub.price_cents, periodStart: sub.current_period_start, periodEnd: sub.current_period_end, cardLabel: sub.card_label,
       lastPaymentError: sub.last_payment_error,
       // What the next payment will cost: a renewal on its date, or a delinquent plan paid now. Includes a locked
@@ -106,6 +106,8 @@ export async function planSummary(restaurantId: number) {
         ? planPrice(ctx, sub, nextPlan, sub.status === 'past_due' ? new Date() : new Date(sub.current_period_end ?? Date.now()))
         : 0,
       grandfathered: !!(sub.locked_monthly_cents || sub.locked_annual_cents),
+      // What a Pioneer Member's plan would cost without the discount.
+      listPriceCents: pioneer ? priceOf(p, (sub.renew_plan ?? sub.plan) as PaidPlan) : 0,
     },
     // A scheduled fee change, so the Plan tab can tell restaurants about it.
     upcomingChange: ctx.pending && {
@@ -115,6 +117,7 @@ export async function planSummary(restaurantId: number) {
     payments: must(history).map((x) => ({
       id: x.id, plan: x.plan, amountCents: x.amount_cents, status: x.status, invoiceNumber: x.invoice_number, cardLabel: x.card_label,
       periodEnd: x.period_end, error: x.error, createdAt: x.created_at,
+      listPriceCents: x.list_price_cents, discountCents: x.discount_cents, discountLabel: x.discount_label,
     })),
   };
 }
@@ -142,7 +145,7 @@ export async function setDefaultCard(restaurantId: number, cardId: number) {
 export async function removeCard(restaurantId: number, cardId: number) {
   const { owner } = await ownerOf(restaurantId);
   const [sub, cards] = await Promise.all([getSubscription(restaurantId), cardsOf(owner.id)]);
-  const renewing = sub && sub.plan !== 'founding' && sub.status !== 'expired' && sub.auto_renew;
+  const renewing = sub && sub.plan !== 'founding' && !isPioneer(sub) && sub.status !== 'expired' && sub.auto_renew;
   if (renewing && cards.length <= 1 && cards.some((c) => c.id === cardId)) {
     throw new AppError(409, 'Your plan renews automatically with this card. Add another card first, or turn off auto-renewal.');
   }
@@ -196,14 +199,80 @@ async function chargePeriod(o: {
   }
 }
 
-async function receipt(o: { to: string; restaurant: string; plan: PaidPlan; amountCents: number; invoice: string; cardLabel: string; end: Date; autoRenew: boolean; renewal: boolean }) {
+async function receipt(o: {
+  to: string; restaurant: string; plan: PaidPlan; amountCents: number; invoice: string; cardLabel: string; start?: Date; end: Date; autoRenew: boolean;
+  renewal: boolean; listPriceCents?: number; discountCents?: number; discountLabel?: string;
+}) {
   await sendEmail({
     to: o.to,
     ...subscriptionReceiptEmail({
       restaurant: o.restaurant, plan: o.plan, amountCents: o.amountCents, invoiceNumber: o.invoice, cardLabel: o.cardLabel,
-      periodEnd: o.end.toISOString(), autoRenew: o.autoRenew, renewal: o.renewal, planUrl: planUrl(),
+      periodStart: o.start?.toISOString(), periodEnd: o.end.toISOString(), autoRenew: o.autoRenew, renewal: o.renewal, planUrl: planUrl(),
+      listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel,
     }),
   }).catch((err) => console.error('subscription receipt email:', err));
+}
+
+// ---------------------------------------------------------------- Pioneer Members
+
+// Records a Pioneer Member's $0.00 invoice for one period (the plan price minus the Pioneer Members Discount) and
+// emails it.
+async function pioneerInvoice(restaurantId: number, plan: PaidPlan, start: Date, end: Date, renewal: boolean) {
+  const listPrice = priceOf(await prices(), plan);
+  const invoice = must(await db().rpc('next_subscription_invoice')) as string;
+  must(await db().from('subscription_payments').insert({
+    restaurant_id: restaurantId, plan, amount_cents: 0, status: 'paid', period_start: start.toISOString(), period_end: end.toISOString(),
+    invoice_number: invoice, transaction_id: 'pioneer', card_label: 'No charge',
+    list_price_cents: listPrice, discount_cents: listPrice, discount_label: PIONEER_DISCOUNT,
+  }).select('id'));
+  const { restaurant, owner } = await ownerOf(restaurantId);
+  await receipt({
+    to: owner.email, restaurant: restaurant.name, plan, amountCents: 0, invoice, cardLabel: 'No charge', start, end, autoRenew: true, renewal,
+    listPriceCents: listPrice, discountCents: listPrice, discountLabel: PIONEER_DISCOUNT,
+  });
+  return invoice;
+}
+
+// A restaurant chooses its plan. While Pioneer spots are left it becomes a Pioneer Member on that plan, free and
+// without a card (returns its pioneer number). Otherwise it returns { pioneer: null } and the restaurant pays with a
+// card (subscribe), which is only possible once the restaurant is approved.
+export async function choosePlan(restaurantId: number, plan: PaidPlan) {
+  const r = must(await db().from('restaurants').select('status').eq('id', restaurantId).single());
+  if (r.status === 'banned' || r.status === 'deleted') throw new AppError(403, 'Your restaurant has been removed from Bite Wise.');
+  const sub = await getSubscription(restaurantId);
+  if (isPioneer(sub) && sub!.status === 'active') throw new AppError(409, 'You are already a Pioneer Member: your plan is free.');
+  if (sub && sub.status !== 'expired') throw new AppError(409, 'You already have a plan. You can switch plans from your next renewal.');
+  const number = maybe(await db().rpc('claim_pioneer_spot', { p_restaurant_id: restaurantId, p_plan: plan })) as number | null;
+  if (!number) {
+    return { pioneer: null, canPay: r.status === 'approved' };
+  }
+  const s = (await getSubscription(restaurantId))!;
+  const invoice = await pioneerInvoice(restaurantId, plan, new Date(s.current_period_start!), new Date(s.current_period_end!), false);
+  return { pioneer: number, invoiceNumber: invoice, periodEnd: s.current_period_end, canPay: true };
+}
+
+// Starts the next free period of every Pioneer membership whose period has ended, with its $0.00 invoice.
+async function renewPioneers() {
+  const due = must(await db().from('restaurant_subscriptions').select('*').not('founding_number', 'is', null).eq('status', 'active')
+    .neq('plan', 'founding').lte('current_period_end', new Date().toISOString()).limit(200));
+  let renewed = 0;
+  for (const s of due) {
+    try {
+      const plan = (s.renew_plan ?? s.plan) as PaidPlan;
+      const start = new Date(s.current_period_end!);
+      const end = addPeriod(start, plan);
+      // Claim it by its current end date, so two job runs never renew the same period twice.
+      const claimed = maybe(await db().from('restaurant_subscriptions')
+        .update({ plan, renew_plan: null, current_period_start: start.toISOString(), current_period_end: end.toISOString(), updated_at: new Date().toISOString() })
+        .eq('restaurant_id', s.restaurant_id).eq('current_period_end', s.current_period_end!).select('restaurant_id').maybeSingle());
+      if (!claimed) continue;
+      await pioneerInvoice(s.restaurant_id, plan, start, end, true);
+      renewed++;
+    } catch (err) {
+      console.error(`renewing the Pioneer membership of restaurant ${s.restaurant_id}:`, err);
+    }
+  }
+  return renewed;
 }
 
 // Pauses the restaurant's live offers (its plan just became delinquent).
@@ -215,7 +284,9 @@ async function pauseOffers(restaurantId: number) {
 // (which is saved to the cards on file).
 export async function subscribe(restaurantId: number, input: { plan: PaidPlan; cardId?: number | null; token?: unknown; autoRenew: boolean }) {
   const sub = await getSubscription(restaurantId);
-  if (sub?.plan === 'founding') throw new AppError(409, 'You are a Founding Partner: Bite Wise is free for you.');
+  if (isPioneer(sub) && sub!.status === 'active') throw new AppError(409, 'You are a Pioneer Member: your plan is free.');
+  const status = must(await db().from('restaurants').select('status').eq('id', restaurantId).single()).status;
+  if (status !== 'approved') throw new AppError(409, 'Paid plans start once your restaurant is approved.');
   if (sub?.status === 'active') throw new AppError(409, 'You already have an active plan. You can switch plans from your next renewal.');
   if (sub?.status === 'past_due') throw new AppError(409, 'Your plan is delinquent: pay it to post offers again.');
   const { restaurant, owner } = await ownerOf(restaurantId);
@@ -250,12 +321,13 @@ export async function subscribe(restaurantId: number, input: { plan: PaidPlan; c
 
 async function paidSubscription(restaurantId: number) {
   const sub = await getSubscription(restaurantId);
-  if (!sub || sub.plan === 'founding' || sub.status === 'expired') throw new AppError(409, 'You have no paid plan right now.');
+  if (!sub || sub.plan === 'founding' || sub.status === 'expired') throw new AppError(409, 'You have no plan right now.');
   return sub;
 }
 
 export async function setAutoRenew(restaurantId: number, on: boolean) {
-  await paidSubscription(restaurantId);
+  const sub = await paidSubscription(restaurantId);
+  if (isPioneer(sub)) throw new AppError(409, 'Pioneer memberships renew automatically, free.');
   if (on) {
     const { owner } = await ownerOf(restaurantId);
     if (!(await cardsOf(owner.id)).length) throw new AppError(409, 'Add a card on file first: auto-renewal charges your default card.');
@@ -273,7 +345,7 @@ export async function setRenewPlan(restaurantId: number, plan: PaidPlan) {
 async function claim(restaurantId: number) {
   const now = new Date();
   return maybe(await db().from('restaurant_subscriptions').update({ renewing_at: now.toISOString() })
-    .eq('restaurant_id', restaurantId).neq('plan', 'founding').in('status', ['active', 'past_due'])
+    .eq('restaurant_id', restaurantId).neq('plan', 'founding').is('founding_number', null).in('status', ['active', 'past_due'])
     .or(`renewing_at.is.null,renewing_at.lt.${new Date(now.getTime() - 10 * 60_000).toISOString()}`)
     .select('*').maybeSingle());
 }
@@ -349,9 +421,10 @@ export async function payNow(restaurantId: number, cardId?: number | null) {
 // Scheduled job: charges renewals that are due, retries delinquent plans once a day, and sends renewal reminders.
 export async function renewDue() {
   const now = new Date();
+  const pioneers = await renewPioneers();
   const due = must(await db().from('restaurant_subscriptions').select('restaurant_id')
-    .neq('plan', 'founding').eq('auto_renew', true).in('status', ['active', 'past_due']).lte('current_period_end', now.toISOString()).limit(200));
-  const counts = { renewed: 0, failed: 0, reminded: 0 };
+    .neq('plan', 'founding').is('founding_number', null).eq('auto_renew', true).in('status', ['active', 'past_due']).lte('current_period_end', now.toISOString()).limit(200));
+  const counts = { renewed: 0, failed: 0, reminded: 0, pioneers };
   for (const { restaurant_id } of due) {
     try {
       const res = await charge(restaurant_id, { manual: false });
@@ -367,7 +440,7 @@ export async function renewDue() {
   const lead = (plan: PaidPlan) => (plan === 'annual' ? p.reminderDaysAnnual : p.reminderDaysMonthly);
   const horizon = new Date(now.getTime() + Math.max(p.reminderDaysAnnual, p.reminderDaysMonthly) * DAY);
   const soon = must(await db().from('restaurant_subscriptions').select('*')
-    .neq('plan', 'founding').eq('auto_renew', true).eq('status', 'active')
+    .neq('plan', 'founding').is('founding_number', null).eq('auto_renew', true).eq('status', 'active')
     .gt('current_period_end', now.toISOString()).lte('current_period_end', horizon.toISOString()));
   const ctx = await priceContext();
   for (const s of soon) {

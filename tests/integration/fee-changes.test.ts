@@ -20,6 +20,7 @@ async function paying(plan: 'monthly' | 'annual') {
   const db = admin();
   const r = (await db.from('restaurants').select('*').eq('owner_id', owner.id).single()).data!;
   await db.from('restaurants').update({ status: 'approved' }).eq('id', r.id);
+  // subscribe() charges a card (choosePlan would make it a free Pioneer Member while spots are left).
   await subs.subscribe(r.id, { plan, token: card('4242'), autoRenew: true });
   return { owner, restaurant: r };
 }

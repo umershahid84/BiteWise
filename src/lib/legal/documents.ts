@@ -8,12 +8,12 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-09.1';
-export const EFFECTIVE = 'October 9, 2026';
+export const LEGAL_VERSION = '2026-10-10.1';
+export const EFFECTIVE = 'October 10, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
-  // Restaurant subscription: prices in dollars, and how many Founding Partner (free) spots there are.
+  // Restaurant subscription: prices in dollars, and how many Pioneer Member (free) spots there are.
   monthlyPrice: number; annualPrice: number; foundingSpots: number;
 };
 
@@ -273,8 +273,10 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
 
 <p>5.6 <b>Subscription.</b> To list Offers, an approved Partner needs an active Bite Wise plan:</p>
 <ul>
-  <li><b>Founding Partners.</b> The first ${c.foundingSpots} restaurants approved on Bite Wise are Founding Partners and pay no
-  subscription fee for as long as this Agreement continues. Founding status is personal to your restaurant and can't be transferred.</li>
+  <li><b>Pioneer Members.</b> The first ${c.foundingSpots} restaurants to choose a plan on Bite Wise become Pioneer Members: their
+  monthly or annual plan is free for as long as this Agreement continues and the membership stays active. Each period you receive an
+  invoice that shows the plan price, a Pioneer Members Discount of the same amount, and a total of $0.00; no card is needed. Pioneer
+  status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
   (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude any applicable taxes.</li>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan

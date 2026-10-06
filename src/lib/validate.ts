@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { formatPhoneInput, phoneDigits } from '@/lib/phone';
 import { DIETARY_TAGS } from '@/lib/constants';
 import { AppError } from '@/lib/errors';
 
@@ -40,7 +41,10 @@ export const restaurantFieldsSchema = z.object({
   address: text('Street address', 3, 120),
   city: text('City', 2, 60),
   zip: zipSchema,
-  phone: optionalText('Phone', 30),
+  // Optional; when given, a 10-digit US number, stored as (xxx) xxx-xxxx.
+  phone: z.string().trim().max(30).optional().default('')
+    .refine((v) => !v || phoneDigits(v).length === 10, 'Enter a 10-digit phone number, like (206) 555-0123.')
+    .transform((v) => (v ? formatPhoneInput(v) : '')),
   cuisine: optionalText('Cuisine', 40),
   lat: coord(90),
   lng: coord(180),

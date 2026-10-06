@@ -2,7 +2,6 @@ import 'server-only';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { AppError, check, maybe, must } from '@/lib/errors';
 import * as orders from '@/lib/orders';
-import { claimFounding } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Suspensions and bans, for accounts and restaurants. The owner console's actions (src/app/actions/admin.ts) check
@@ -58,7 +57,6 @@ export async function setRestaurantStatus(id: number, d: { status: RestaurantSta
     const lifted = must(await db().from('profiles').update({ status: 'active' }).eq('id', before.owner_id).eq('status', 'banned').select('id'));
     if (lifted.length) await setLoginBan(before.owner_id, 'none');
   }
-  if (d.status === 'approved') await claimFounding(id); // the first restaurants approved are Founding Partners (free)
   return before.name;
 }
 

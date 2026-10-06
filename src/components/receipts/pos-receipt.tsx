@@ -1,5 +1,6 @@
 import type { Receipt } from '@/lib/receipts/data';
 import { money, pct } from '@/lib/format';
+import { displayPhone } from '@/lib/phone';
 
 // Point-of-sale (80 mm thermal) receipt. The PDF version is drawn by src/lib/receipts/pdf.ts.
 const Row = ({ left, right, className = '' }: { left: React.ReactNode; right?: React.ReactNode; className?: string }) => (
@@ -30,7 +31,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
           <img className="pos-logo" src="/assets/logo.svg" alt="Bite Wise" />
           <div className="pos-tag">Rescued food · Greater Seattle</div>
           <div className="pos-store">{rest.name}</div>
-          <div>{rest.address}<br />{rest.city}, WA {rest.zip}{rest.phone && <><br />Tel {rest.phone}</>}</div>
+          <div>{rest.address}<br />{rest.city}, WA {rest.zip}{rest.phone && <><br />Tel {displayPhone(rest.phone)}</>}</div>
         </header>
         <hr className="pos-dash" />
         <Row left="Receipt" right={r.receiptNumber} />

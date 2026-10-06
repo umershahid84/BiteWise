@@ -40,12 +40,15 @@ type Data = {
   rows: Row[];
 };
 
-const FILTERS = { all: 'All restaurants', past_due: 'Delinquent', founding: 'Founding Partners', monthly: 'Monthly', annual: 'Annual', none: 'No plan', expired: 'Ended' } as const;
+const FILTERS = { all: 'All restaurants', past_due: 'Delinquent', founding: 'Pioneer Members', monthly: 'Monthly', annual: 'Annual', none: 'No plan', expired: 'Ended' } as const;
+// Pioneer Members (and the old founding plan) pay nothing.
+const pioneer = (r: Pick<Row, 'plan' | 'foundingNumber'>) => r.plan === 'founding' || r.foundingNumber != null;
+
 const PLACEHOLDERS = ['{{restaurant}}', '{{effective_date}}', '{{old_monthly}}', '{{new_monthly}}', '{{old_annual}}', '{{new_annual}}', '{{your_plan}}'];
 
 function PlanCell({ r }: { r: Row }) {
   if (!r.plan) return <Badge tone="neutral">No plan</Badge>;
-  if (r.plan === 'founding') return <Badge tone="green">🌱 Founding #{r.foundingNumber ?? '–'}</Badge>;
+  if (r.plan === 'founding' || r.foundingNumber) return <Badge tone="green">🎉 Pioneer #{r.foundingNumber ?? '–'}{r.plan !== 'founding' && ` · ${r.plan === 'annual' ? 'annual' : 'monthly'}`}</Badge>;
   const name = r.plan === 'annual' ? 'Annual' : 'Monthly';
   if (r.status === 'past_due') return <Badge tone="red">{name}: delinquent</Badge>;
   if (r.status === 'expired') return <Badge tone="neutral">{name}: ended</Badge>;
@@ -61,7 +64,8 @@ export function PlansPanel() {
   if (!data) return <Spinner />;
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
   const rows = data.rows.filter((r) =>
-    filter === 'all' ? true : filter === 'none' ? !r.plan : filter === 'past_due' || filter === 'expired' ? r.status === filter : r.plan === filter && r.status === 'active');
+    filter === 'all' ? true : filter === 'none' ? !r.plan : filter === 'past_due' || filter === 'expired' ? r.status === filter
+      : filter === 'founding' ? pioneer(r) : r.plan === filter && r.status === 'active' && !pioneer(r));
   const s = data.summary;
   return (
     <div className="grid gap-5">
@@ -69,7 +73,7 @@ export function PlansPanel() {
         <Kpi value={money(s.mrrCents)} label="Monthly recurring revenue" />
         <Kpi value={money(s.paid12mCents)} label="Plan payments, last 12 months" />
         <Kpi value={`${s.monthly} · ${s.annual}`} label="Paying: monthly · annual" />
-        <Kpi value={`${data.prices.foundingTaken} / ${data.prices.foundingSpots}`} label="Founding Partner spots used" />
+        <Kpi value={`${data.prices.foundingTaken} / ${data.prices.foundingSpots}`} label="Pioneer Member spots used" />
         <Kpi value={<span className={s.delinquent ? 'text-danger' : undefined}>{s.delinquent}</span>} label={`Delinquent · ${s.noPlan} without a plan`} />
       </div>
 
@@ -113,10 +117,10 @@ export function PlansPanel() {
                 <td><b>{r.name}</b><div className="text-xs text-muted">{r.city} · {r.ownerEmail}{r.restaurantStatus !== 'approved' && ` · ${r.restaurantStatus}`}</div></td>
                 <td><PlanCell r={r} />{r.status === 'past_due' && r.lastPaymentError && <div className="mt-1 max-w-56 text-xs text-danger">{r.lastPaymentError}</div>}</td>
                 <td className="text-sm">
-                  {r.plan && r.plan !== 'founding' ? `${money(r.priceCents)} / ${r.plan === 'annual' ? 'yr' : 'mo'}` : r.plan === 'founding' ? 'Free' : '–'}
+                  {pioneer(r) ? 'FREE' : r.plan ? `${money(r.priceCents)} / ${r.plan === 'annual' ? 'yr' : 'mo'}` : '–'}
                   {r.lockedCents && <div className="text-xs text-primary-ink">locked at {money(r.lockedCents)}</div>}
                 </td>
-                <td className="text-sm">{r.periodEnd ? day(r.periodEnd) : '–'}{r.plan && r.plan !== 'founding' && r.status === 'active' && <div className="text-xs text-muted">{r.autoRenew ? 'auto-renews' : 'ends'}</div>}</td>
+                <td className="text-sm">{r.periodEnd ? day(r.periodEnd) : '–'}{r.plan && r.status === 'active' && <div className="text-xs text-muted">{pioneer(r) ? '$0.00 invoices' : r.autoRenew ? 'auto-renews' : 'ends'}</div>}</td>
                 <td className="text-sm">{r.cardLabel || '–'}</td>
                 <td className="text-right text-sm">{r.paid12mCents ? money(r.paid12mCents) : '–'}</td>
                 <td className="whitespace-nowrap">
@@ -272,7 +276,7 @@ function FeeChangeForm({ data, onChanged }: { data: Data; onChanged: () => void 
       </div>
 
       <Checkbox className="my-4" checked={f.includeFounding} onChange={(e) => setF({ ...f, includeFounding: e.target.checked })}
-        label={`Also email the ${data.audience.founding} Founding Partners (their plan stays free)`} />
+        label={`Also email the ${data.audience.founding} Pioneer Members (their plan stays free)`} />
       <ErrorText error={error} />
       <div className="flex flex-wrap gap-2">
         <Button variant="ghost" onClick={showPreview}>Preview email</Button>
@@ -304,7 +308,7 @@ function PlanSettings({ prices, onSaved }: { prices: Data['prices']; onSaved: ()
   return (
     <Card>
       <CardTitle>Plan settings</CardTitle>
-      <Field label="Founding Partner spots (free for life)" htmlFor="ps-founding" hint={`${prices.foundingTaken} used · given to the first restaurants approved`}>
+      <Field label="Pioneer Member spots (free plan)" htmlFor="ps-founding" hint={`${prices.foundingTaken} used · given to the first restaurants to choose a plan`}>
         <Input id="ps-founding" inputMode="numeric" className="max-w-40" value={f.foundingSpots} onChange={(e) => setF({ ...f, foundingSpots: e.target.value })} />
       </Field>
       <p className="mb-2 text-sm font-bold">Renewal reminder email (card on file, amount and date)</p>

@@ -168,14 +168,14 @@ export async function updateSettings(input: unknown) {
   });
 }
 
-// Founding Partner spots and when renewal reminders go out. (Prices change through a scheduled fee change.)
+// Pioneer Member spots and when renewal reminders go out. (Prices change through a scheduled fee change.)
 export async function updatePlanSettings(input: unknown) {
   return action(async () => {
     const me = await requireActor('admin');
     const days = (what: string) => z.coerce.number().int(`${what} must be a whole number of days.`).min(1, `${what} must be 1 to 60 days.`).max(60, `${what} must be 1 to 60 days.`);
     const d = parse(
       z.object({
-        foundingSpots: z.coerce.number().int('Founding spots must be a whole number.').min(0, 'Founding spots must be 0 to 10,000.').max(10000, 'Founding spots must be 0 to 10,000.'),
+        foundingSpots: z.coerce.number().int('Pioneer spots must be a whole number.').min(0, 'Pioneer spots must be 0 to 10,000.').max(10000, 'Pioneer spots must be 0 to 10,000.'),
         reminderDaysAnnual: days('The annual reminder'),
         reminderDaysMonthly: days('The monthly reminder'),
       }),

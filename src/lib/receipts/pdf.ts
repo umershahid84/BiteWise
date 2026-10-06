@@ -4,6 +4,7 @@ import PDFDocument from 'pdfkit';
 import { code128 } from '@/lib/code128';
 import { money, pct } from '@/lib/format';
 import type { Receipt, Report } from './data';
+import { displayPhone } from '@/lib/phone';
 
 // PDF receipts (80 mm point-of-sale roll) and daily reports (landscape letter).
 // WOFF fonts (not WOFF2): pdfkit's font subsetter can fail on WOFF2 input.
@@ -93,7 +94,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   y += logoW * LOGO_RATIO + 4;
   center('RESCUED FOOD · GREATER SEATTLE', 'mono', 6.2, { spacing: 0.4, after: 7 });
   center(rc.restaurant.name.toUpperCase(), 'monoBold', 9.5, { after: 1 });
-  center(`${rc.restaurant.address}\n${rc.restaurant.city}, WA ${rc.restaurant.zip}${rc.restaurant.phone ? `\nTel ${rc.restaurant.phone}` : ''}`, 'mono', 7.2, { after: 2 });
+  center(`${rc.restaurant.address}\n${rc.restaurant.city}, WA ${rc.restaurant.zip}${rc.restaurant.phone ? `\nTel ${displayPhone(rc.restaurant.phone)}` : ''}`, 'mono', 7.2, { after: 2 });
   dashes();
 
   // Order facts.
@@ -212,7 +213,7 @@ export function reportPdf(rep: Report) {
   doc.image(LOGO, L, 34, { height: 38 });
   doc.font('head').fontSize(18).fillColor(INK).text('Daily sales report', L, 36, { width: W, align: 'right' });
   doc.font('regular').fontSize(9.5).fillColor(MUTED).text(`${rep.restaurant.name} · ${rep.dateText}`, L, 60, { width: W, align: 'right' });
-  doc.text(`${rep.restaurant.address}, ${rep.restaurant.city}, WA ${rep.restaurant.zip}${rep.restaurant.phone ? ` · ${rep.restaurant.phone}` : ''}`, L, 74, { width: W, align: 'right' });
+  doc.text(`${rep.restaurant.address}, ${rep.restaurant.city}, WA ${rep.restaurant.zip}${rep.restaurant.phone ? ` · ${displayPhone(rep.restaurant.phone)}` : ''}`, L, 74, { width: W, align: 'right' });
   rule(doc, L, R, 96);
 
   const s = rep.summary;

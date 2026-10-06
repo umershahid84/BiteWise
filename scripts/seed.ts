@@ -234,7 +234,7 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
 
   // Plans: the Seattle demo restaurants are on the annual plan and the others on the monthly plan (mock payments),
   // each with a test card on file.
-  // Demo restaurants never take one of the free Founding Partner spots, which are kept for real restaurants.
+  // Demo restaurants never take one of the free Pioneer Member spots, which are kept for real restaurants.
   for (const [u, rid] of Object.entries(ids)) {
     if (u === 'issaquahbakehouse') continue;
     // A test card on file (mock payments), which auto-renewal charges.

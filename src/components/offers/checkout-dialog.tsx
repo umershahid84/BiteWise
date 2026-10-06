@@ -23,6 +23,7 @@ import type { Quote } from '@/lib/pricing';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { OfferImage } from './offer-card';
 import type { OfferRow, Origin } from './types';
+import { displayPhone } from '@/lib/phone';
 
 export function CheckoutDialog({ offer, origin, payment, onClose }: {
   offer: OfferRow | null;
@@ -136,7 +137,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
       <p className="mb-1"><b>{offer.restaurant_name}</b>{offer.cuisine ? ` · ${offer.cuisine}` : ''}</p>
       <p className="mb-3 text-sm text-muted">
         {offer.address}, {offer.city}, WA {offer.zip} · <a href={mapUrl} target="_blank" rel="noopener">Map</a>
-        {offer.phone && <> · <a href={`tel:${offer.phone}`}>{offer.phone}</a></>}
+        {offer.phone && <> · <a href={`tel:${offer.phone.replace(/[^\d+]/g, '')}`}>{displayPhone(offer.phone)}</a></>}
         {away != null && <> · {away.toFixed(1)} mi away</>}
       </p>
       {offer.description && <p className="mb-3 text-ink-2">{offer.description}</p>}

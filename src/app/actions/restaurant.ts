@@ -9,10 +9,11 @@ import { ensureKioskToken, kioskUrls, rotateKioskToken } from '@/lib/kiosk';
 import { action, AppError, check, maybe, must } from '@/lib/errors';
 import { payments } from '@/lib/payments';
 import * as orders from '@/lib/orders';
+import { locateRestaurant } from '@/lib/restaurant-location';
 import * as subscriptions from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
-import { menuItemSchema, parse, restaurantProfileSchema } from '@/lib/validate';
+import { menuItemSchema, parse, restaurantProfileSchema, zipSchema } from '@/lib/validate';
 
 // ---------------------------------------------------------------- pickup
 
@@ -104,10 +105,10 @@ export async function saveRestaurantProfile(input: unknown) {
     const supabase = await supabaseServer();
     let lat = data.lat;
     let lng = data.lng;
-    // Until the owner pins the exact spot, use the ZIP code's center.
+    // Without a pin from the owner, look the street address up (or, failing that, use the ZIP code's center).
     if (lat === null || lng === null) {
-      const area = maybe(await supabase.rpc('resolve_area', { p_query: data.zip.slice(0, 5) }))?.[0];
-      if (area) ({ lat, lng } = area);
+      const spot = await locateRestaurant(data);
+      if (spot) ({ lat, lng } = spot);
     }
     check(
       await supabase.from('restaurants').update({
@@ -117,6 +118,17 @@ export async function saveRestaurantProfile(input: unknown) {
       }).eq('id', restaurant.id),
     );
     return null;
+  });
+}
+
+// Looks a street address up for the profile's map pin.
+export async function locateAddress(input: unknown) {
+  return action(async () => {
+    await requireRestaurant();
+    const a = parse(z.object({ address: z.string().trim().min(3, 'Enter the street address.'), city: z.string().trim().min(2, 'Enter the city.'), zip: zipSchema }), input);
+    const spot = await locateRestaurant(a);
+    if (!spot) throw new AppError(404, 'We couldn\'t find that address. Check it, or drag the pin to your door.');
+    return spot;
   });
 }
 
@@ -197,6 +209,15 @@ export async function createPlanSetupIntent() {
     const customerId = await payments().ensureCustomer({ email: viewer.email, username: viewer.username, existingId: profile?.stripe_customer_id });
     if (customerId !== profile?.stripe_customer_id) await supabaseAdmin().from('profiles').update({ stripe_customer_id: customerId }).eq('id', viewer.id);
     return payments().createSetupIntent(customerId);
+  });
+}
+
+// Chooses a plan: free (Pioneer Member) while spots are left, with no card; otherwise the restaurant pays with
+// subscribePlan. Works while the restaurant waits for approval.
+export async function choosePlan(plan: unknown) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    return subscriptions.choosePlan(restaurant.id, parse(paidPlan, plan));
   });
 }
 

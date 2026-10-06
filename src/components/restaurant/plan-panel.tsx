@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, CreditCard, Leaf, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  addPlanCard, createPlanSetupIntent, getPlan, payPlanNow, removePlanCard, setDefaultPlanCard, setPlanAtRenewal, setPlanAutoRenew, subscribePlan,
+  addPlanCard, choosePlan, createPlanSetupIntent, getPlan, payPlanNow, removePlanCard, setDefaultPlanCard, setPlanAtRenewal, setPlanAutoRenew, subscribePlan,
 } from '@/app/actions/restaurant';
 import { CardEntry, type CardEntryHandle, type PaymentConfig } from '@/components/payments/card-entry';
 import { Alert, ErrorText } from '@/components/ui/alert';
@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 type PaidPlan = 'monthly' | 'annual';
 type SavedCard = PlanSummary['cards'][number];
-const NAMES = { founding: 'Founding Partner', monthly: 'Monthly', annual: 'Annual' } as const;
+const NAMES = { founding: 'Pioneer', monthly: 'Monthly', annual: 'Annual' } as const;
 const usd = (cents: number) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 const cardLabel = (c: SavedCard) => `${c.brand.toUpperCase()} •••• ${c.last4}`;
 
@@ -37,8 +37,9 @@ async function cardToken(payment: PaymentConfig, ref: React.RefObject<CardEntryH
   return ref.current!.confirmSetup(secret);
 }
 
-// The restaurant's Bite Wise plan: Founding Partner (free), or a monthly or annual plan that renews automatically
-// with the default card on file. A declined payment makes the plan delinquent until it is paid.
+// The restaurant's Bite Wise plan. The first restaurants to choose a plan are Pioneer Members: free, no card, with a
+// $0.00 invoice each period. Others pay a monthly or annual plan that renews automatically with the default card on
+// file; a declined payment makes the plan delinquent until it is paid.
 export function PlanPanel({ payment, approved }: { payment: PaymentConfig; approved: boolean }) {
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
@@ -52,19 +53,37 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
   const [subscribeTo, setSubscribeTo] = useState<PaidPlan | null>(null);
   const [addingCard, setAddingCard] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [choosing, setChoosing] = useState<PaidPlan | null>(null);
+  const [welcome, setWelcome] = useState<{ number: number; plan: PaidPlan; invoice: string } | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['plan'] });
 
   if (isLoading) return <div className="grid place-items-center py-10"><Spinner /></div>;
   if (error || !data) return <Alert tone="error">{error?.message ?? 'Could not load your plan.'}</Alert>;
   const sub = data.subscription;
   const p = data.prices;
-  const paid = sub && sub.plan !== 'founding';
+  const pioneer = !!sub?.pioneer || sub?.plan === 'founding';
+  const paid = sub && !pioneer;
+
+  // Pioneer spots left: the plan is free and no card is asked for. Otherwise the card form opens (once approved).
+  const choose = async (plan: PaidPlan) => {
+    setChoosing(plan);
+    const res = await choosePlan(plan);
+    setChoosing(null);
+    if (!res.ok) return toast.error(res.error);
+    if (res.data.pioneer) {
+      setWelcome({ number: res.data.pioneer, plan, invoice: res.data.invoiceNumber ?? '' });
+      refresh();
+      return;
+    }
+    if (!res.data.canPay) return toast.info('All Pioneer spots are taken. You can choose a paid plan as soon as your restaurant is approved.');
+    setSubscribeTo(plan);
+  };
 
   const change = data.upcomingChange;
   const keepsFee = !!paid && sub!.status !== 'expired' && (sub!.grandfathered || (change && !change.appliesToExisting));
   return (
     <div className="grid gap-5">
-      {change && sub?.plan !== 'founding' && (
+      {change && !pioneer && (
         <Alert tone="info">
           📣 <b>Subscription fees change on {fmtDate(change.effectiveAt)} (12:01 AM Pacific):</b> {usd(change.monthlyCents)} a month or {usd(change.annualCents)} a year.{' '}
           {paid && sub!.status !== 'expired'
@@ -88,25 +107,34 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
         </Card>
       )}
 
-      {sub?.plan === 'founding' ? (
-        <FoundingCard number={sub.foundingNumber} />
+      {pioneer && sub ? (
+        <PioneerCard sub={sub} onChanged={refresh} />
       ) : sub && sub.status !== 'expired' ? (
         <CurrentPlan data={data} onChanged={refresh} />
       ) : (
         <>
           {sub?.status === 'expired' && <Alert tone="error">⛔ <b>Your plan has ended.</b> Your offers are paused. Choose a plan to post offers again.</Alert>}
-          {!sub && !approved && p.foundingLeft > 0 && (
-            <Alert tone="info">
-              🌱 <b>Good news: {p.foundingLeft} of {p.foundingSpots} Founding Partner spots are still open.</b> Founding Partners use Bite Wise free for as long as they stay
-              partners. If a spot is still open when your restaurant is approved, it&apos;s yours automatically: nothing to do now.
-            </Alert>
+          {p.foundingLeft > 0 ? (
+            <Card className="border-2 border-primary/60 bg-primary-soft/40">
+              <p className="m-0 text-sm font-bold tracking-wide text-primary-ink uppercase">Pioneer offer · {p.foundingLeft} of {p.foundingSpots} spots left</p>
+              <h2 className="m-0 mt-1 text-2xl font-extrabold">Choose your plan now and it&apos;s FREE 🎉</h2>
+              <p className="m-0 mt-1 text-ink-2">
+                The first {p.foundingSpots} restaurants to choose a plan become <b>Pioneer Members</b>: your monthly or annual plan costs $0.00 for as long as you stay
+                a member, with no card needed. Every month or year you get an invoice showing your plan price, minus the Pioneer Members Discount, for a total of $0.00.
+                {!approved && ' You can choose now, while we review your restaurant.'}
+              </p>
+            </Card>
+          ) : (
+            <>
+              {!approved && <Alert tone="info">⏳ All Pioneer spots are taken. You can choose your plan as soon as your restaurant is approved.</Alert>}
+              {approved && <Alert tone="warn">⭐ <b>Choose a plan to start posting offers.</b> No commission on your sales: just one simple fee.</Alert>}
+            </>
           )}
-          {!sub && approved && <Alert tone="warn">⭐ <b>Choose a plan to start posting offers.</b> No commission on your sales: just one simple fee.</Alert>}
-          <PlanChooser prices={p} onChoose={setSubscribeTo} />
+          <PlanChooser prices={p} pioneer={p.foundingLeft > 0} busy={choosing} onChoose={choose} />
         </>
       )}
 
-      {sub?.plan !== 'founding' && (
+      {!pioneer && (
         <CardsOnFile cards={data.cards} renewing={!!paid && sub!.status !== 'expired' && sub!.autoRenew} onAdd={() => setAddingCard(true)} onChanged={refresh} />
       )}
 
@@ -119,11 +147,24 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
               {data.payments.map((x) => (
                 <tr key={x.id}>
                   <td>{fmtDate(x.createdAt)}</td>
-                  <td className="font-mono text-xs">{x.invoiceNumber ?? '–'}</td>
+                  <td className="font-mono text-xs">
+                    {x.invoiceNumber ? <a href={`/restaurant/invoices/${x.id}`} target="_blank" rel="noopener">{x.invoiceNumber}</a> : '–'}
+                  </td>
                   <td>{NAMES[x.plan]}{x.periodEnd && x.status === 'paid' && <div className="text-xs text-muted">through {fmtDate(x.periodEnd)}</div>}</td>
                   <td className="text-sm">{x.cardLabel || '–'}</td>
-                  <td className="text-right font-semibold">{money(x.amountCents)}</td>
-                  <td>{x.status === 'paid' ? <Badge tone="green">Paid</Badge> : <Badge tone="red" title={x.error}>Declined</Badge>}{x.status === 'failed' && x.error && <div className="mt-1 text-xs text-muted">{x.error}</div>}</td>
+                  <td className="text-right">
+                    {x.discountCents > 0 ? (
+                      <>
+                        <span className="text-xs text-muted line-through">{money(x.listPriceCents ?? x.discountCents)}</span>{' '}
+                        <b>{money(x.amountCents)}</b>
+                        <div className="text-xs text-primary-ink">−{money(x.discountCents)} {x.discountLabel}</div>
+                      </>
+                    ) : <b>{money(x.amountCents)}</b>}
+                  </td>
+                  <td>
+                    {x.status === 'paid' ? <Badge tone="green">{x.amountCents === 0 && x.discountCents > 0 ? 'FREE' : 'Paid'}</Badge> : <Badge tone="red" title={x.error}>Declined</Badge>}
+                    {x.status === 'failed' && x.error && <div className="mt-1 text-xs text-muted">{x.error}</div>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -131,6 +172,24 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
         </Card>
       )}
 
+      <Dialog open={!!welcome} onOpenChange={(o) => !o && setWelcome(null)}>
+        {welcome && (
+          <DialogContent title="Congratulations! 🎉" description="You're one of our first restaurants.">
+            <div className="rounded-2xl bg-primary-soft/60 p-5 text-center">
+              <p className="m-0 text-sm font-bold tracking-wide text-primary-ink uppercase">Pioneer Member #{welcome.number}</p>
+              <p className="m-0 mt-1 text-3xl font-extrabold">Your subscription is FREE</p>
+              <p className="m-0 mt-2 text-ink-2">
+                {NAMES[welcome.plan]} plan: <span className="line-through">{usd(welcome.plan === 'annual' ? p.annualCents : p.monthlyCents)}</span> → <b>$0.00</b> every{' '}
+                {welcome.plan === 'annual' ? 'year' : 'month'}. No card needed.
+              </p>
+            </div>
+            <p className="mb-4 text-sm text-ink-2">
+              Your first invoice{welcome.invoice && <> ({welcome.invoice})</>} is in your inbox and below. {approved ? 'You can post offers now.' : 'Once your restaurant is approved, your offers go live.'}
+            </p>
+            <Button block variant="green" onClick={() => setWelcome(null)}>Wonderful!</Button>
+          </DialogContent>
+        )}
+      </Dialog>
       <Dialog open={!!subscribeTo} onOpenChange={(o) => !o && setSubscribeTo(null)}>
         {subscribeTo && (
           <SubscribeForm
@@ -152,48 +211,76 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
   );
 }
 
-function FoundingCard({ number }: { number: number | null }) {
+function PioneerCard({ sub, onChanged }: { sub: NonNullable<PlanSummary['subscription']>; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const legacy = sub.plan === 'founding';
+  const plan = legacy ? null : ((sub.renewPlan ?? sub.plan) as PaidPlan);
+  const other: PaidPlan = plan === 'annual' ? 'monthly' : 'annual';
   return (
     <Card className="overflow-hidden border-primary/40 bg-primary-soft/60">
       <div className="flex flex-wrap items-center gap-5">
         <div className="grid size-20 place-items-center rounded-full bg-primary-600 text-white shadow-pop"><Leaf className="size-10" /></div>
         <div className="flex-1">
-          <p className="m-0 text-sm font-bold tracking-wide text-primary-ink uppercase">Your plan</p>
-          <h2 className="m-0 text-2xl font-extrabold">Founding Partner{number ? ` #${number}` : ''} 🎉</h2>
+          <p className="m-0 text-sm font-bold tracking-wide text-primary-ink uppercase">Pioneer Member{sub.foundingNumber ? ` #${sub.foundingNumber}` : ''}</p>
+          <h2 className="m-0 text-2xl font-extrabold">{legacy ? 'Your plan' : `${NAMES[sub.plan as PaidPlan]} plan`} · FREE 🎉</h2>
           <p className="m-0 mt-1 text-ink-2">
-            As one of the first restaurants on Bite Wise, you pay <b>no subscription fee, for as long as you&apos;re a partner</b>. No card needed, nothing to renew.
-            Thank you for helping us rescue good food from day one.
+            {legacy
+              ? 'As one of the first restaurants on Bite Wise, you pay no subscription fee.'
+              : <>Your <span className="line-through">{usd(sub.listPriceCents)}</span> {sub.plan === 'annual' ? 'yearly' : 'monthly'} fee is covered by the <b>Pioneer Members Discount</b>.
+                You get a $0.00 invoice every {sub.plan === 'annual' ? 'year' : 'month'}; the next one on <b>{fmtDate(sub.periodEnd)}</b>. No card needed.</>}
           </p>
         </div>
+        {plan && (
+          <Button size="sm" variant="ghost" disabled={busy} onClick={async () => {
+            setBusy(true);
+            const res = await setPlanAtRenewal(other);
+            setBusy(false);
+            if (!res.ok) return toast.error(res.error);
+            toast.success(`From ${fmtDate(sub.periodEnd)}: ${NAMES[other].toLowerCase()} plan, still FREE`);
+            onChanged();
+          }}>
+            <RefreshCw /> {sub.renewPlan ? `Switching to ${NAMES[sub.renewPlan as PaidPlan].toLowerCase()}` : `Switch to ${NAMES[other].toLowerCase()}`}
+          </Button>
+        )}
       </div>
     </Card>
   );
 }
 
-function PlanChooser({ prices, onChoose }: { prices: PlanSummary['prices']; onChoose: (plan: PaidPlan) => void }) {
+function PlanChooser({ prices, pioneer, busy, onChoose }: { prices: PlanSummary['prices']; pioneer: boolean; busy: PaidPlan | null; onChoose: (plan: PaidPlan) => void }) {
   const saving = prices.monthlyCents * 12 - prices.annualCents;
   const perks = ['Unlimited offers and menu items', 'Counter kiosk for your tablet', 'Live order bell and daily reports', 'Payouts at every pickup (Stripe)', 'No commission on your sales'];
   const plans: { plan: PaidPlan; price: string; per: string; note: string; best?: boolean }[] = [
-    { plan: 'monthly', price: usd(prices.monthlyCents), per: '/ month', note: 'Billed monthly. Cancel any time.' },
-    { plan: 'annual', price: usd(prices.annualCents), per: '/ year', note: `Billed yearly: ${usd(Math.round(prices.annualCents / 12))} a month.`, best: saving > 0 },
+    { plan: 'monthly', price: usd(prices.monthlyCents), per: '/ month', note: pioneer ? 'A $0.00 invoice every month.' : 'Billed monthly. Cancel any time.' },
+    { plan: 'annual', price: usd(prices.annualCents), per: '/ year', note: pioneer ? 'A $0.00 invoice every year.' : `Billed yearly: ${usd(Math.round(prices.annualCents / 12))} a month.`, best: saving > 0 },
   ];
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {plans.map((x) => (
         <Card key={x.plan} className={cn('relative flex flex-col', x.best && 'border-2 border-primary shadow-pop')}>
-          {x.best && <span className="absolute -top-3 right-5 rounded-full bg-accent px-3 py-1 text-xs font-extrabold text-white shadow">SAVE {usd(saving)}</span>}
+          {pioneer
+            ? <span className="absolute -top-3 right-5 rounded-full bg-primary-600 px-3 py-1 text-xs font-extrabold text-white shadow">FREE FOR PIONEERS</span>
+            : x.best && <span className="absolute -top-3 right-5 rounded-full bg-accent px-3 py-1 text-xs font-extrabold text-white shadow">SAVE {usd(saving)}</span>}
           <p className="m-0 text-sm font-bold tracking-wide text-muted uppercase">{NAMES[x.plan]}</p>
-          <p className="m-0 mt-1"><span className="text-4xl font-extrabold">{x.price}</span> <span className="text-muted">{x.per}</span></p>
+          {pioneer ? (
+            <p className="m-0 mt-1"><span className="text-4xl font-extrabold">$0.00</span> <span className="text-muted line-through">{x.price}</span> <span className="text-muted">{x.per}</span></p>
+          ) : (
+            <p className="m-0 mt-1"><span className="text-4xl font-extrabold">{x.price}</span> <span className="text-muted">{x.per}</span></p>
+          )}
           <p className="mt-1 mb-4 text-sm text-ink-2">{x.note}</p>
           <ul className="mb-5 grid flex-1 list-none gap-2 p-0 text-sm">
             {perks.map((perk) => <li key={perk} className="flex gap-2"><Check className="size-4 shrink-0 text-primary" /> {perk}</li>)}
           </ul>
-          <Button block variant={x.best ? 'green' : 'primary'} onClick={() => onChoose(x.plan)}>Choose {NAMES[x.plan].toLowerCase()}</Button>
+          <Button block variant={x.best || pioneer ? 'green' : 'primary'} disabled={!!busy} onClick={() => onChoose(x.plan)}>
+            {busy === x.plan ? 'One moment…' : `Choose ${NAMES[x.plan].toLowerCase()}${pioneer ? ': FREE' : ''}`}
+          </Button>
         </Card>
       ))}
       <p className="m-0 text-xs text-muted md:col-span-2">
-        Plans are paid in advance and renew automatically with your default card on file until you turn auto-renewal off. If a payment is declined, your offers are
-        paused until the plan is paid. Prices in US dollars. See section 5.6 of the Restaurant Partner Agreement.
+        {pioneer
+          ? 'Pioneer memberships renew automatically, free, with no card on file. Prices shown are the regular prices covered by the Pioneer Members Discount.'
+          : 'Plans are paid in advance and renew automatically with your default card on file until you turn auto-renewal off. If a payment is declined, your offers are paused until the plan is paid.'}{' '}
+        Prices in US dollars. See section 5.6 of the Restaurant Partner Agreement.
       </p>
     </div>
   );

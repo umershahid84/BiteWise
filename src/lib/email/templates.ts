@@ -64,17 +64,25 @@ We'll email you once you're approved.`,
 const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: serverEnv.timeZone });
 
-// The restaurant's plan, for the welcome email: a Founding Partner number, or the prices of the paid plans.
-export type WelcomePlan = { founding: number | null; monthlyCents: number; annualCents: number };
+// The restaurant's plan, for the welcome email: a Pioneer Member number, or the prices and Pioneer spots left.
+export type WelcomePlan = { founding: number | null; hasPlan: boolean; pioneerSpotsLeft: number; monthlyCents: number; annualCents: number };
 
 function planBox(p: WelcomePlan, planUrl: string) {
   if (p.founding) {
     return `<div style="background:#E8F5E1;border-radius:18px;padding:18px 22px;margin:0 0 20px;">
-      <p style="margin:0;font:800 17px ${FONT};color:#2F6B24;">🌱 You're Founding Partner #${p.founding}</p>
-      <p style="margin:6px 0 0;font:15px/1.55 ${FONT};color:#334155;">As one of our first restaurants, you use Bite Wise <b>free, for as long as you're a partner</b>. No card needed.</p>
+      <p style="margin:0;font:800 17px ${FONT};color:#2F6B24;">🎉 You're Pioneer Member #${p.founding}</p>
+      <p style="margin:6px 0 0;font:15px/1.55 ${FONT};color:#334155;">Your subscription is <b>FREE</b>: each invoice shows your plan price, minus the Pioneer Members Discount, for a total of $0.00. No card needed.</p>
     </div>`;
   }
+  if (p.hasPlan) return '';
   const saving = p.monthlyCents * 12 - p.annualCents;
+  if (p.pioneerSpotsLeft > 0) {
+    return `<div style="background:#E8F5E1;border-radius:18px;padding:18px 22px;margin:0 0 20px;">
+      <p style="margin:0;font:800 17px ${FONT};color:#2F6B24;">⭐ Choose your plan: it's FREE for Pioneer Members</p>
+      <p style="margin:6px 0 14px;font:15px/1.55 ${FONT};color:#334155;">Only ${p.pioneerSpotsLeft} Pioneer spot${p.pioneerSpotsLeft === 1 ? '' : 's'} left. Pick the monthly or annual plan now and you pay $0.00, every period, with no card needed.</p>
+      ${button(planUrl, 'Choose my free plan', '#3E8230')}
+    </div>`;
+  }
   return `<div style="background:#FFF7E6;border-radius:18px;padding:18px 22px;margin:0 0 20px;">
     <p style="margin:0;font:800 17px ${FONT};color:#92400E;">⭐ One last step: choose your plan</p>
     <p style="margin:6px 0 14px;font:15px/1.55 ${FONT};color:#334155;"><b>${usd(p.monthlyCents)} a month</b>, or <b>${usd(p.annualCents)} a year</b>${saving > 0 ? ` (you save ${usd(saving)})` : ''}.
@@ -118,7 +126,7 @@ export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidU
     }),
     text: `Welcome to Bite Wise, ${o.restaurant}! You're approved and live.
 Your electronically signed Restaurant Partner Agreement is attached.
-${o.plan.founding ? `You're Founding Partner #${o.plan.founding}: Bite Wise is free for you for as long as you're a partner.` : `Choose your plan (${usd(o.plan.monthlyCents)} a month or ${usd(o.plan.annualCents)} a year) to start posting offers: ${planUrl}`}
+${o.plan.founding ? `You're Pioneer Member #${o.plan.founding}: your subscription is FREE ($0.00 invoices).` : o.plan.hasPlan ? '' : `Choose your plan (${usd(o.plan.monthlyCents)} a month or ${usd(o.plan.annualCents)} a year${o.plan.pioneerSpotsLeft ? `; FREE for the next ${o.plan.pioneerSpotsLeft} Pioneer Members` : ''}): ${planUrl}`}
 
 Your restaurant kiosk (open it on your counter tablet; share it only with your staff):
 ${o.kioskUrl}
@@ -131,30 +139,44 @@ Dashboard: ${o.dashboardUrl}`,
 
 const PLAN_NAMES = { monthly: 'Monthly', annual: 'Annual' } as const;
 
-// Sent after each successful subscription payment (the first one and every renewal).
+// The invoice for each plan period (a payment, or a Pioneer Member's free period): plan price, any discount, total.
 export function subscriptionReceiptEmail(o: {
-  restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; invoiceNumber: string; cardLabel: string;
-  periodEnd: string; autoRenew: boolean; renewal: boolean; planUrl: string;
+  restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; invoiceNumber: string; cardLabel: string; periodStart?: string;
+  periodEnd: string; autoRenew: boolean; renewal: boolean; planUrl: string; listPriceCents?: number; discountCents?: number; discountLabel?: string;
 }) {
-  const row = (k: string, v: string) => `<tr><td style="padding:7px 0;color:#64748B;font:14px ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:700 14px ${FONT};color:#1E293B;">${v}</td></tr>`;
-  const next = o.autoRenew ? `Renews automatically on ${date(o.periodEnd)}` : `Ends on ${date(o.periodEnd)} (auto-renewal is off)`;
+  const row = (k: string, v: string, strong = false) => `<tr><td style="padding:7px 0;color:#64748B;font:${strong ? '800 15px' : '14px'} ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:${strong ? '800 16px' : '700 14px'} ${FONT};color:#1E293B;">${v}</td></tr>`;
+  const discount = o.discountCents ?? 0;
+  const free = o.amountCents === 0 && discount > 0;
+  const list = o.listPriceCents ?? o.amountCents + discount;
+  const period = `${o.periodStart ? `${date(o.periodStart)} – ` : 'through '}${date(o.periodEnd)}`;
+  const next = free ? `Your next free period starts on ${date(o.periodEnd)}` : o.autoRenew ? `Renews automatically on ${date(o.periodEnd)}` : `Ends on ${date(o.periodEnd)} (auto-renewal is off)`;
   return {
-    subject: `${o.renewal ? 'Your Bite Wise plan renewed' : 'Your Bite Wise plan is active'}: ${usd(o.amountCents)} (${o.invoiceNumber})`,
+    subject: free
+      ? `Your Bite Wise invoice ${o.invoiceNumber}: $0.00 (FREE Pioneer membership)`
+      : `${o.renewal ? 'Your Bite Wise plan renewed' : 'Your Bite Wise plan is active'}: ${usd(o.amountCents)} (${o.invoiceNumber})`,
     html: layout({
-      preview: `${PLAN_NAMES[o.plan]} plan, ${usd(o.amountCents)}. ${next}.`,
-      emoji: '🧾',
-      title: o.renewal ? 'Your plan renewed' : 'Your plan is active',
+      preview: free ? `${PLAN_NAMES[o.plan]} plan, ${usd(list)} − ${o.discountLabel} = $0.00.` : `${PLAN_NAMES[o.plan]} plan, ${usd(o.amountCents)}. ${next}.`,
+      emoji: free ? '🎉' : '🧾',
+      title: free ? 'Your subscription is FREE' : o.renewal ? 'Your plan renewed' : 'Your plan is active',
       subtitle: `${esc(o.restaurant)} · ${PLAN_NAMES[o.plan]} plan`,
-      body: `<p style="margin:0 0 16px;">Thank you! Here is your receipt.</p>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
-          ${row('Invoice', esc(o.invoiceNumber))}${row('Plan', PLAN_NAMES[o.plan])}${row('Amount paid', usd(o.amountCents))}${row('Card', esc(o.cardLabel))}${row('Paid through', date(o.periodEnd))}
+      body: `<p style="margin:0 0 16px;">${free ? 'Thank you for being a Pioneer Member! Here is your invoice for this period.' : 'Thank you! Here is your receipt.'}</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;margin:0 0 4px;">
+          ${row('Invoice', esc(o.invoiceNumber))}${row('Period', period)}
         </table>
-        <p style="margin:0 0 18px;font-size:15px;color:#475569;">${next}. You can change your plan, card or auto-renewal in the Plan tab.</p>
-        ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
+          ${row(`${PLAN_NAMES[o.plan]} plan`, usd(list))}
+          ${discount ? row(esc(o.discountLabel || 'Discount'), `−${usd(discount)}`) : ''}
+          ${row(free ? 'Total due' : 'Amount paid', free ? `${usd(0)} <span style="color:#3E8230;">FREE</span>` : usd(o.amountCents), true)}
+          ${free ? '' : row('Card', esc(o.cardLabel))}
+        </table>
+        <p style="margin:0 0 18px;font-size:15px;color:#475569;">${next}.${free ? ' Nothing to pay, and no card needed.' : ' You can change your plan, card or auto-renewal in the Plan tab.'}</p>
+        ${button(o.planUrl, 'View my plan', '#14284B')}`,
     }),
-    text: `Bite Wise receipt ${o.invoiceNumber}: ${PLAN_NAMES[o.plan]} plan for ${o.restaurant}, ${usd(o.amountCents)} paid with ${o.cardLabel}.
-Paid through ${date(o.periodEnd)}. ${next}.
-Manage your plan: ${o.planUrl}`,
+    text: `Bite Wise invoice ${o.invoiceNumber} for ${o.restaurant} (${period})
+${PLAN_NAMES[o.plan]} plan: ${usd(list)}${discount ? `\n${o.discountLabel || 'Discount'}: -${usd(discount)}` : ''}
+${free ? 'Total due: $0.00 (FREE)' : `Amount paid: ${usd(o.amountCents)} with ${o.cardLabel}`}
+${next}.
+Your plan: ${o.planUrl}`,
   };
 }
 

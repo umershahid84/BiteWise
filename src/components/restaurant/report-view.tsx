@@ -9,6 +9,7 @@ import { Paper } from '@/components/ui/card';
 import { money } from '@/lib/format';
 import type { Report } from '@/lib/receipts/data';
 import { cn } from '@/lib/utils';
+import { displayPhone } from '@/lib/phone';
 
 export function ReportView({ report: rep, today }: { report: Report; today: string }) {
   const router = useRouter();
@@ -43,7 +44,7 @@ export function ReportView({ report: rep, today }: { report: Report; today: stri
           <div className="text-right">
             <h1 className="m-0 text-2xl font-extrabold">Daily sales report</h1>
             <div className="text-sm text-[#6b7b73]">{rep.restaurant.name} · {rep.dateText}</div>
-            <div className="text-sm text-[#6b7b73]">{rep.restaurant.address}, {rep.restaurant.city}, WA {rep.restaurant.zip}{rep.restaurant.phone && ` · ${rep.restaurant.phone}`}</div>
+            <div className="text-sm text-[#6b7b73]">{rep.restaurant.address}, {rep.restaurant.city}, WA {rep.restaurant.zip}{rep.restaurant.phone && ` · ${displayPhone(rep.restaurant.phone)}`}</div>
           </div>
         </div>
         <div className="mb-3 grid grid-cols-2 gap-2.5 md:grid-cols-6">

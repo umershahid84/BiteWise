@@ -8,6 +8,7 @@ import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
 import { homeFor } from '@/lib/constants';
 import { action, AppError, fromDb } from '@/lib/errors';
+import { locateRestaurant } from '@/lib/restaurant-location';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -65,6 +66,11 @@ export async function signUp(input: unknown) {
     }
     await assertAvailable(data.email, data.username);
     const { ip, userAgent } = await requestInfo();
+    // Put the restaurant on the map at its street address (the database falls back to the ZIP code's center).
+    if (data.restaurant && (data.restaurant.lat === null || data.restaurant.lng === null)) {
+      const spot = await locateRestaurant(data.restaurant);
+      if (spot?.source === 'address') data.restaurant = { ...data.restaurant, lat: spot.lat, lng: spot.lng };
+    }
     const supabase = await supabaseServer();
     const { data: res, error } = await supabase.auth.signUp({
       email: data.email,

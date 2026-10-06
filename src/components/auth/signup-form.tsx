@@ -7,6 +7,7 @@ import { signUp, validateSignup } from '@/app/actions/auth';
 import { AgreementDialog } from '@/components/app/agreement-dialog';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Field, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { AuthTitle } from './auth-card';
@@ -118,7 +119,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
               <Field label="ZIP code" htmlFor="r-zip"><Input id="r-zip" name="r-zip" autoComplete="postal-code" inputMode="numeric" /></Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Phone" htmlFor="r-phone"><Input id="r-phone" name="r-phone" type="tel" autoComplete="tel" /></Field>
+              <Field label="Phone" htmlFor="r-phone"><PhoneInput id="r-phone" name="r-phone" /></Field>
               <Field label="Cuisine" htmlFor="r-cuisine"><Input id="r-cuisine" name="r-cuisine" placeholder="e.g. Thai" /></Field>
             </div>
             <p className="mb-4 text-sm text-muted">You can set your exact map location and sales-tax rate in the portal after signing up.</p>

@@ -4,7 +4,7 @@ import { applicationPendingEmail, welcomeEmail } from '@/lib/email/templates';
 import { publicEnv } from '@/lib/env';
 import { ensureKioskToken, kioskUrls } from '@/lib/kiosk';
 import { signedAgreementPdf } from '@/lib/legal/agreement-pdf';
-import { claimFounding, getSubscription, prices } from '@/lib/subscriptions';
+import { getSubscription, isPioneer, prices } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // The emails a restaurant gets while joining, after Supabase's "confirm your email":
@@ -36,9 +36,11 @@ export async function sendOnboardingEmails(restaurantId: number) {
       if (r.status === 'approved') {
         const urls = kioskUrls(await ensureKioskToken(r.id));
         const agreement = await signedAgreementPdf(r.id, now);
-        await claimFounding(r.id);
         const [sub, p] = await Promise.all([getSubscription(r.id), prices()]);
-        const plan = { founding: sub?.founding_number ?? null, monthlyCents: p.monthlyCents, annualCents: p.annualCents };
+        const plan = {
+          founding: isPioneer(sub) ? sub!.founding_number : null, hasPlan: !!sub && sub.status !== 'expired',
+          pioneerSpotsLeft: p.foundingLeft, monthlyCents: p.monthlyCents, annualCents: p.annualCents,
+        };
         sent = await sendEmail({
           to: email,
           ...welcomeEmail({ restaurant: r.name, dashboardUrl, ...urls, plan }),

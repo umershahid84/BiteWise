@@ -27,13 +27,15 @@ import type { Ctx, Restaurant } from './types';
 
 type NewOrder = { id: number; quantity: number; item_title: string; customer_username: string; total_cents: number; pickup_end: string; image_url: string | null };
 
-export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, stripePublishableKey, planNotice, initialTab, stripeReturn }: {
+export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, stripePublishableKey, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
   restaurant: Restaurant;
   serviceFeeBps: number;
   map: MapConfig;
   paymentMode: 'stripe' | 'mock';
   stripePublishableKey: string;
   planNotice: 'choose' | 'delinquent' | null;
+  hasPlan: boolean;
+  pioneerSpotsLeft: number;
   initialTab: string;
   stripeReturn: boolean;
 }) {
@@ -135,6 +137,18 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
           your account (usually within 1 business day).
         </Alert>
       )}
+      {restaurant.status === 'pending' && !hasPlan && pioneerSpotsLeft > 0 && tab !== 'plan' && (
+        <div className="mb-5 flex flex-wrap items-center gap-4 rounded-card border-2 border-primary/60 bg-primary-soft/50 px-5 py-4">
+          <span aria-hidden className="text-3xl">🎉</span>
+          <div className="min-w-60 flex-1">
+            <p className="m-0 font-extrabold">Choose your membership plan while we review your restaurant: it&apos;s FREE for Pioneer Members.</p>
+            <p className="m-0 text-sm text-ink-2">
+              The first restaurants to choose a plan pay $0.00, every month or year, with no card needed. Only <b>{pioneerSpotsLeft}</b> Pioneer spot{pioneerSpotsLeft === 1 ? '' : 's'} left.
+            </p>
+          </div>
+          <Button variant="green" onClick={() => changeTab('plan')}>Choose my free plan</Button>
+        </div>
+      )}
       {restaurant.status === 'suspended' && (
         <Alert tone="error" className="mb-5">
           ⛔ <b>Your restaurant is suspended{restaurant.suspended_until ? ` until ${fmtDay(restaurant.suspended_until)}` : ''}.</b> Your offers are hidden and you can&apos;t post
@@ -149,7 +163,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
       )}
       {restaurant.status === 'approved' && planNotice === 'choose' && tab !== 'plan' && (
         <Alert tone="warn" className="mb-5">
-          ⭐ <b>Choose your Bite Wise plan to post offers.</b>{' '}
+          ⭐ <b>Choose your Bite Wise plan to post offers{pioneerSpotsLeft > 0 ? `: it's FREE for the next ${pioneerSpotsLeft} Pioneer Members` : ''}.</b>{' '}
           <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>See plans</button>
         </Alert>
       )}

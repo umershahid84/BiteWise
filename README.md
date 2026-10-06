@@ -44,11 +44,11 @@ Bite Wise is a marketplace where restaurants in greater Seattle sell food that w
 
 **Counter kiosk:** every approved restaurant gets a private kiosk link for its counter tablet (see "Restaurant onboarding and the counter kiosk").
 
-**Restaurant plans:** $15 a month or $150 a year (save $30), and the first 50 restaurants approved are **Founding Partners**, free for as long as they stay partners. Restaurants keep cards on file, paid plans renew automatically with the default card (restaurants can turn that off), a declined payment pauses their offers until paid, and the admin can change the fees any time — see "Restaurant plans and auto-renewal".
+**Restaurant plans:** $15 a month or $150 a year (save $30), and the first 50 restaurants to choose a plan are **Pioneer Members**: free, with no card, and a $0.00 invoice every month or year that shows the plan price minus the Pioneer Members Discount. Restaurants can choose their plan as soon as their email is confirmed, while they wait for approval. Restaurants keep cards on file, paid plans renew automatically with the default card (restaurants can turn that off), a declined payment pauses their offers until paid, and the admin can change the fees any time — see "Restaurant plans and auto-renewal".
 
 **Real emails only:** sign-up refuses disposable inboxes (Mailinator, 10-Minute Mail, Guerrilla Mail, ...), reserved test domains and domains that don't exist or take no email (checked with a DNS lookup of the domain's mail servers).
 
-**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), restaurant plans (subscription fees, founding spots, delinquent plans), settings (service fee, default tax, approval) and an audit log of every admin action.
+**Owner console (`/admin`)**: overview with revenue and a daily chart, restaurant approvals, plans, suspensions (5–30 days, lifted automatically) and permanent bans, customers (suspend for 5, 10, 15, 20 or 30 days, lifted automatically; **ban permanently**: no login, open orders cancelled, the email can't sign up again; a ban can be lifted if it was a mistake; delete: accounts with order history are anonymized so sales and tax records stay intact; issue goodwill credit), orders (cancel, **refund by 10/25/50/75/100% or a set amount, to the original payment or as platform credit**, receipt PDF, CSV), live offer moderation, payouts (send what's owed through Stripe or record a manual payout, with a locked invoice number and bank/transaction details), sales tax by location (CSV for the WA excise tax return), restaurant plans (subscription fees, Pioneer spots, delinquent plans), settings (service fee, default tax, approval) and an audit log of every admin action.
 
 ## Money flow
 
@@ -233,11 +233,11 @@ Restaurants find their link, a QR code to open it on the tablet, and a **Get a n
 
 ## Restaurant plans and auto-renewal
 
-An approved restaurant needs a plan to post offers. It chooses one in the dashboard's **Plan** tab:
+An approved restaurant needs a plan to post offers. It chooses one in the dashboard's **Plan** tab; a restaurant still waiting for approval sees a banner inviting it to choose its plan straight away:
 
 | Plan | Price | Notes |
 |---|---|---|
-| **Founding Partner** | free | The first 50 restaurants approved (setting `founding_spots`). Given automatically on approval; no card. |
+| **Pioneer Member** | free | The first 50 restaurants to choose a plan (setting `founding_spots`), monthly or annual, even before approval. No card is asked for; a congratulations message confirms the plan is FREE. Every month or year they get an invoice (`/restaurant/invoices/[id]`, also emailed) listing the plan price, minus the **Pioneer Members Discount**, for a total of **$0.00**. They can switch between monthly and annual and stay free. |
 | **Monthly** | $15 / month | Paid in advance. |
 | **Annual** | $150 / year | Paid in advance; $30 less than 12 months. |
 
@@ -245,7 +245,7 @@ An approved restaurant needs a plan to post offers. It chooses one in the dashbo
 - **Keep existing restaurants at their current fees:** restaurants with a plan keep paying what they pay now (their price is locked when the change takes effect); only plans started from that date pay the new fees.
 - **Existing restaurants also pay the new fees:** from their first renewal on or after that date (this also ends any earlier lock).
 
-Pick the email that announces it from the templates (*Rising operating costs*, *New features and improvements*, *Annual price review*, *Introductory pricing ends*), edit it, save your own templates, **Preview** it as a restaurant will see it, and **Schedule & send**: every restaurant is emailed straight away, with a sentence about what the change means for its own plan (`{{your_plan}}`). Founding Partners are only emailed if you tick the box. One change can be scheduled at a time and cancelled before it takes effect; the tab keeps a history. The agreement promises 30 days' notice, and the form warns about shorter dates. *Plan settings* has the number of founding spots and when renewal reminders go out. The tab also shows monthly recurring revenue, every restaurant's plan (delinquent ones first) and a **Charge default card** button for delinquent plans. Every change is in the audit log.
+Pick the email that announces it from the templates (*Rising operating costs*, *New features and improvements*, *Annual price review*, *Introductory pricing ends*), edit it, save your own templates, **Preview** it as a restaurant will see it, and **Schedule & send**: every restaurant is emailed straight away, with a sentence about what the change means for its own plan (`{{your_plan}}`). Pioneer Members are only emailed if you tick the box (fee changes never apply to them). One change can be scheduled at a time and cancelled before it takes effect; the tab keeps a history. The agreement promises 30 days' notice, and the form warns about shorter dates. *Plan settings* has the number of Pioneer spots and when renewal reminders go out. The tab also shows monthly recurring revenue, every restaurant's plan (delinquent ones first) and a **Charge default card** button for delinquent plans. Every change is in the audit log.
 
 **Emails restaurants get about their plan:** a receipt for every payment; a **renewal reminder** 30 days before an annual plan renews and 7 days before a monthly one (both adjustable), saying the card on file will be charged this amount on this date; a **delinquent** notice when a payment is declined (offers paused, no new offers until the payment is made, with the renewal link); and fee-change announcements.
 
@@ -255,7 +255,13 @@ Pick the email that announces it from the templates (*Rising operating costs*, *
 
 Renewals are charged by the app's **scheduled jobs**, which also void card holds. A long-running server (`npm start` or the Linux service) runs them by itself every 5 minutes (`src/instrumentation.ts`). On Vercel, `vercel.json` calls `/api/cron/sweep` instead (set `CRON_SECRET`).
 
-Databases set up before plans existed give their already-approved restaurants the first founding spots. `npm run seed` puts the demo restaurants on paid plans with a test card on file instead (they never use founding spots).
+Restaurants that were Founding Partners become free monthly Pioneer Members. Paid plans start once a restaurant is approved; Pioneer spots can be taken before. `npm run seed` puts the approved demo restaurants on paid plans with a test card on file (they never use Pioneer spots).
+
+## Map positions and phone numbers
+
+**Map positions:** when a restaurant signs up or saves its profile, its street address is looked up (US Census Bureau geocoder, then OpenStreetMap Nominatim; free, no key) so its offers show at the restaurant, not at the middle of its ZIP code. A match more than 25 miles from the ZIP code is ignored. The Profile tab has a **Find my address** button. Restaurants added before this were placed at their ZIP code: `npm run locate-restaurants` lists the new positions it finds and `npm run locate-restaurants -- --yes` saves them (`--all` re-checks every restaurant). Set `GEOCODING=off` to turn lookups off (the ZIP code is used).
+
+**Phone numbers** are typed as digits and formatted as you type to `(xxx) xxx-xxxx`; they are stored and shown (receipts, reports, invoices, agreements) the same way.
 
 ## Suspensions and bans
 

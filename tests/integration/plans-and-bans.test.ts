@@ -27,25 +27,41 @@ const paymentsOf = async (rid: number) => (await admin().from('subscription_paym
 const canLogIn = async (email: string) => !(await anon().auth.signInWithPassword({ email, password: PASSWORD })).error;
 
 describe.skipIf(!available)('restaurant plans', () => {
-  it('gives the free Founding Partner spots to the first restaurants approved, until they run out', async () => {
+  it('gives the first restaurants to choose a plan a free Pioneer membership, without a card, even before approval', async () => {
     const db = admin();
     const { count } = await db.from('restaurant_subscriptions').select('restaurant_id', { count: 'exact', head: true }).not('founding_number', 'is', null);
     const old = (await db.from('settings').select('value').eq('key', 'founding_spots').single()).data!.value;
     await db.from('settings').update({ value: (count ?? 0) + 1 }).eq('key', 'founding_spots');
     try {
-      const first = await newRestaurant(false);
+      const first = await newRestaurant(false); // still waiting for approval
       const second = await newRestaurant(false);
-      await moderation.setRestaurantStatus(first.restaurant.id, { status: 'approved' });
-      await moderation.setRestaurantStatus(second.restaurant.id, { status: 'approved' });
+      const res = await subs.choosePlan(first.restaurant.id, 'annual');
+      expect(res.pioneer).toBeGreaterThan(0);
       const s1 = await subOf(first.restaurant.id);
-      expect(s1).toMatchObject({ plan: 'founding', status: 'active', price_cents: 0 });
-      expect(s1.founding_number).toBeGreaterThan(0);
-      expect((await admin().from('restaurant_subscriptions').select('*').eq('restaurant_id', second.restaurant.id).maybeSingle()).data).toBeNull();
-      expect((await first.post()).error).toBeNull();
-      expect((await second.post()).error?.message).toMatch(/Choose a Bite Wise plan/);
-      // Approving again (e.g. after a suspension) keeps the same spot.
+      expect(s1).toMatchObject({ plan: 'annual', status: 'active', price_cents: 0, auto_renew: true, founding_number: res.pioneer });
+      expect((Date.parse(s1.current_period_end!) - Date.parse(s1.current_period_start!)) / 86_400_000).toBeGreaterThanOrEqual(365);
+      const [invoice] = await paymentsOf(first.restaurant.id);
+      expect(invoice).toMatchObject({ amount_cents: 0, status: 'paid', list_price_cents: 15000, discount_cents: 15000, discount_label: 'Pioneer Members Discount' });
+      expect(invoice.invoice_number).toMatch(/^BW-SUB-/);
+      expect(await subs.cardsOf(first.owner.id)).toEqual([]); // no card was asked for
+      await expect(subs.setAutoRenew(first.restaurant.id, false)).rejects.toThrow(/renew automatically, free/);
+
+      // No spots left: the second restaurant has to pay, which it can only do once approved.
+      expect(await subs.choosePlan(second.restaurant.id, 'monthly')).toEqual({ pioneer: null, canPay: false });
+      await expect(subs.subscribe(second.restaurant.id, { plan: 'monthly', token: card('4242'), autoRenew: true })).rejects.toThrow(/once your restaurant is approved/);
+      await moderation.setRestaurantStatus(second.restaurant.id, { status: 'approved' });
+      expect(await subs.choosePlan(second.restaurant.id, 'monthly')).toEqual({ pioneer: null, canPay: true });
+
+      // Approved, the Pioneer Member posts like everyone else; each period brings another $0.00 invoice.
       await moderation.setRestaurantStatus(first.restaurant.id, { status: 'approved' });
-      expect((await subOf(first.restaurant.id)).founding_number).toBe(s1.founding_number);
+      expect((await first.post()).error).toBeNull();
+      await subs.setRenewPlan(first.restaurant.id, 'monthly');
+      await db.from('restaurant_subscriptions').update({ current_period_end: new Date(Date.now() - 60_000).toISOString() }).eq('restaurant_id', first.restaurant.id);
+      await subs.renewDue();
+      const renewed = await subOf(first.restaurant.id);
+      expect(renewed).toMatchObject({ plan: 'monthly', status: 'active', price_cents: 0 });
+      expect(Date.parse(renewed.current_period_end!)).toBeGreaterThan(Date.now() + 25 * 86_400_000);
+      expect((await paymentsOf(first.restaurant.id)).map((x) => [x.plan, x.amount_cents, x.discount_cents])).toEqual([['annual', 0, 15000], ['monthly', 0, 1500]]);
       expect((await subs.planSummary(second.restaurant.id)).prices.foundingLeft).toBe(0);
     } finally {
       await db.from('settings').update({ value: old }).eq('key', 'founding_spots');

@@ -3,6 +3,7 @@ import { RestaurantDashboard } from '@/components/restaurant/dashboard';
 import { requirePageViewer } from '@/lib/auth';
 import { paymentMode, publicEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
+import { prices } from '@/lib/subscriptions';
 import { supabaseServer } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Restaurant dashboard' };
@@ -17,6 +18,8 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
     supabase.rpc('restaurant_plan_ok', { p_restaurant_id: restaurant.id }),
     supabase.from('restaurant_subscriptions').select('status').eq('restaurant_id', restaurant.id).maybeSingle(),
   ]);
+  // Pioneer spots left (the first restaurants to choose a plan get it free), for the "choose your plan" banner.
+  const { foundingLeft } = await prices();
   return (
     <RestaurantDashboard
       restaurant={restaurant}
@@ -25,6 +28,8 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
       paymentMode={paymentMode()}
       stripePublishableKey={publicEnv.stripePublishableKey}
       planNotice={planOk ? null : sub?.status === 'past_due' ? 'delinquent' : 'choose'}
+      hasPlan={!!sub && sub.status !== 'expired'}
+      pioneerSpotsLeft={foundingLeft}
       initialTab={typeof tab === 'string' ? tab : 'pickup'}
       stripeReturn={stripe === 'return' || stripe === 'refresh'}
     />
