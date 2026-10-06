@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, FileSpreadsheet } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { adminCancelOrder, refundOrder } from '@/app/actions/admin';
 import { ErrorText } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/constants';
 import { fmtDateTime, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AdminOrder } from '@/lib/admin';
-import { adminGet, RangePicker, run, useAdmin, type Range } from './shared';
+import { adminGet, RangePicker, run, TableHead, useAdmin, type Range } from './shared';
 
 export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: Range) => void }) {
   const queryClient = useQueryClient();
@@ -39,10 +39,9 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
           <option value="">All statuses</option>
           {(['reserved', 'picked_up', 'cancelled', 'expired', 'pending_payment'] as OrderStatus[]).map((s) => <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>)}
         </Select>
-        <span className="flex-1" />
-        <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/admin/export/orders?from=${range.from}&to=${range.to}`}><FileSpreadsheet /> Export CSV</a>
       </div>
       <Card className="p-2">
+        <TableHead title="Orders" kind="orders" params={{ ...range, status, q }} what="these orders" />
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
           <>
             <PagerBar pager={pager} label="orders" />

@@ -6,6 +6,7 @@ import { money, pct } from '@/lib/format';
 import type { Receipt, Report } from './data';
 import type { PlanInvoice } from './plan-invoice';
 import type { Income } from '@/lib/admin';
+import type { Cell, Report as ListReport } from '@/lib/exports';
 import { displayPhone } from '@/lib/phone';
 
 // PDF receipts (80 mm point-of-sale roll) and daily reports (landscape letter).
@@ -347,6 +348,103 @@ export function planInvoicePdf(inv: PlanInvoice) {
   return finish(doc);
 }
 
+// ---------------------------------------------------------------- paged tables (owner console reports)
+
+export type PdfCol = { h: string; w: number; a?: 'left' | 'right' };
+
+// Draws a table at at.y that continues on new pages (newPage), repeating its header row. Widths are relative.
+function pagedTable(doc: Doc, at: { y: number }, box: { L: number; R: number; bottom: number; newPage: () => void },
+  heading: string | null, cols: PdfCol[], rows: string[][], total: string[] | undefined, empty: string) {
+  const { L, R, bottom } = box;
+  const W = R - L;
+  const scale = W / cols.reduce((n, c) => n + c.w, 0);
+  const ws = cols.map((c) => c.w * scale);
+  const header = () => {
+    doc.rect(L, at.y, W, 18).fill(INK);
+    let cx = L;
+    cols.forEach((c, i) => {
+      doc.font('bold').fontSize(7.5).fillColor('#ffffff').text(c.h.toUpperCase(), cx + 5, at.y + 5, { width: ws[i] - 10, height: 9, align: c.a ?? 'right', ellipsis: true });
+      cx += ws[i];
+    });
+    at.y += 20;
+  };
+  if (heading) {
+    if (at.y > bottom - 80) box.newPage();
+    doc.font('bold').fontSize(11).fillColor(INK).text(heading, L, at.y);
+    at.y += 16;
+  }
+  header();
+  const draw = (vals: string[], bold: boolean, shade: boolean) => {
+    if (at.y > bottom - 16) {
+      box.newPage();
+      header();
+    }
+    if (shade) doc.rect(L, at.y - 3, W, 16).fill('#f6f9f7');
+    let cx = L;
+    vals.forEach((v, i) => {
+      doc.font(bold ? 'bold' : i === 0 ? 'medium' : 'regular').fontSize(8.5).fillColor(INK)
+        .text(v, cx + 5, at.y, { width: ws[i] - 10, height: 11, align: cols[i].a ?? 'right', ellipsis: true }); // one line, cut with …
+      cx += ws[i];
+    });
+    at.y += 16;
+  };
+  if (!rows.length) {
+    doc.font('regular').fontSize(9).fillColor(MUTED).text(empty, L + 5, at.y);
+    at.y += 16;
+  }
+  rows.forEach((r, i) => draw(r, false, i % 2 === 1));
+  if (total) {
+    rule(doc, L, R, at.y - 2);
+    at.y += 3;
+    draw(total, true, false);
+  }
+  at.y += 14;
+}
+
+// A list from the owner console (Restaurants, Customers, Orders, Payouts, Sales tax, Audit log; see src/lib/exports.ts)
+// as a landscape letter PDF: title, the tab's figures (whole tab only), then its tables. Columns with width 0 are
+// CSV-only details.
+export function listReportPdf(r: ListReport, o: { generatedAt: string; text: (c: Cell) => string }) {
+  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margins: { top: 36, left: 36, right: 36, bottom: 0 }, info: { Title: `Bite Wise ${r.title}`, Author: 'Bite Wise' } });
+  fonts(doc);
+  const L = 36;
+  const R = doc.page.width - 36;
+  const W = R - L;
+  const bottom = doc.page.height - 50;
+  const footer = () => {
+    doc.font('regular').fontSize(7.5).fillColor(MUTED).text(`${r.note ? `${r.note} ` : ''}Generated ${o.generatedAt}.`, L, doc.page.height - 34, { width: W, lineBreak: false, ellipsis: true });
+  };
+  doc.image(LOGO, L, 30, { height: 34 });
+  doc.font('head').fontSize(18).fillColor(INK).text(r.title, L, 30, { width: W, align: 'right' });
+  doc.font('regular').fontSize(9.5).fillColor(MUTED).text(r.subtitle, L, 54, { width: W, align: 'right', lineBreak: false, ellipsis: true });
+  rule(doc, L, R, 76);
+  const at = { y: 90 };
+  const newPage = () => {
+    footer();
+    doc.addPage();
+    at.y = 40;
+  };
+  if (r.figures?.length) {
+    const n = r.figures.length;
+    const bw = (W - (n - 1) * 8) / n;
+    r.figures.forEach(([k, v], i) => {
+      const bx = L + i * (bw + 8);
+      doc.roundedRect(bx, at.y, bw, 46, 8).fill('#f2f7f4');
+      label(doc, k.toUpperCase(), bx + 10, at.y + 9, { width: bw - 20, lineBreak: false, ellipsis: true });
+      doc.font('head').fontSize(15).fillColor(i === 0 ? GREEN : INK).text(v, bx + 10, at.y + 23, { width: bw - 20, lineBreak: false });
+    });
+    at.y += 62;
+  }
+  for (const t of r.tables) {
+    const keep = t.columns.map((c, i) => [c, i] as const).filter(([c]) => c.w > 0);
+    const pick = (row: Cell[]) => keep.map(([, i]) => o.text(row[i]));
+    pagedTable(doc, at, { L, R, bottom, newPage }, r.tables.length > 1 ? t.title : null,
+      keep.map(([c]) => ({ h: c.h, w: c.w, a: c.align })), t.rows.map(pick), t.total && pick(t.total), 'Nothing to show.');
+  }
+  footer();
+  return finish(doc);
+}
+
 // ---------------------------------------------------------------- owner console: income report
 
 type IncomeLineT = Income['totals'];
@@ -459,52 +557,9 @@ export function incomePdf(x: Income, section: 'all' | 'periods' | 'restaurants',
     y += ch + 24;
   }
 
-  // A table that continues on new pages, repeating its header.
-  type Col = { h: string; w: number; a?: 'left' | 'right' };
-  const table = (heading: string, cols: Col[], rows: string[][], total?: string[]) => {
-    const scale = W / cols.reduce((s, c) => s + c.w, 0);
-    const ws = cols.map((c) => c.w * scale);
-    const header = () => {
-      doc.rect(L, y, W, 18).fill(INK);
-      let cx = L;
-      cols.forEach((c, i) => {
-        doc.font('bold').fontSize(7.5).fillColor('#ffffff').text(c.h.toUpperCase(), cx + 5, y + 5, { width: ws[i] - 10, align: c.a ?? 'right', lineBreak: false });
-        cx += ws[i];
-      });
-      y += 20;
-    };
-    if (section === 'all') {
-      if (y > bottom - 80) newPage();
-      doc.font('bold').fontSize(11).fillColor(INK).text(heading, L, y);
-      y += 16;
-    }
-    header();
-    const draw = (vals: string[], bold: boolean, shade: boolean) => {
-      if (y > bottom - 16) {
-        newPage();
-        header();
-      }
-      if (shade) doc.rect(L, y - 3, W, 16).fill('#f6f9f7');
-      let cx = L;
-      vals.forEach((v, i) => {
-        doc.font(bold ? 'bold' : i === 0 ? 'medium' : 'regular').fontSize(8.5).fillColor(INK)
-          .text(v, cx + 5, y, { width: ws[i] - 10, align: cols[i].a ?? 'right', lineBreak: false, ellipsis: true });
-        cx += ws[i];
-      });
-      y += 16;
-    };
-    if (!rows.length) {
-      doc.font('regular').fontSize(9).fillColor(MUTED).text('Nothing in this period.', L + 5, y);
-      y += 16;
-    }
-    rows.forEach((r, i) => draw(r, false, i % 2 === 1));
-    if (total) {
-      rule(doc, L, R, y - 2);
-      y += 3;
-      draw(total, true, false);
-    }
-    y += 14;
-  };
+  const at = { get y() { return y; }, set y(v: number) { y = v; } };
+  const table = (heading: string, cols: PdfCol[], rows: string[][], total?: string[]) =>
+    pagedTable(doc, at, { L, R, bottom, newPage }, section === 'all' ? heading : null, cols, rows, total, 'Nothing in this period.');
 
   const lineVals = (l: IncomeLineT) => [String(l.orders), money(l.serviceFeesCents), money(l.planFeesCents),
     l.creditCostCents ? `−${money(l.creditCostCents)}` : '–', money(l.netCents), money(l.orderTaxCents + l.planTaxCents)];

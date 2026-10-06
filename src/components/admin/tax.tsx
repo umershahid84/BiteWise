@@ -1,11 +1,9 @@
 'use client';
 
-import { FileSpreadsheet } from 'lucide-react';
-import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
 import { money, pct } from '@/lib/format';
-import { RangePicker, useAdmin, type Range } from './shared';
+import { DownloadIcons, exportHref, RangePicker, TableHead, useAdmin, type Range } from './shared';
 
 type Totals = { taxableCents: number; taxCents: number };
 type Tax = {
@@ -19,7 +17,8 @@ export function TaxPanel({ range, setRange }: { range: Range; setRange: (r: Rang
   return (
     <>
       <div className="flex flex-wrap items-start"><RangePicker range={range} onChange={setRange} /><span className="flex-1" />
-        <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/admin/export/tax?from=${range.from}&to=${range.to}`}><FileSpreadsheet /> Export CSV</a></div>
+        {/* The whole tab (totals and both tables) as one PDF. */}
+        <DownloadIcons what="the sales tax report" pdf={exportHref('tax', range, 'pdf')} /></div>
       <p className="mb-4 text-sm text-muted">Retail sales tax collected on completed orders (less refunds to the original payment) and on restaurant plan fees, by restaurant location. Use it for your Washington excise tax return.</p>
       {isLoading || !data ? <Spinner /> : (
         <>
@@ -29,15 +28,15 @@ export function TaxPanel({ range, setRange }: { range: Range; setRange: (r: Rang
             <Kpi value={money(data.planTotals.taxCents)} label={`On plan fees (${money(data.planTotals.taxableCents)} taxable)`} />
             <Kpi value={money(data.allTotals.taxableCents)} label="Taxable sales and fees" />
           </div>
-          <h3 className="mt-2 mb-2 text-lg font-extrabold">Food orders</h3>
           <Card className="p-2">
+            <TableHead title="Food orders" kind="tax" params={range} section="orders" what="sales tax on food orders" />
             <Table>
               <thead><tr><th>City</th><th>ZIP</th><th>Rate</th><th>Orders</th><th>Taxable sales</th><th>Sales tax</th></tr></thead>
               <tbody>{data.rows.map((x) => <tr key={`${x.city}${x.zip}${x.rateBps}`}><td>{x.city}</td><td>{x.zip}</td><td>{pct(x.rateBps)}</td><td>{x.orders}</td><td>{money(x.taxableCents)}</td><td>{money(x.taxCents)}</td></tr>)}</tbody>
             </Table>
           </Card>
-          <h3 className="mt-6 mb-2 text-lg font-extrabold">Restaurant plan fees</h3>
-          <Card className="p-2">
+          <Card className="mt-6 p-2">
+            <TableHead title="Restaurant plan fees" kind="tax" params={range} section="plans" what="sales tax on plan fees" />
             <Table>
               <thead><tr><th>City</th><th>ZIP</th><th>Rate</th><th>Invoices</th><th>Taxable fees</th><th>Sales tax</th></tr></thead>
               <tbody>

@@ -225,35 +225,26 @@ async function ordersInRange(params: URLSearchParams) {
   return { r, rows };
 }
 
-export async function orders(params: URLSearchParams) {
+// Orders in the date range, with the Orders tab's status filter and search (newest first).
+export async function filteredOrders(params: URLSearchParams) {
   const { r, rows } = await ordersInRange(params);
   const status = params.get('status') ?? '';
   const q = (params.get('q') ?? '').trim().toLowerCase();
-  const list = rows
-    .filter((o) => !status || o.status === status)
-    .filter((o) => !q || String(o.id) === q || [o.customer_username, o.profiles?.email, o.restaurants?.name, o.item_title].join(' ').toLowerCase().includes(q))
-    .slice(0, 10000)
-    .map(presentOrder);
-  return { orders: list, range: { from: r.from, to: r.to } };
+  return {
+    r,
+    rows: rows
+      .filter((o) => !status || o.status === status)
+      .filter((o) => !q || String(o.id) === q || [o.customer_username, o.profiles?.email, o.restaurants?.name, o.item_title].join(' ').toLowerCase().includes(q)),
+  };
+}
+
+export async function orders(params: URLSearchParams) {
+  const { r, rows } = await filteredOrders(params);
+  return { orders: rows.slice(0, 10000).map(presentOrder), range: { from: r.from, to: r.to } };
 }
 
 export async function orderRefunds(orderId: number) {
   return must(await db().from('refunds').select('*, profiles(username)').eq('order_id', orderId).order('id'));
-}
-
-export async function ordersCsv(params: URLSearchParams) {
-  const { r, rows } = await ordersInRange(params);
-  return {
-    name: `BiteWise-orders-${r.from}-to-${r.to}.csv`,
-    csv: toCsv([
-      ['Order #', 'Created', 'Picked up', 'Status', 'Customer', 'Restaurant', 'Item', 'Qty', 'Original unit', 'Discount %', 'Unit price', 'Food subtotal',
-        'Service fee', 'Sales tax', 'Total', 'Credit applied', 'Refunded to original payment', 'Refunded as platform credit', 'Card', 'Transaction ID'],
-      ...[...rows].reverse().map((o) => [o.id, o.created_at, o.picked_up_at ?? '', o.status, o.customer_username, o.restaurants?.name ?? '', o.item_title,
-        o.quantity, dollars(o.original_unit_price_cents), o.discount_pct, dollars(o.unit_price_cents), dollars(o.subtotal_cents), dollars(o.service_fee_cents),
-        dollars(o.tax_cents), dollars(o.total_cents), dollars(o.credit_applied_cents), dollars(o.refunded_cents), dollars(o.credited_cents), o.card_label,
-        o.payment_ref ?? '']),
-    ]),
-  };
 }
 
 // ---------------------------------------------------------------- offers
@@ -289,18 +280,6 @@ export async function payouts() {
       }),
     history,
   };
-}
-
-export async function payoutsCsv() {
-  const p = await payouts();
-  return toCsv([
-    ['Restaurant', 'City', 'Owner email', 'Completed orders', 'Earned', 'Paid', 'Balance owed', 'Stripe account', 'Last paid'],
-    ...p.balances.map((x) => [x.name, x.city, x.email, x.orders, dollars(x.earnedCents), dollars(x.paidCents), dollars(x.balanceCents), x.stripeAccount ?? '', x.lastPaidAt ?? '']),
-    [],
-    ['Payout history'],
-    ['Date', 'Invoice number', 'Restaurant', 'Type', 'Amount', 'Bank/transaction details', 'Transaction ID', 'Note'],
-    ...[...p.history].reverse().map((x) => [x.paid_at, x.invoice_number ?? '', x.restaurants?.name ?? '', x.kind, dollars(x.amount_cents), x.bank_details, x.transaction_id, x.note]),
-  ]);
 }
 
 // ---------------------------------------------------------------- sales tax
@@ -358,26 +337,6 @@ export async function tax(params: URLSearchParams) {
 type PlanPayment = Database['public']['Tables']['subscription_payments']['Row'];
 const paidPlansBetween = (start: string, end: string) =>
   all<PlanPayment>((a, b) => db().from('subscription_payments').select('*').eq('status', 'paid').gte('created_at', start).lt('created_at', end).range(a, b));
-
-export async function taxCsv(params: URLSearchParams) {
-  const t = await tax(params);
-  return {
-    name: `BiteWise-sales-tax-${t.range.from}-to-${t.range.to}.csv`,
-    csv: toCsv([
-      ['Food orders'],
-      ['City', 'ZIP', 'Rate %', 'Orders', 'Taxable sales', 'Sales tax collected'],
-      ...t.rows.map((x) => [x.city, x.zip, (x.rateBps / 100).toFixed(2), x.orders, dollars(x.taxableCents), dollars(x.taxCents)]),
-      ['Total', '', '', '', dollars(t.totals.taxableCents), dollars(t.totals.taxCents)],
-      [],
-      ['Restaurant plan fees'],
-      ['City', 'ZIP', 'Rate %', 'Invoices', 'Taxable fees', 'Sales tax collected'],
-      ...t.planRows.map((x) => [x.city, x.zip, (x.rateBps / 100).toFixed(2), x.invoices, dollars(x.taxableCents), dollars(x.taxCents)]),
-      ['Total', '', '', '', dollars(t.planTotals.taxableCents), dollars(t.planTotals.taxCents)],
-      [],
-      ['All sales tax collected', '', '', '', dollars(t.allTotals.taxableCents), dollars(t.allTotals.taxCents)],
-    ]),
-  };
-}
 
 // ---------------------------------------------------------------- restaurant plans
 

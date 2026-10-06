@@ -14,7 +14,7 @@ import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money, pct } from '@/lib/format';
-import { day, run, useAdmin } from './shared';
+import { day, run, TableHead, useAdmin } from './shared';
 import { DaysPicker } from './users';
 
 type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_due' | 'expired'; foundingNumber: number | null; autoRenew: boolean; periodEnd: string | null };
@@ -63,6 +63,7 @@ export function RestaurantsPanel() {
         </Select>
       </div>
       <Card className="p-2">
+        <TableHead title="Restaurants" kind="restaurants" params={{ status, q }} what="these restaurants" />
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
           <>
             <PagerBar pager={pager} label="restaurants" />

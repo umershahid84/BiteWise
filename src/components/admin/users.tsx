@@ -14,7 +14,7 @@ import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money } from '@/lib/format';
-import { day, run, useAdmin } from './shared';
+import { day, run, TableHead, useAdmin } from './shared';
 
 type User = {
   id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number; noShowStreak: number; noShowProbation: boolean;
@@ -45,6 +45,7 @@ export function UsersPanel({ adminId }: { adminId: string }) {
         </Select>
       </div>
       <Card className="p-2">
+        <TableHead title={role === 'restaurant' ? 'Restaurant owners' : role === 'admin' ? 'Admins' : 'Customers'} kind="users" params={{ role, q }} what="these accounts" />
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
           <>
             <PagerBar pager={pager} label="accounts" />

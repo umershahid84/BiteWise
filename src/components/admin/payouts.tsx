@@ -2,18 +2,18 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { payRestaurant } from '@/app/actions/admin';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { fmtDateTime, money } from '@/lib/format';
-import { day, useAdmin } from './shared';
+import { day, DownloadIcons, exportHref, TableHead, useAdmin } from './shared';
 
 type Balance = {
   restaurantId: number; name: string; city: string; status: string; email: string; orders: number; earnedCents: number; paidCents: number;
@@ -36,13 +36,12 @@ export function PayoutsPanel() {
         Restaurants connected to <b>Stripe Connect</b> are paid automatically at each pickup (destination charges with Bite Wise&apos;s application fee).
         Anything still owed, for example orders completed before a restaurant connected Stripe, shows below: send it through Stripe, or record a payment made another way.
       </Alert>
-      <div className="mb-3 flex items-center">
-        <CardTitle className="m-0">Balances · {money(owed)} owed</CardTitle>
-        <span className="flex-1" />
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- CSV download, not a page */}
-        <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href="/api/admin/export/payouts"><FileSpreadsheet /> Export CSV</a>
+      <div className="mb-3 flex items-center justify-end">
+        {/* The whole tab (totals and both tables) as one PDF. */}
+        <DownloadIcons what="all payouts (balances and history)" pdf={exportHref('payouts', {}, 'pdf')} />
       </div>
       <Card className="mb-5 p-2">
+        <TableHead title={<>Balances · {money(owed)} owed</>} kind="payouts" section="balances" what="balances" />
         <PagerBar pager={balances} label="restaurants" />
         <Table>
           <thead><tr><th>Restaurant</th><th>Stripe</th><th>Orders</th><th>Earned</th><th>Paid</th><th>Owed</th><th /></tr></thead>
@@ -60,8 +59,8 @@ export function PayoutsPanel() {
         </Table>
         <PagerFooter pager={balances} />
       </Card>
-      <CardTitle>Payout history</CardTitle>
       <Card className="p-2">
+        <TableHead title="Payout history" kind="payouts" section="history" what="payout history" />
         <PagerBar pager={history} label="payouts" />
         <Table>
           <thead><tr><th>Date</th><th>Invoice number</th><th>Restaurant</th><th>Bank / transaction details</th><th className="text-right">Amount</th></tr></thead>

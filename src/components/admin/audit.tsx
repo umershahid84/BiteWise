@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { fmtDateTime } from '@/lib/format';
-import { useAdmin } from './shared';
+import { TableHead, useAdmin } from './shared';
 
 type Entry = { id: number; action: string; target_type: string; target_id: string | null; details: string; created_at: string; profiles: { username: string } | null };
 
@@ -14,6 +14,7 @@ export function AuditPanel() {
   if (isLoading) return <Spinner />;
   return (
     <Card className="p-2">
+      <TableHead title="Audit log" kind="audit" what="the audit log" />
       <PagerBar pager={pager} label="actions" />
       <Table>
         <thead><tr><th>When</th><th>Admin</th><th>Action</th><th>Details</th></tr></thead>

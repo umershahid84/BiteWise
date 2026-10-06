@@ -3,38 +3,48 @@ import * as admin from '@/lib/admin';
 import { requireActor } from '@/lib/auth';
 import { serverEnv } from '@/lib/env';
 import { AppError } from '@/lib/errors';
-import { incomePdf } from '@/lib/receipts/pdf';
+import { cellText, hasReport, report, reportCsv } from '@/lib/exports';
+import { incomePdf, listReportPdf } from '@/lib/receipts/pdf';
 import { formatDateTime } from '@/lib/receipts/time';
 
-// Downloads from the owner console: CSV (orders, sales tax, income, payouts) and the income report as a PDF
-// (?section=all for the whole Income tab, periods or restaurants for one table).
+// Downloads from the owner console, as CSV or PDF (?format=pdf):
+//   restaurants, users, orders, payouts, tax, audit: the tab with its current filters (src/lib/exports.ts); ?section=
+//   <table> for one of its tables;
+//   income (CSV) and income-pdf: the Income tab (?section=all, periods or restaurants).
+const pdfResponse = (pdf: Buffer, name: string) =>
+  new NextResponse(new Uint8Array(pdf), {
+    headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'private, no-store' },
+  });
+// The byte order mark makes Excel read the file as UTF-8 (so "•", "–" and accents show correctly).
+const csvResponse = (csv: string, name: string) =>
+  new NextResponse(`\uFEFF${csv}`, {
+    headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'private, no-store' },
+  });
+
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/export/[kind]'>) {
   try {
     await requireActor('admin');
     const { kind } = await ctx.params;
     const p = req.nextUrl.searchParams;
+    const generatedAt = formatDateTime(new Date().toISOString(), serverEnv.timeZone);
+    if (hasReport(kind)) {
+      const { report: r } = await report(kind, p);
+      return p.get('format') === 'pdf'
+        ? pdfResponse(await listReportPdf(r, { generatedAt, text: (c) => cellText(c, false) }), `BiteWise-${r.file}.pdf`)
+        : csvResponse(reportCsv(r), `BiteWise-${r.file}.csv`);
+    }
+    if (kind === 'income') {
+      const file = await admin.incomeCsv(p);
+      return csvResponse(file.csv, file.name);
+    }
     if (kind === 'income-pdf') {
       const x = await admin.income(p);
       const section = admin.incomeSection(p);
-      const pdf = await incomePdf(x, section, { generatedAt: formatDateTime(new Date().toISOString(), serverEnv.timeZone), note: admin.INCOME_NOTE });
+      const pdf = await incomePdf(x, section, { generatedAt, note: admin.INCOME_NOTE });
       const what = section === 'restaurants' ? 'income-by-restaurant' : section === 'periods' ? `income-by-${x.by}` : 'income-report';
-      return new NextResponse(new Uint8Array(pdf), {
-        headers: {
-          'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="BiteWise-${what}-${x.range.from}-to-${x.range.to}.pdf"`,
-          'Cache-Control': 'private, no-store',
-        },
-      });
+      return pdfResponse(pdf, `BiteWise-${what}-${x.range.from}-to-${x.range.to}.pdf`);
     }
-    const file =
-      kind === 'orders' ? await admin.ordersCsv(p)
-        : kind === 'tax' ? await admin.taxCsv(p)
-          : kind === 'income' ? await admin.incomeCsv(p)
-            : kind === 'payouts' ? { name: 'BiteWise-payouts.csv', csv: await admin.payoutsCsv() }
-              : null;
-    if (!file) throw new AppError(404, 'Not found.');
-    return new NextResponse(file.csv, {
-      headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${file.name}"`, 'Cache-Control': 'private, no-store' },
-    });
+    throw new AppError(404, 'Not found.');
   } catch (err) {
     const e = err instanceof AppError ? err : new AppError(500, 'Something went wrong.');
     if (!(err instanceof AppError)) console.error(err);

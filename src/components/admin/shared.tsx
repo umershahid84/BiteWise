@@ -71,3 +71,22 @@ export function DownloadIcons({ csv, pdf, what }: { csv?: string; pdf?: string; 
     </span>
   );
 }
+
+// Link to a download from /api/admin/export/<kind> with the tab's current filters.
+export function exportHref(kind: string, params: Record<string, string | number | undefined>, format: 'csv' | 'pdf', section?: string) {
+  const all = { ...params, format, section };
+  const qs = new URLSearchParams(Object.entries(all).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
+  return `/api/admin/export/${kind}?${qs}`;
+}
+
+// The title row of a table card, with its CSV and PDF downloads on the right.
+export function TableHead({ title, kind, params = {}, section, what }: {
+  title: React.ReactNode; kind: string; params?: Record<string, string | number | undefined>; section?: string; what: string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-2 pt-2 pb-1">
+      <h3 className="m-0 flex-1 text-lg font-extrabold">{title}</h3>
+      <DownloadIcons what={what} csv={exportHref(kind, params, 'csv', section)} pdf={exportHref(kind, params, 'pdf', section)} />
+    </div>
+  );
+}
