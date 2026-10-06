@@ -13,6 +13,8 @@ const DURATIONS = JSON.parse(fs.readFileSync(path.join(OUT, 'voice/durations.jso
 const LOGO = fs.readFileSync(new URL('../../public/assets/logo-dark.svg', import.meta.url), 'utf8');
 const STORY = fs.readFileSync(new URL('./story.html', import.meta.url), 'utf8');
 const SIZE = { width: 1280, height: 720 };
+// The deals page asks for the customer's location; the demo browser allows it, at the demo restaurants' area.
+const DEMO_LOCATION = { permissions: ['geolocation'], geolocation: { latitude: 47.6101, longitude: -122.3421 } };
 const PASSWORD = 'BiteWise123';
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -96,7 +98,7 @@ function narrator(tour) {
 
 // End screen: fades in over the last page, pops in the Bite Wise logo piece by piece and says goodbye.
 const OUTRO = {
-  customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join · United States & Canada' },
+  customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join' },
   restaurant: { headline: 'Happy selling!', line: 'Less waste. More revenue.', pill: 'Free to join · Paid through Stripe' },
 };
 
@@ -205,7 +207,7 @@ async function logIn(p, user) {
 }
 
 async function recordingContext(browser) {
-  const ctx = await browser.newContext({ viewport: SIZE, recordVideo: { dir: OUT, size: SIZE }, deviceScaleFactor: 1, timezoneId: 'America/Los_Angeles' });
+  const ctx = await browser.newContext({ viewport: SIZE, recordVideo: { dir: OUT, size: SIZE }, deviceScaleFactor: 1, timezoneId: 'America/Los_Angeles', ...DEMO_LOCATION });
   await ctx.addInitScript(OVERLAY);
   return ctx;
 }
@@ -312,7 +314,7 @@ async function restaurantTour(browser) {
   await n.say(p, 'live', { gap: 100 });
 
   // A customer orders (in another, unrecorded browser) and the bell rings live.
-  const other = await browser.newContext({ viewport: SIZE, timezoneId: 'America/Los_Angeles' });
+  const other = await browser.newContext({ viewport: SIZE, timezoneId: 'America/Los_Angeles', ...DEMO_LOCATION });
   const c = await other.newPage();
   await c.goto(`${BASE}/login`);
   await c.fill('#login', 'demo');
