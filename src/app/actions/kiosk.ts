@@ -60,6 +60,7 @@ export async function kioskConfirm(token: string, pin: string, orderId: number) 
       id: number; paymentRef: string | null; destinationAccount: string | null;
     };
     const done = await orders.completePickup(claimed);
+    orders.emailInvoiceAfterResponse(done.id); // the customer's invoice
     return { id: done.id, quantity: done.quantity, itemTitle: done.item_title, customerUsername: done.customer_username, totalCents: done.total_cents, creditAppliedCents: done.credit_applied_cents };
   });
 }

@@ -7,6 +7,8 @@ import { AppError, check, maybe, must } from '@/lib/errors';
 import { planPrice, priceContext } from '@/lib/fee-changes';
 import * as orders from '@/lib/orders';
 import { PaymentError, payments } from '@/lib/payments';
+import { planInvoicePdf } from '@/lib/receipts/pdf';
+import { planInvoiceByNumber } from '@/lib/receipts/plan-invoice';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Restaurant subscriptions (supabase/migrations/20261006000200_bans_and_subscriptions.sql, 20261007000100_delinquent_plans.sql).
@@ -203,14 +205,22 @@ async function receipt(o: {
   to: string; restaurant: string; plan: PaidPlan; amountCents: number; invoice: string; cardLabel: string; start?: Date; end: Date; autoRenew: boolean;
   renewal: boolean; listPriceCents?: number; discountCents?: number; discountLabel?: string;
 }) {
-  await sendEmail({
-    to: o.to,
-    ...subscriptionReceiptEmail({
-      restaurant: o.restaurant, plan: o.plan, amountCents: o.amountCents, invoiceNumber: o.invoice, cardLabel: o.cardLabel,
-      periodStart: o.start?.toISOString(), periodEnd: o.end.toISOString(), autoRenew: o.autoRenew, renewal: o.renewal, planUrl: planUrl(),
-      listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel,
-    }),
-  }).catch((err) => console.error('subscription receipt email:', err));
+  try {
+    // The invoice as a PDF, and a link to it (it can be printed from there).
+    const inv = await planInvoiceByNumber(o.invoice);
+    await sendEmail({
+      to: o.to,
+      ...subscriptionReceiptEmail({
+        restaurant: o.restaurant, plan: o.plan, amountCents: o.amountCents, invoiceNumber: o.invoice, cardLabel: o.cardLabel,
+        periodStart: o.start?.toISOString(), periodEnd: o.end.toISOString(), autoRenew: o.autoRenew, renewal: o.renewal, planUrl: planUrl(),
+        listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel,
+        invoiceUrl: `${publicEnv.siteUrl}/restaurant/invoices/${inv.id}`,
+      }),
+      attachments: [{ filename: `Bite-Wise-invoice-${o.invoice}.pdf`, content: await planInvoicePdf(inv), contentType: 'application/pdf' }],
+    });
+  } catch (err) {
+    console.error('subscription receipt email:', err);
+  }
 }
 
 // ---------------------------------------------------------------- Pioneer Members

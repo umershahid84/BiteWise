@@ -15,9 +15,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.resolve(import.meta.dirname),
   // pdfkit reads its font metrics from disk, so it must not be bundled.
   serverExternalPackages: ['pdfkit', 'nodemailer'],
-  // Fonts and logos for PDFs (receipts, reports, agreements) and emails are read at runtime.
+  // Fonts and logos for PDFs (receipts, reports, agreements), emails and the sign-up email template are read at runtime.
   outputFileTracingIncludes: {
-    '/**/*': ['./assets/pdf-fonts/**/*', './public/assets/logo.png', './public/assets/email-logo.png'],
+    '/**/*': ['./assets/pdf-fonts/**/*', './public/assets/logo.png', './public/assets/email-logo.png', './supabase/templates/confirmation.html'],
   },
   images: {
     remotePatterns: [new URL(`${supabaseUrl}/storage/v1/object/public/**`)],

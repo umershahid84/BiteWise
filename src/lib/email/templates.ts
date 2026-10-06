@@ -1,5 +1,6 @@
 import 'server-only';
 import { serverEnv } from '@/lib/env';
+import type { Receipt } from '@/lib/receipts/data';
 
 // Bite Wise emails the app sends itself, in the same style as the sign-up email (supabase/templates/confirmation.html):
 // tables and inline styles, so they look right in Gmail, Outlook and on phones.
@@ -143,8 +144,9 @@ const PLAN_NAMES = { monthly: 'Monthly', annual: 'Annual' } as const;
 export function subscriptionReceiptEmail(o: {
   restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; invoiceNumber: string; cardLabel: string; periodStart?: string;
   periodEnd: string; autoRenew: boolean; renewal: boolean; planUrl: string; listPriceCents?: number; discountCents?: number; discountLabel?: string;
+  invoiceUrl?: string;
 }) {
-  const row = (k: string, v: string, strong = false) => `<tr><td style="padding:7px 0;color:#64748B;font:${strong ? '800 15px' : '14px'} ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:${strong ? '800 16px' : '700 14px'} ${FONT};color:#1E293B;">${v}</td></tr>`;
+  const row = (k: string, v: string, strong = false, color?: string) => `<tr><td style="padding:7px 0;color:${color ?? '#64748B'};font:${strong ? '800 15px' : '14px'} ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:${strong ? '800 16px' : '700 14px'} ${FONT};color:${color ?? '#1E293B'};">${v}</td></tr>`;
   const discount = o.discountCents ?? 0;
   const free = o.amountCents === 0 && discount > 0;
   const list = o.listPriceCents ?? o.amountCents + discount;
@@ -165,18 +167,18 @@ export function subscriptionReceiptEmail(o: {
         </table>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
           ${row(`${PLAN_NAMES[o.plan]} plan`, usd(list))}
-          ${discount ? row(esc(o.discountLabel || 'Discount'), `−${usd(discount)}`) : ''}
+          ${discount ? row(esc(o.discountLabel || 'Discount'), `−${usd(discount)}`, false, '#3E8230') : ''}
           ${row(free ? 'Total due' : 'Amount paid', free ? `${usd(0)} <span style="color:#3E8230;">FREE</span>` : usd(o.amountCents), true)}
           ${free ? '' : row('Card', esc(o.cardLabel))}
         </table>
-        <p style="margin:0 0 18px;font-size:15px;color:#475569;">${next}.${free ? ' Nothing to pay, and no card needed.' : ' You can change your plan, card or auto-renewal in the Plan tab.'}</p>
-        ${button(o.planUrl, 'View my plan', '#14284B')}`,
+        <p style="margin:0 0 18px;font-size:15px;color:#475569;">${next}.${free ? ' Nothing to pay, and no card needed.' : ' You can change your plan, card or auto-renewal in the Plan tab.'}${o.invoiceUrl ? ' Your invoice is attached as a PDF.' : ''}</p>
+        ${o.invoiceUrl ? button(o.invoiceUrl, 'View my invoice', '#14284B') : button(o.planUrl, 'View my plan', '#14284B')}`,
     }),
     text: `Bite Wise invoice ${o.invoiceNumber} for ${o.restaurant} (${period})
 ${PLAN_NAMES[o.plan]} plan: ${usd(list)}${discount ? `\n${o.discountLabel || 'Discount'}: -${usd(discount)}` : ''}
 ${free ? 'Total due: $0.00 (FREE)' : `Amount paid: ${usd(o.amountCents)} with ${o.cardLabel}`}
 ${next}.
-Your plan: ${o.planUrl}`,
+${o.invoiceUrl ? `Your invoice: ${o.invoiceUrl}\n` : ''}Your plan: ${o.planUrl}`,
   };
 }
 
@@ -265,5 +267,51 @@ Annual plan: ${usd(o.oldAnnualCents)} → ${usd(o.newAnnualCents)} per year
 New prices from ${o.effective}.
 
 Your plan: ${o.planUrl}`,
+  };
+}
+
+// A customer's invoice, sent the moment the order is paid (charged at pickup), with the PDF receipt attached.
+export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
+  const row = (k: string, v: string, o2: { strong?: boolean; color?: string; sub?: string } = {}) =>
+    `<tr><td style="padding:7px 0;font:${o2.strong ? '800 15px' : '14px'} ${FONT};color:${o2.color ?? (o2.strong ? '#1E293B' : '#64748B')};">${k}${o2.sub ? `<div style="font:12px ${FONT};color:#94A3B8;">${o2.sub}</div>` : ''}</td>
+      <td align="right" valign="top" style="padding:7px 0;font:${o2.strong ? '800 16px' : '700 14px'} ${FONT};color:${o2.color ?? '#1E293B'};">${v}</td></tr>`;
+  const it = rc.item;
+  const r = rc.restaurant;
+  const charged = rc.amountChargedCents;
+  const paid = (card: string) => [charged > 0 && `${usd(charged)} on ${card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in Bite Wise credit`].filter(Boolean).join(' + ');
+  const paidWith = paid(esc(rc.card));
+  return {
+    subject: `Your Bite Wise invoice ${rc.receiptNumber}: ${usd(rc.totalCents)} at ${r.name}`,
+    html: layout({
+      preview: `Paid ${usd(rc.totalCents)} for ${it.quantity} × ${it.title}. You saved ${usd(it.savingsCents)}.`,
+      emoji: '🧾',
+      title: 'Thanks for rescuing food!',
+      subtitle: `${esc(r.name)} · Order #${rc.orderId}`,
+      body: `<p style="margin:0 0 16px;">Here is your invoice for the order you picked up${rc.pickedUpAtText ? ` on ${esc(rc.pickedUpAtText)}` : ''}.${it.savingsCents > 0 ? ` You saved <b style="color:#3E8230;">${usd(it.savingsCents)}</b> and kept good food from going to waste. 💚` : ''}</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;margin:0 0 4px;">
+          ${row('Invoice', esc(rc.receiptNumber))}
+          ${row('Restaurant', esc(r.name), { sub: `${esc(r.address)}, ${esc(r.city)} ${esc(r.zip)}` })}
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
+          ${row(`${it.quantity} × ${esc(it.title)}`, usd(it.lineOriginalCents), { sub: `${usd(it.originalUnitCents)} each` })}
+          ${it.savingsCents > 0 ? row(`Bite Wise discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
+          ${row('Subtotal', usd(rc.subtotalCents))}
+          ${rc.serviceFeeCents ? row(`Service fee (${rc.serviceFeePct}%)`, usd(rc.serviceFeeCents)) : ''}
+          ${row(`Sales tax (${(rc.taxRateBps / 100).toFixed(2).replace(/\.?0+$/, '')}%)`, usd(rc.taxCents))}
+          ${row('Total paid', usd(rc.totalCents), { strong: true })}
+          ${paidWith ? row('Paid with', paidWith) : ''}
+        </table>
+        <p style="margin:0 0 18px;font-size:14px;color:#475569;">Your receipt is attached as a PDF. You can also view or print it any time:</p>
+        ${button(o.receiptUrl, 'View my receipt', '#14284B')}`,
+    }),
+    text: `Bite Wise invoice ${rc.receiptNumber} (order #${rc.orderId})
+${r.name}, ${r.address}, ${r.city} ${r.zip}
+
+${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
+Subtotal: ${usd(rc.subtotalCents)}${rc.serviceFeeCents ? `\nService fee (${rc.serviceFeePct}%): ${usd(rc.serviceFeeCents)}` : ''}
+Sales tax: ${usd(rc.taxCents)}
+Total paid: ${usd(rc.totalCents)}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
+
+Your receipt: ${o.receiptUrl}`,
   };
 }

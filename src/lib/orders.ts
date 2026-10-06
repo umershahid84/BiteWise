@@ -1,7 +1,13 @@
 import 'server-only';
+import { after } from 'next/server';
 import type { Database } from '@/lib/database.types';
 import { AppError, check, maybe, must } from '@/lib/errors';
+import { orderInvoiceEmail } from '@/lib/email/templates';
+import { sendEmail } from '@/lib/email/send';
+import { publicEnv } from '@/lib/env';
 import { payments, PaymentError } from '@/lib/payments';
+import { receiptData } from '@/lib/receipts/data';
+import { receiptPdf } from '@/lib/receipts/pdf';
 import { restaurantShareOfRefund, type Quote } from '@/lib/pricing';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -251,6 +257,32 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
     console.error(`Payout for order ${order.id} failed; it stays owed.`, err);
   }
   return done;
+}
+
+// Emails the invoice once the response is sent, so handing over the food doesn't wait for the email. (Outside a
+// request, e.g. in tests or scripts, it is sent in the background.)
+export function emailInvoiceAfterResponse(orderId: number) {
+  try {
+    after(() => emailInvoice(orderId));
+  } catch {
+    void emailInvoice(orderId);
+  }
+}
+
+// Emails the customer the invoice for a paid order, with the PDF receipt attached. Never throws.
+export async function emailInvoice(orderId: number) {
+  try {
+    const rc = await receiptData(await getOrder(orderId));
+    if (!rc.customer.email) return false;
+    return await sendEmail({
+      to: rc.customer.email,
+      ...orderInvoiceEmail(rc, { receiptUrl: `${publicEnv.siteUrl}/orders/${orderId}/receipt` }),
+      attachments: [{ filename: `Bite-Wise-receipt-${rc.receiptNumber}.pdf`, content: await receiptPdf(rc), contentType: 'application/pdf' }],
+    });
+  } catch (err) {
+    console.error(`Invoice email for order ${orderId} failed:`, err instanceof Error ? err.message : err);
+    return false;
+  }
 }
 
 async function sendTransfer(restaurantId: number, amountCents: number, sourceChargeId: string | null, note: string, orderId: number | null, key: string, by: string | null = null) {

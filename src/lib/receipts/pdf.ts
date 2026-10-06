@@ -4,6 +4,7 @@ import PDFDocument from 'pdfkit';
 import { code128 } from '@/lib/code128';
 import { money, pct } from '@/lib/format';
 import type { Receipt, Report } from './data';
+import type { PlanInvoice } from './plan-invoice';
 import { displayPhone } from '@/lib/phone';
 
 // PDF receipts (80 mm point-of-sale roll) and daily reports (landscape letter).
@@ -271,6 +272,66 @@ export function reportPdf(rep: Report) {
   doc.font('regular').fontSize(8).fillColor(MUTED).text(
     `Sales totals include orders picked up (and charged) on this day. Times in Pacific Time. Generated ${rep.generatedAtText}.`,
     L, doc.page.height - 50, { width: W, lineBreak: false },
+  );
+  return finish(doc);
+}
+
+// ---------------------------------------------------------------- restaurant plan invoice
+
+export function planInvoicePdf(inv: PlanInvoice) {
+  const doc = new PDFDocument({ size: 'LETTER', margin: 54, info: { Title: `Bite Wise invoice ${inv.number}`, Author: 'Bite Wise' } });
+  fonts(doc);
+  const L = 54;
+  const R = doc.page.width - 54;
+  const W = R - L;
+  const NAVY = '#14284B';
+  const SAVE = '#3E8230';
+
+  doc.image(LOGO, L, 50, { height: 44 });
+  doc.font('head').fontSize(24).fillColor(NAVY).text('INVOICE', L, 50, { width: W, align: 'right' });
+  doc.font('mono').fontSize(10).fillColor(INK).text(inv.number, L, 80, { width: W, align: 'right' });
+  doc.font('regular').fontSize(10).fillColor(MUTED).text(inv.dateText, L, 95, { width: W, align: 'right' });
+  rule(doc, L, R, 122);
+
+  const r = inv.restaurant;
+  label(doc, 'BILLED TO', L, 140);
+  doc.font('bold').fontSize(10.5).fillColor(INK).text(r.name, L, 154, { width: W / 2 });
+  doc.font('regular').fontSize(10).text([r.address, `${r.city}, WA ${r.zip}`, r.phone ? displayPhone(r.phone) : ''].filter(Boolean).join('\n'), { width: W / 2, lineGap: 2 });
+  label(doc, 'FROM', L, 140, { width: W, align: 'right' });
+  doc.font('bold').fontSize(10.5).fillColor(INK).text(inv.from.entity, L, 154, { width: W, align: 'right' });
+  doc.font('regular').fontSize(10).text(`${inv.from.address}\n${inv.from.email}`, L, doc.y, { width: W, align: 'right', lineGap: 2 });
+
+  let y = 236;
+  label(doc, 'DESCRIPTION', L, y);
+  label(doc, 'AMOUNT', L, y, { width: W, align: 'right' });
+  y += 16;
+  rule(doc, L, R, y);
+  y += 12;
+  doc.font('bold').fontSize(11).fillColor(INK).text(inv.description, L, y, { width: W - 120 });
+  doc.font('regular').fontSize(11).text(money(inv.listCents), L, y, { width: W, align: 'right' });
+  doc.font('regular').fontSize(9).fillColor(MUTED).text(inv.periodText, L, y + 16, { width: W - 120 });
+  y += 40;
+  rule(doc, L, R, y);
+  if (inv.discountCents > 0) {
+    y += 12;
+    doc.font('medium').fontSize(11).fillColor(SAVE).text(inv.discountLabel, L, y, { width: W - 120 });
+    doc.text(`−${money(inv.discountCents)}`, L, y, { width: W, align: 'right' });
+    y += 26;
+    rule(doc, L, R, y);
+  }
+  y += 18;
+  doc.font('head').fontSize(13).fillColor(INK).text(inv.free ? 'Total due' : inv.paid ? 'Total paid' : 'Total due', L, y + 4);
+  const total = money(inv.totalCents);
+  if (inv.free) {
+    doc.font('head').fontSize(11).fillColor(SAVE).text('FREE', L, y + 6, { width: W, align: 'right' });
+    doc.font('head').fontSize(20).fillColor(INK).text(total, L, y, { width: W - 44, align: 'right' });
+  } else {
+    doc.font('head').fontSize(20).fillColor(INK).text(total, L, y, { width: W, align: 'right' });
+  }
+  y += 46;
+  doc.font('regular').fontSize(9.5).fillColor(MUTED).text(inv.note, L, y, { width: W });
+  doc.font('regular').fontSize(8.5).fillColor(MUTED).text(
+    `${inv.from.entity} · Eat well, waste less · ${inv.from.email}`, L, doc.page.height - 70, { width: W, align: 'center', lineBreak: false },
   );
   return finish(doc);
 }

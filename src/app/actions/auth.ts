@@ -4,6 +4,8 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { serverEnv } from '@/lib/env';
 import { checkEmailDomain } from '@/lib/email-domain';
+import { confirmationEmail, sendsOwnConfirmation } from '@/lib/email/confirmation';
+import { sendEmail } from '@/lib/email/send';
 import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
 import { homeFor } from '@/lib/constants';
@@ -44,6 +46,25 @@ async function assertAvailable(email: string, username: string) {
   if (byName.data) throw new AppError(409, 'That user name is taken.');
 }
 
+const CONFIRM_URL = () => `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/confirm`;
+
+// Emails the confirmation link. If the email can't be sent, Supabase sends its own as a fallback.
+async function sendConfirmation(email: string, tokenHash: string, meta: Record<string, unknown> | undefined) {
+  const restaurant = meta?.restaurant as { name?: string } | undefined;
+  const sent = await sendEmail({
+    to: email,
+    ...confirmationEmail({ email, tokenHash, username: meta?.username as string | undefined, role: meta?.role as string | undefined, restaurant: restaurant?.name }),
+  }).catch((err) => {
+    console.error('confirmation email:', err instanceof Error ? err.message : err);
+    return false;
+  });
+  if (!sent) {
+    const supabase = await supabaseServer();
+    const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: CONFIRM_URL() } });
+    if (error) console.error('confirmation email (Supabase):', error.message);
+  }
+}
+
 const BANNED = 'This account has been permanently closed for breaking the Bite Wise terms. Contact Bite Wise support if you think this is a mistake.';
 
 // Checks the sign-up form before the agreement is shown, without creating anything.
@@ -71,26 +92,36 @@ export async function signUp(input: unknown) {
       const spot = await locateRestaurant(data.restaurant);
       if (spot?.source === 'address') data.restaurant = { ...data.restaurant, lat: spot.lat, lng: spot.lng };
     }
+    const metadata = {
+      username: data.username,
+      role: data.role,
+      accepted_terms: data.acceptedTerms,
+      restaurant: data.role === 'restaurant' ? data.restaurant : undefined,
+      ip,
+      user_agent: userAgent,
+    };
+    const signupError = (error: { message: string }) => {
+      if (/already registered|already exists/i.test(error.message)) return new AppError(409, 'An account with this email already exists.');
+      return new AppError(400, error.message.includes('Database error') ? 'We could not create your account. Please check your details.' : error.message);
+    };
+
+    // The app sends the Bite Wise confirmation email itself (see src/lib/email/confirmation.ts).
+    if (await sendsOwnConfirmation()) {
+      const { data: link, error } = await supabaseAdmin().auth.admin.generateLink({
+        type: 'signup', email: data.email, password: data.password, options: { data: metadata, redirectTo: CONFIRM_URL() },
+      });
+      if (error) throw signupError(error);
+      await sendConfirmation(data.email, link.properties.hashed_token, link.user.user_metadata);
+      return { needsConfirmation: true, next: homeFor(data.role) };
+    }
+
     const supabase = await supabaseServer();
     const { data: res, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
-      options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/confirm`,
-        data: {
-          username: data.username,
-          role: data.role,
-          accepted_terms: data.acceptedTerms,
-          restaurant: data.role === 'restaurant' ? data.restaurant : undefined,
-          ip,
-          user_agent: userAgent,
-        },
-      },
+      options: { emailRedirectTo: CONFIRM_URL(), data: metadata },
     });
-    if (error) {
-      if (/already registered|already exists/i.test(error.message)) throw new AppError(409, 'An account with this email already exists.');
-      throw new AppError(400, error.message.includes('Database error') ? 'We could not create your account. Please check your details.' : error.message);
-    }
+    if (error) throw signupError(error);
     // With email confirmation off, the email counts as confirmed at once: send the restaurant's onboarding email now.
     if (res.session && data.role === 'restaurant' && res.user) {
       const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', res.user.id).maybeSingle();
@@ -154,12 +185,28 @@ export async function resendConfirmation(input: unknown) {
       if (!data) return null;
       email = data.email;
     }
+    if (await sendsOwnConfirmation()) {
+      const { data: profile } = await supabaseAdmin().from('profiles').select('id').eq('email', email).maybeSingle();
+      if (!profile) return null;
+      // One email a minute per account, as Supabase does.
+      const { data: user } = await supabaseAdmin().auth.admin.getUserById(profile.id);
+      if (user.user?.email_confirmed_at) return null;
+      const last = user.user?.confirmation_sent_at ? Date.parse(user.user.confirmation_sent_at) : 0;
+      if (Date.now() - last < 60_000) throw new AppError(429, 'An email was sent very recently. Please wait a minute and try again.');
+      // Gives a new link for an account that isn't confirmed yet; a confirmed one answers "email_exists".
+      const { data: link, error } = await supabaseAdmin().auth.admin.generateLink({
+        type: 'signup', email, password: undefined as unknown as string, // existing account: its password stays as it is
+        options: { redirectTo: CONFIRM_URL() },
+      });
+      if (error) {
+        if (error.code !== 'email_exists') console.error('resend confirmation:', error.message);
+        return null;
+      }
+      await sendConfirmation(email, link.properties.hashed_token, link.user.user_metadata);
+      return null;
+    }
     const supabase = await supabaseServer();
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/confirm` },
-    });
+    const { error } = await supabase.auth.resend({ type: 'signup', email, options: { emailRedirectTo: CONFIRM_URL() } });
     if (error?.status === 429) throw new AppError(429, 'An email was sent very recently. Please wait a minute and try again.');
     if (error) console.error('resend confirmation:', error.message);
     return null;
