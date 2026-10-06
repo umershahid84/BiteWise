@@ -7,6 +7,7 @@ import { StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { OFFER_REASONS, offerStatus, type OfferReason } from '@/lib/constants';
 import { money } from '@/lib/format';
 import { run, useAdmin } from './shared';
@@ -19,6 +20,7 @@ type Offer = {
 export function OffersPanel() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useAdmin<Offer[]>(['offers'], 'offers');
+  const pager = usePager(data ?? []);
   const remove = async (o: Offer) => {
     const reason = prompt(`Remove "${o.title}" from Bite Wise? Reason (optional):`);
     if (reason === null) return;
@@ -28,10 +30,11 @@ export function OffersPanel() {
   if (!data?.length) return <EmptyState title="No live offers right now" />;
   return (
     <Card className="p-2">
+      <PagerBar pager={pager} label="offers" />
       <Table>
         <thead><tr><th>Offer</th><th>Restaurant</th><th>Price</th><th>Left</th><th>Timer</th><th>Status</th><th /></tr></thead>
         <tbody>
-          {data.map((o) => (
+          {pager.rows.map((o) => (
             <tr key={o.id}>
               <td><b>{o.title}</b><div className="text-xs text-muted">{OFFER_REASONS[o.reason]}</div></td>
               <td className="text-sm">{o.restaurants?.name}<div className="text-xs text-muted">{o.restaurants?.city}{o.restaurants?.status !== 'approved' && ` · restaurant ${o.restaurants?.status}`}</div></td>
@@ -44,6 +47,7 @@ export function OffersPanel() {
           ))}
         </tbody>
       </Table>
+      <PagerFooter pager={pager} />
     </Card>
   );
 }

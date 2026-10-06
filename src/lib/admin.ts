@@ -166,7 +166,7 @@ export async function users(params: URLSearchParams) {
   ]);
   return profiles
     .filter((u) => !q || `${u.email} ${u.username}`.toLowerCase().includes(q))
-    .slice(0, 500)
+    .slice(0, 10000)
     .map((u) => {
       const mine = orders.filter((o) => o.user_id === u.id);
       const done = mine.filter((o) => o.status === 'picked_up');
@@ -185,7 +185,7 @@ export async function users(params: URLSearchParams) {
 // Missed-pickup alerts (src/lib/no-shows.ts). ?all=1 includes single no-shows; by default only suspensions and bans.
 export async function alerts(params: URLSearchParams) {
   let q = db().from('admin_alerts').select('*, profiles!admin_alerts_user_id_fkey(username, email, status, suspended_until, no_shows_total, no_show_strikes, no_show_probation)')
-    .order('created_at', { ascending: false }).limit(300);
+    .order('created_at', { ascending: false }).limit(5000);
   if (params.get('all') !== '1') q = q.neq('kind', 'no_show');
   const rows = must(await q);
   const unread = (await db().from('admin_alerts').select('id', { count: 'exact', head: true }).neq('kind', 'no_show').is('read_at', null)).count ?? 0;
@@ -232,7 +232,7 @@ export async function orders(params: URLSearchParams) {
   const list = rows
     .filter((o) => !status || o.status === status)
     .filter((o) => !q || String(o.id) === q || [o.customer_username, o.profiles?.email, o.restaurants?.name, o.item_title].join(' ').toLowerCase().includes(q))
-    .slice(0, 500)
+    .slice(0, 10000)
     .map(presentOrder);
   return { orders: list, range: { from: r.from, to: r.to } };
 }
@@ -271,7 +271,7 @@ export async function payouts() {
     must(await db().from('restaurant_balances').select('*').order('name')),
     must(await db().from('restaurant_payment_accounts').select('*')),
     all<{ id: number; owner_id: string }>((a, b) => db().from('restaurants').select('id, owner_id').range(a, b)),
-    must(await db().from('payouts').select('*, restaurants(name)').order('paid_at', { ascending: false }).limit(300)),
+    must(await db().from('payouts').select('*, restaurants(name)').order('paid_at', { ascending: false }).limit(5000)),
   ]);
   const emails = new Map(must(await db().from('profiles').select('id, email').eq('role', 'restaurant')).map((p) => [p.id, p.email]));
   const ownerOf = new Map(owners.map((o) => [o.id, o.owner_id]));
@@ -444,7 +444,7 @@ export async function settings() {
 }
 
 export async function audit() {
-  return must(await db().from('audit_log').select('*, profiles(username)').order('id', { ascending: false }).limit(300));
+  return must(await db().from('audit_log').select('*, profiles(username)').order('id', { ascending: false }).limit(5000));
 }
 
 export async function log(adminId: string, action: string, targetType: string, targetId: string | number | null, details = '') {

@@ -11,6 +11,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { fmtDateTime, money } from '@/lib/format';
 import { day, useAdmin } from './shared';
 
@@ -24,6 +25,9 @@ export function PayoutsPanel() {
   const queryClient = useQueryClient();
   const [paying, setPaying] = useState<Balance | null>(null);
   const { data, isLoading } = useAdmin<{ balances: Balance[]; history: History[] }>(['payouts'], 'payouts');
+  const balances = usePager(data?.balances ?? []);
+  const history = usePager(data?.history ?? []);
+
   if (isLoading || !data) return <div className="grid place-items-center py-10"><Spinner /></div>;
   const owed = data.balances.reduce((n, b) => n + Math.max(0, b.balanceCents), 0);
   return (
@@ -39,10 +43,11 @@ export function PayoutsPanel() {
         <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href="/api/admin/export/payouts"><FileSpreadsheet /> Export CSV</a>
       </div>
       <Card className="mb-5 p-2">
+        <PagerBar pager={balances} label="restaurants" />
         <Table>
           <thead><tr><th>Restaurant</th><th>Stripe</th><th>Orders</th><th>Earned</th><th>Paid</th><th>Owed</th><th /></tr></thead>
           <tbody>
-            {data.balances.map((b) => (
+            {balances.rows.map((b) => (
               <tr key={b.restaurantId}>
                 <td><b>{b.name}</b><div className="text-xs text-muted">{b.city} · {b.email}</div></td>
                 <td>{b.stripeReady ? <Badge tone="green">Connected</Badge> : <Badge tone="amber">Not connected</Badge>}<div className="text-xs text-muted">{b.bank}</div></td>
@@ -53,13 +58,15 @@ export function PayoutsPanel() {
             ))}
           </tbody>
         </Table>
+        <PagerFooter pager={balances} />
       </Card>
       <CardTitle>Payout history</CardTitle>
       <Card className="p-2">
+        <PagerBar pager={history} label="payouts" />
         <Table>
           <thead><tr><th>Date</th><th>Invoice number</th><th>Restaurant</th><th>Bank / transaction details</th><th className="text-right">Amount</th></tr></thead>
           <tbody>
-            {data.history.map((h) => (
+            {history.rows.map((h) => (
               <tr key={h.id}>
                 <td className="text-xs whitespace-nowrap">{fmtDateTime(h.paid_at)}</td>
                 <td><code className="text-xs">{h.invoice_number}</code><div className="text-xs text-muted">{h.kind}{h.note && ` · ${h.note}`}</div></td>
@@ -70,6 +77,7 @@ export function PayoutsPanel() {
             ))}
           </tbody>
         </Table>
+        <PagerFooter pager={history} />
       </Card>
       <Dialog open={!!paying} onOpenChange={(o) => !o && setPaying(null)}>
         {paying && <PayForm b={paying} onDone={() => queryClient.invalidateQueries({ queryKey: ['admin'] })} />}

@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/field';
 import { SectionLabel, Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/constants';
 import { fmtDateTime, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,7 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
   const [q, setQ] = useState('');
   const [refunding, setRefunding] = useState<AdminOrder | null>(null);
   const { data, isLoading } = useAdmin<{ orders: AdminOrder[] }>(['orders', range, status, q], 'orders', { ...range, status, q });
+  const pager = usePager(data?.orders ?? [], `${range.from}|${range.to}|${status}|${q}`);
   const cancel = async (o: AdminOrder) => {
     const reason = prompt(`Cancel order #${o.id}? The customer's card hold is released. Reason (optional):`);
     if (reason === null) return;
@@ -42,32 +44,36 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
       </div>
       <Card className="p-2">
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
-          <Table>
-            <thead><tr><th>#</th><th>Order</th><th>Customer</th><th>Total</th><th>Refunded</th><th>Status</th><th /></tr></thead>
-            <tbody>
-              {(data?.orders ?? []).map((o) => (
-                <tr key={o.id}>
-                  <td>{o.id}</td>
-                  <td><b>{o.quantity} × {o.itemTitle}</b><div className="text-xs text-muted">{o.restaurant} · {fmtDateTime(o.createdAt)}</div></td>
-                  <td className="text-sm">{o.customer}<div className="text-xs text-muted">{o.customerEmail}</div></td>
-                  <td>{money(o.totalCents)}{o.creditAppliedCents > 0 && <div className="text-xs text-accent-ink">{money(o.creditAppliedCents)} credit</div>}</td>
-                  <td className="text-sm">
-                    {o.refundedCents > 0 && <div>{money(o.refundedCents)} original</div>}
-                    {o.creditedCents > 0 && <div className="text-accent-ink">{money(o.creditedCents)} as credit</div>}
-                    {!o.refundedCents && !o.creditedCents && <span className="text-muted">–</span>}
-                  </td>
-                  <td><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} /></td>
-                  <td className="whitespace-nowrap">
-                    <div className="flex gap-1.5">
-                      {o.status === 'picked_up' && o.refundableCents > 0 && <Button size="sm" variant="warm" onClick={() => setRefunding(o)}>Refund</Button>}
-                      {(o.status === 'reserved' || o.status === 'pending_payment') && <Button size="sm" variant="danger" onClick={() => cancel(o)}>Cancel</Button>}
-                      <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/orders/${o.id}/receipt`} aria-label={`Receipt PDF for order ${o.id}`}><Download /></a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+          <>
+            <PagerBar pager={pager} label="orders" />
+            <Table>
+              <thead><tr><th>#</th><th>Order</th><th>Customer</th><th>Total</th><th>Refunded</th><th>Status</th><th /></tr></thead>
+              <tbody>
+                {pager.rows.map((o) => (
+                  <tr key={o.id}>
+                    <td>{o.id}</td>
+                    <td><b>{o.quantity} × {o.itemTitle}</b><div className="text-xs text-muted">{o.restaurant} · {fmtDateTime(o.createdAt)}</div></td>
+                    <td className="text-sm">{o.customer}<div className="text-xs text-muted">{o.customerEmail}</div></td>
+                    <td>{money(o.totalCents)}{o.creditAppliedCents > 0 && <div className="text-xs text-accent-ink">{money(o.creditAppliedCents)} credit</div>}</td>
+                    <td className="text-sm">
+                      {o.refundedCents > 0 && <div>{money(o.refundedCents)} original</div>}
+                      {o.creditedCents > 0 && <div className="text-accent-ink">{money(o.creditedCents)} as credit</div>}
+                      {!o.refundedCents && !o.creditedCents && <span className="text-muted">–</span>}
+                    </td>
+                    <td><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} /></td>
+                    <td className="whitespace-nowrap">
+                      <div className="flex gap-1.5">
+                        {o.status === 'picked_up' && o.refundableCents > 0 && <Button size="sm" variant="warm" onClick={() => setRefunding(o)}>Refund</Button>}
+                        {(o.status === 'reserved' || o.status === 'pending_payment') && <Button size="sm" variant="danger" onClick={() => cancel(o)}>Cancel</Button>}
+                        <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/orders/${o.id}/receipt`} aria-label={`Receipt PDF for order ${o.id}`}><Download /></a>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <PagerFooter pager={pager} />
+          </>
         )}
       </Card>
       <Dialog open={!!refunding} onOpenChange={(o) => !o && setRefunding(null)}>

@@ -13,6 +13,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/field';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { day, run, useAdmin } from './shared';
@@ -61,11 +62,12 @@ export function PlansPanel() {
   const queryClient = useQueryClient();
   const { data } = useAdmin<Data>(['plans'], 'plans');
   const [filter, setFilter] = useState<keyof typeof FILTERS>('all');
-  if (!data) return <Spinner />;
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
-  const rows = data.rows.filter((r) =>
+  const rows = (data?.rows ?? []).filter((r) =>
     filter === 'all' ? true : filter === 'none' ? !r.plan : filter === 'past_due' || filter === 'expired' ? r.status === filter
       : filter === 'founding' ? pioneer(r) : r.plan === filter && r.status === 'active' && !pioneer(r));
+  const pager = usePager(rows, filter);
+  if (!data) return <Spinner />;
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
   const s = data.summary;
   return (
     <div className="grid gap-5">
@@ -109,10 +111,11 @@ export function PlansPanel() {
             {Object.entries(FILTERS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </div>
+        <PagerBar pager={pager} label="restaurants" />
         <Table>
           <thead><tr><th>Restaurant</th><th>Plan</th><th>Price</th><th>Paid through</th><th>Card</th><th className="text-right">Paid (12 mo)</th><th /></tr></thead>
           <tbody>
-            {rows.map((r) => (
+            {pager.rows.map((r) => (
               <tr key={r.restaurantId}>
                 <td><b>{r.name}</b><div className="text-xs text-muted">{r.city} · {r.ownerEmail}{r.restaurantStatus !== 'approved' && ` · ${r.restaurantStatus}`}</div></td>
                 <td><PlanCell r={r} />{r.status === 'past_due' && r.lastPaymentError && <div className="mt-1 max-w-56 text-xs text-danger">{r.lastPaymentError}</div>}</td>
@@ -136,6 +139,7 @@ export function PlansPanel() {
             {!rows.length && <tr><td colSpan={7} className="py-8 text-center text-muted">No restaurants here.</td></tr>}
           </tbody>
         </Table>
+        <PagerFooter pager={pager} />
       </Card>
     </div>
   );

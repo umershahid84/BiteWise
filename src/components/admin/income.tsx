@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FileSpreadsheet } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { RangePicker, daysAgo, todayPT, useAdmin, type Range } from './shared';
@@ -35,6 +36,10 @@ export function IncomePanel() {
   const [range, setRange] = useState<Range>({ from: daysAgo(29), to: today });
   const [by, setBy] = useState<By>('day');
   const { data, isLoading } = useAdmin<Income>(['income', range, by], 'income', { ...range, by });
+  // Newest period first, 25 a page.
+  const key = `${range.from}|${range.to}|${by}`;
+  const periods = usePager(useMemo(() => [...(data?.periods ?? [])].reverse(), [data]), key);
+  const restaurants = usePager(data?.restaurants ?? [], key);
   const year = today.slice(0, 4);
   const presets: [string, Range, By][] = [
     ['This month', { from: `${today.slice(0, 8)}01`, to: today }, 'day'],
@@ -90,10 +95,11 @@ export function IncomePanel() {
           </Card>
 
           <Card className="mb-4 p-2">
+            <PagerBar pager={periods} label={by === 'day' ? 'days' : by === 'month' ? 'months' : 'years'} />
             <Table>
               <thead><tr><th>{by === 'day' ? 'Day' : by === 'month' ? 'Month' : 'Year'}</th><th>Orders</th><th>Service fees</th><th>Plan fees</th><th>Credit cost</th><th>Net income</th><th>Sales tax collected</th></tr></thead>
               <tbody>
-                {[...data.periods].reverse().map((p) => (
+                {periods.rows.map((p) => (
                   <tr key={p.key}>
                     <td className="whitespace-nowrap">{label(p.key, by)}</td>
                     <td>{p.orders}</td>
@@ -105,28 +111,33 @@ export function IncomePanel() {
                   </tr>
                 ))}
                 <tr className="border-t-2 border-line font-bold">
-                  <td>Total</td><td>{data.totals.orders}</td><td>{money(data.totals.serviceFeesCents)}</td><td>{money(data.totals.planFeesCents)}</td>
+                  <td>Total{periods.pages > 1 && <span className="text-xs font-normal text-muted"> (all {periods.total})</span>}</td><td>{data.totals.orders}</td><td>{money(data.totals.serviceFeesCents)}</td><td>{money(data.totals.planFeesCents)}</td>
                   <td>{data.totals.creditCostCents ? `−${money(data.totals.creditCostCents)}` : '–'}</td><td>{money(data.totals.netCents)}</td>
                   <td>{money(data.totals.orderTaxCents + data.totals.planTaxCents)}</td>
                 </tr>
               </tbody>
             </Table>
+            <PagerFooter pager={periods} />
           </Card>
 
           <h3 className="mt-6 mb-2 text-lg font-extrabold">Income by restaurant</h3>
           <Card className="p-2">
             {!data.restaurants.length ? <p className="p-4 text-center text-sm text-muted">No income in this period.</p> : (
-              <Table>
-                <thead><tr><th>Restaurant</th><th>Orders</th><th>Service fees</th><th>Plan fees</th><th>Income</th><th>Sales charged</th></tr></thead>
-                <tbody>
-                  {data.restaurants.map((x) => (
-                    <tr key={x.id}>
-                      <td><b>{x.name}</b><div className="text-xs text-muted">{x.city}</div></td>
-                      <td>{x.orders}</td><td>{money(x.serviceFeesCents)}</td><td>{money(x.planFeesCents)}</td><td><b>{money(x.netCents)}</b></td><td className="text-muted">{money(x.gmvCents)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+              <>
+                <PagerBar pager={restaurants} label="restaurants" />
+                <Table>
+                  <thead><tr><th>Restaurant</th><th>Orders</th><th>Service fees</th><th>Plan fees</th><th>Income</th><th>Sales charged</th></tr></thead>
+                  <tbody>
+                    {restaurants.rows.map((x) => (
+                      <tr key={x.id}>
+                        <td><b>{x.name}</b><div className="text-xs text-muted">{x.city}</div></td>
+                        <td>{x.orders}</td><td>{money(x.serviceFeesCents)}</td><td>{money(x.planFeesCents)}</td><td><b>{money(x.netCents)}</b></td><td className="text-muted">{money(x.gmvCents)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+                <PagerFooter pager={restaurants} />
+              </>
             )}
           </Card>
           <p className="mt-3 text-xs text-muted">

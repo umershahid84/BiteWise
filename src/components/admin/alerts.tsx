@@ -8,6 +8,7 @@ import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState, Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { day, run, useAdmin } from './shared';
 
 export type AlertsData = {
@@ -36,6 +37,7 @@ export function AlertsPanel({ go }: { go: (tab: string) => void }) {
   const queryClient = useQueryClient();
   const [all, setAll] = useState(false);
   const { data, isLoading } = useAdmin<AlertsData>(['alerts', all], 'alerts', { all: all ? 1 : undefined });
+  const pager = usePager(data?.alerts ?? [], String(all));
   const read = async (id?: number) => {
     if (await run(() => markAlertsRead({ id }))) queryClient.invalidateQueries({ queryKey: ['admin', 'alerts'] });
   };
@@ -54,10 +56,11 @@ export function AlertsPanel({ go }: { go: (tab: string) => void }) {
         <EmptyState title="No alerts">Nobody has been suspended or banned for missed pickups.</EmptyState>
       ) : (
         <Card className="p-2">
+          <PagerBar pager={pager} label="alerts" />
           <Table>
             <thead><tr><th>When</th><th>Alert</th><th>Customer</th><th>What happened</th><th>Account now</th><th /></tr></thead>
             <tbody>
-              {data.alerts.map((a) => (
+              {pager.rows.map((a) => (
                 <tr key={a.id} className={a.readAt || a.kind === 'no_show' ? '' : 'bg-danger-soft/40'}>
                   <td className="text-sm whitespace-nowrap">{time(a.createdAt)}</td>
                   <td><Badge tone={KIND[a.kind].tone}>{KIND[a.kind].label}</Badge></td>
@@ -72,6 +75,7 @@ export function AlertsPanel({ go }: { go: (tab: string) => void }) {
               ))}
             </tbody>
           </Table>
+          <PagerFooter pager={pager} />
         </Card>
       )}
     </>

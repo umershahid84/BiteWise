@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
+import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money } from '@/lib/format';
 import { day, run, useAdmin } from './shared';
@@ -29,6 +30,7 @@ export function UsersPanel({ adminId }: { adminId: string }) {
   const [deleteFor, setDeleteFor] = useState<User | null>(null);
   const [banFor, setBanFor] = useState<User | null>(null);
   const { data, isLoading } = useAdmin<User[]>(['users', role, q], 'users', { role, q });
+  const pager = usePager(data ?? [], `${role}|${q}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
   const reactivate = async (u: User) => {
     if (u.status === 'banned' && !confirm(`Lift the permanent ban on ${u.username}? They will be able to log in again.`)) return;
@@ -44,38 +46,42 @@ export function UsersPanel({ adminId }: { adminId: string }) {
       </div>
       <Card className="p-2">
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
-          <Table>
-            <thead><tr><th>User</th><th>Orders</th><th>Spent</th><th>No-shows</th><th>Credit</th><th>Terms accepted</th><th>Status</th><th /></tr></thead>
-            <tbody>
-              {(data ?? []).map((u) => (
-                <tr key={u.id}>
-                  <td><b>{u.username}</b><div className="text-xs text-muted">{u.email} · joined {day(u.createdAt)}</div></td>
-                  <td>{u.orders}</td><td>{money(u.spentCents)}</td>
-                  <td>
-                    {u.noShows}
-                    {u.noShowStreak > 0 && u.status === 'active' && <div className="text-xs text-accent-ink">{u.noShowStreak} in a row</div>}
-                    {u.noShowProbation && u.status !== 'banned' && <div className="text-xs text-danger" title="Suspended before for missed pickups: the next one bans the account">final warning</div>}
-                  </td>
-                  <td className="text-accent-ink">{u.creditCents ? money(u.creditCents) : '–'}</td>
-                  <td className="text-xs">{day(u.termsAcceptedAt) || '–'}</td>
-                  <td>
-                    <StatusBadge status={u.status} />
-                    {u.status === 'suspended' && u.suspendedUntil && <div className="mt-1 text-xs text-muted">until {day(u.suspendedUntil)}</div>}
-                  </td>
-                  <td className="whitespace-nowrap">
-                    <div className="flex gap-1.5">
-                      {u.role === 'customer' && u.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
-                      {u.id !== adminId && (u.status === 'active'
-                        ? <Button size="sm" variant="danger" onClick={() => setSuspendFor(u)}>Suspend</Button>
-                        : <Button size="sm" variant="green" onClick={() => reactivate(u)}>{u.status === 'banned' ? 'Lift ban' : 'Reactivate'}</Button>)}
-                      {u.id !== adminId && u.role !== 'admin' && u.status !== 'banned' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(u)}>Ban</Button>}
-                      {u.id !== adminId && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(u)}>Delete</Button>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+          <>
+            <PagerBar pager={pager} label="accounts" />
+            <Table>
+              <thead><tr><th>User</th><th>Orders</th><th>Spent</th><th>No-shows</th><th>Credit</th><th>Terms accepted</th><th>Status</th><th /></tr></thead>
+              <tbody>
+                {pager.rows.map((u) => (
+                  <tr key={u.id}>
+                    <td><b>{u.username}</b><div className="text-xs text-muted">{u.email} · joined {day(u.createdAt)}</div></td>
+                    <td>{u.orders}</td><td>{money(u.spentCents)}</td>
+                    <td>
+                      {u.noShows}
+                      {u.noShowStreak > 0 && u.status === 'active' && <div className="text-xs text-accent-ink">{u.noShowStreak} in a row</div>}
+                      {u.noShowProbation && u.status !== 'banned' && <div className="text-xs text-danger" title="Suspended before for missed pickups: the next one bans the account">final warning</div>}
+                    </td>
+                    <td className="text-accent-ink">{u.creditCents ? money(u.creditCents) : '–'}</td>
+                    <td className="text-xs">{day(u.termsAcceptedAt) || '–'}</td>
+                    <td>
+                      <StatusBadge status={u.status} />
+                      {u.status === 'suspended' && u.suspendedUntil && <div className="mt-1 text-xs text-muted">until {day(u.suspendedUntil)}</div>}
+                    </td>
+                    <td className="whitespace-nowrap">
+                      <div className="flex gap-1.5">
+                        {u.role === 'customer' && u.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
+                        {u.id !== adminId && (u.status === 'active'
+                          ? <Button size="sm" variant="danger" onClick={() => setSuspendFor(u)}>Suspend</Button>
+                          : <Button size="sm" variant="green" onClick={() => reactivate(u)}>{u.status === 'banned' ? 'Lift ban' : 'Reactivate'}</Button>)}
+                        {u.id !== adminId && u.role !== 'admin' && u.status !== 'banned' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(u)}>Ban</Button>}
+                        {u.id !== adminId && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(u)}>Delete</Button>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+            <PagerFooter pager={pager} />
+          </>
         )}
       </Card>
       <Dialog open={!!creditFor} onOpenChange={(o) => !o && setCreditFor(null)}>
