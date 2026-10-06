@@ -212,6 +212,10 @@ Set `NEXT_PUBLIC_SITE_URL` (and **Authentication → URL Configuration → Site 
 
 **Sending to real customers:** Supabase's built-in email service is only for testing. It sends a few emails an hour, and only to your project team's addresses. Before launch, connect your own email provider in **Authentication → Emails → SMTP Settings** (for example Resend, Postmark or Amazon SES), with a sender like `Bite Wise <hello@your-domain>`, and put the same account in `.env.local` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `EMAIL_FROM`) for the emails the app sends.
 
+## About us page
+
+`/about` tells the founders' story (linked in the header and footer). Photo spots show a placeholder until a photo is added to `public/about/` with the name shown in the placeholder (`founders`, `pakistan`, `family-meal`, `childhood`, `family`, `umer`, `arham`, `shaheer`, `aini`, `ulliya`; .jpg, .png or .webp; portrait 4:5 looks best). Then run `npm run update` (Next.js only serves files that were in `public/` when the site was built). The text is in `src/app/about/page.tsx`.
+
 ## Restaurant onboarding and the counter kiosk
 
 A restaurant that signs up gets three emails:

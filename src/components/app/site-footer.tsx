@@ -8,6 +8,7 @@ export function SiteFooter() {
         <img src="/assets/logo-dark-compact.svg" alt="Bite Wise" className="h-11" />
         <span className="flex-1" />
         <nav className="flex flex-wrap gap-4">
+          <Link href="/about" className="text-muted hover:text-ink">About us</Link>
           <Link href="/legal/customer-terms" className="text-muted hover:text-ink">Customer Terms</Link>
           <Link href="/legal/restaurant-agreement" className="text-muted hover:text-ink">Restaurant Partner Agreement</Link>
           <Link href="/legal/privacy" className="text-muted hover:text-ink">Privacy Policy</Link>

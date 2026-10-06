@@ -39,6 +39,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
       <>
         <NavLink href="/#how" onClick={close}>How it works</NavLink>
         <NavLink href="/#restaurants" onClick={close}>For restaurants</NavLink>
+        <NavLink href="/about" onClick={close}>About us</NavLink>
         <NavLink href="/login" onClick={close}>Log in</NavLink>
         <Link href="/signup" onClick={close} className={cn(buttonVariants({ size: 'sm' }), 'ml-1')}>Sign up free</Link>
       </>
@@ -65,6 +66,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         <NavLink href="/offers" onClick={close}>Browse deals</NavLink>
         <NavLink href="/orders" onClick={close}>My orders</NavLink>
         <NavLink href="/account" onClick={close}>Account</NavLink>
+        <NavLink href="/about" onClick={close}>About us</NavLink>
         {viewer.creditCents > 0 && (
           <Link
             href="/account#credit"
