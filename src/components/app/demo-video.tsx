@@ -10,13 +10,13 @@ import { cn } from '@/lib/utils';
 export const TOURS = {
   customer: {
     title: 'How Bite Wise works for customers',
-    length: '1:28',
+    length: '1:27',
     src: '/videos/customer-tour',
     steps: ['Browse live deals near you', 'See the full total before you order', 'Your card is held, not charged', 'Show your 4-digit PIN at pickup'],
   },
   restaurant: {
     title: 'How Bite Wise works for restaurants',
-    length: '1:05',
+    length: '1:04',
     src: '/videos/restaurant-tour',
     steps: ['Post surplus food in under a minute', 'A bell rings when someone orders', 'Type the PIN and hand over the food', 'Get paid through Stripe, with reports'],
   },
