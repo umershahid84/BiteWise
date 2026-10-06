@@ -153,7 +153,7 @@ export function subscriptionReceiptEmail(o: {
   const free = o.amountCents === 0 && discount > 0;
   const tax = o.taxCents ?? 0;
   const list = o.listPriceCents ?? o.amountCents + discount - tax;
-  const taxLabel = `WA sales tax (${((o.taxRateBps ?? 0) / 100).toFixed(2).replace(/\.?0+$/, '')}%)`;
+  const taxLabel = `Sales tax (${((o.taxRateBps ?? 0) / 100).toFixed(2).replace(/\.?0+$/, '')}%)`;
   const period = `${o.periodStart ? `${date(o.periodStart)} – ` : 'through '}${date(o.periodEnd)}`;
   const next = free ? `Your next free period starts on ${date(o.periodEnd)}` : o.autoRenew ? `Renews automatically on ${date(o.periodEnd)}` : `Ends on ${date(o.periodEnd)} (auto-renewal is off)`;
   return {
@@ -223,7 +223,7 @@ export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 
       body: `<p style="margin:0 0 16px;">This is a friendly reminder that your Bite Wise ${plan} plan renews automatically on <b>${when}</b>.</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:16px;margin:0 0 18px;">
           <tr><td style="padding:16px 20px;font:15px/1.7 ${FONT};color:#334155;">
-            <b style="color:#14284B;">Amount:</b> ${usd(o.amountCents)} (including WA sales tax)<br>
+            <b style="color:#14284B;">Amount:</b> ${usd(o.amountCents)} (including any sales tax)<br>
             <b style="color:#14284B;">Charged on:</b> ${when}<br>
             <b style="color:#14284B;">Card on file:</b> ${esc(o.cardLabel)}
           </td></tr>
@@ -232,7 +232,7 @@ export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 
         ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
     }),
     text: `Your Bite Wise ${plan} plan for ${o.restaurant} renews automatically on ${when}.
-Your card on file (${o.cardLabel}) will be charged ${usd(o.amountCents)} (including WA sales tax) on ${when}.
+Your card on file (${o.cardLabel}) will be charged ${usd(o.amountCents)} (including any sales tax) on ${when}.
 Manage your plan: ${o.planUrl}`,
   };
 }
@@ -260,7 +260,7 @@ export function feeChangeEmail(o: {
               ${row('Monthly plan (per month)', o.oldMonthlyCents, o.newMonthlyCents)}
               ${row('Annual plan (per year)', o.oldAnnualCents, o.newAnnualCents)}
             </table>
-            <p style="margin:8px 0 0;font:13px ${FONT};color:#64748B;">New prices from ${esc(o.effective)}. Prices exclude Washington sales tax, which is added at your location's rate.</p>
+            <p style="margin:8px 0 0;font:13px ${FONT};color:#64748B;">New prices from ${esc(o.effective)}. Prices exclude sales tax, which is added at your location's rate where it applies.</p>
           </td></tr>
         </table>
         ${button(o.planUrl, 'View my plan', '#14284B')}`,
@@ -269,7 +269,7 @@ export function feeChangeEmail(o: {
 
 Monthly plan: ${usd(o.oldMonthlyCents)} → ${usd(o.newMonthlyCents)} per month
 Annual plan: ${usd(o.oldAnnualCents)} → ${usd(o.newAnnualCents)} per year
-New prices from ${o.effective}. Prices exclude Washington sales tax, which is added at your location's rate.
+New prices from ${o.effective}. Prices exclude sales tax, which is added at your location's rate where it applies.
 
 Your plan: ${o.planUrl}`,
   };

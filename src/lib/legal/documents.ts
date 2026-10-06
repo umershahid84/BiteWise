@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-11.1';
-export const EFFECTIVE = 'October 11, 2026';
+export const LEGAL_VERSION = '2026-10-12.1';
+export const EFFECTIVE = 'October 12, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -64,7 +64,7 @@ health department rules.</p>
 
 <h2>4. Ordering, pricing and payment</h2>
 <p>4.1 <b>Prices.</b> Before you place an order, we show you the item's original price, the Restaurant's discount, the discounted
-price, a Bite Wise service fee (currently ${c.serviceFeePct}% of the food subtotal), applicable Washington sales tax, and the total.
+price, a Bite Wise service fee (currently ${c.serviceFeePct}% of the food subtotal), applicable sales tax, and the total.
 Prices are in U.S. dollars.</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold
 on your debit or credit card for the order total. <b>Your card is charged only when the Restaurant confirms pickup by entering your
@@ -75,8 +75,9 @@ it for future orders you place. Card numbers are handled by our payment processo
 digits and expiry date. You can remove a saved card at any time on your Account page.</p>
 <p>4.4 <b>Order confirmation.</b> An order is confirmed when you receive a 4-digit pickup PIN. The Restaurant may decline or cancel an
 order it cannot fulfil (for example, if food is found to be unsuitable), in which case you will not be charged.</p>
-<p>4.5 <b>Taxes.</b> Where Bite Wise is required to do so as a marketplace facilitator under Washington law, Bite Wise collects sales
-tax on your order and remits it to the Washington State Department of Revenue.</p>
+<p>4.5 <b>Taxes.</b> Because you pick your order up at the Restaurant, sales tax is charged at the rate that applies at the
+Restaurant's address (state, county, city and any local taxes), which we calculate automatically. Where Bite Wise is required to do so
+as a marketplace facilitator, Bite Wise collects sales tax on your order and remits it to the state tax authority.</p>
 
 <h2>5. Pickup, PIN and the discard timer</h2>
 <p>5.1 Each Offer has a discard timer set by the Restaurant. You must pick up your order at the Restaurant before the timer ends. If
@@ -270,9 +271,10 @@ includes the Stripe Services Agreement.</p>
   each deposit.</li>
   <li><b>Questions:</b> raise any question about a payout within 60 days.</li>
 </ul>
-<p>5.4 <b>Taxes.</b> Where Bite Wise is a marketplace facilitator under Washington law, Bite Wise will collect and remit retail sales tax
-on sales made through the marketplace. You remain responsible for all other taxes on your business, including business and
-occupation (B&amp;O) tax on your gross proceeds and any income taxes.</p>
+<p>5.4 <b>Taxes.</b> Sales tax on each order is charged at the rate for your restaurant's address, which Bite Wise looks up
+automatically from the address in your profile; keep that address accurate. Where Bite Wise is a marketplace facilitator under the
+law of your state, Bite Wise will collect and remit sales tax on sales made through the marketplace. You remain responsible for all
+other taxes on your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</p>
 <p>5.5 <b>Refunds, Platform Credit and chargebacks.</b> Bite Wise will share a customer's complaint with you and consider your response
 before deciding on a refund. Bite Wise may resolve a complaint in one of two ways:</p>
 <ul>
@@ -294,9 +296,9 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
   (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude taxes.</li>
-  <li><b>Sales tax.</b> Washington retail sales tax is added to every plan payment at the combined state and local rate for your
-  restaurant's location, and is shown separately on each invoice. Bite Wise collects it and remits it to the Washington State Department
-  of Revenue. A Pioneer Member's $0.00 plan has no sales tax.</li>
+  <li><b>Sales tax.</b> Where your state taxes software subscriptions, sales tax is added to every plan payment at the combined
+  state and local rate for your restaurant's location, and is shown separately on each invoice. Bite Wise collects it and remits it to
+  the state tax authority. A Pioneer Member's $0.00 plan has no sales tax.</li>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
   renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
   is charged the plan price then in effect, plus sales tax. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then

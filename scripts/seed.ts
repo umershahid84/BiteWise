@@ -203,12 +203,16 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
   const demoId = await user('demo', 'customer');
   await user('admin', 'admin');
 
+  // Demo rates count as already looked up (fictional addresses; no lookups over the internet when seeding).
+  const demoTax = (city: string) => ({
+    state: 'WA', tax_source: 'auto', tax_accuracy: 'address', tax_jurisdiction: `${city}, WA (demo)`, tax_checked_at: new Date().toISOString(),
+  } as const);
   const ids: Record<string, number> = {};
   for (const r of RESTAURANTS) {
     const owner = await user(r.user, 'restaurant', { name: r.name, address: r.address, city: r.city, zip: r.zip, cuisine: r.cuisine, lat: r.lat, lng: r.lng });
     ids[r.user] = await restaurantId(owner);
     must(await db.from('restaurants').update({
-      status: 'approved', tax_rate_bps: r.tax, description: `Neighborhood ${r.cuisine.toLowerCase()} spot in ${r.city}.`,
+      status: 'approved', tax_rate_bps: r.tax, ...demoTax(r.city), description: `Neighborhood ${r.cuisine.toLowerCase()} spot in ${r.city}.`,
       phone: `(206) 555-01${String(Object.keys(ids).length).padStart(2, '0')}`,
     }).eq('id', ids[r.user]).select('id'), 'approve');
     // Seattle-area demo restaurants have finished Stripe Connect onboarding (mock accounts).
@@ -227,7 +231,7 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
     ids[u] = await restaurantId(owner);
     must(await db.from('restaurants').update({
       // One restaurant waits for approval, to show the admin approval queue.
-      status: u === 'issaquahbakehouse' ? 'pending' : 'approved',
+      status: u === 'issaquahbakehouse' ? 'pending' : 'approved', ...demoTax(city),
       description: `Neighborhood ${cuisine.toLowerCase()} spot in ${city}.`, phone: `(253) 555-${String(1000 + i).slice(-4)}`,
     }).eq('id', ids[u]).select('id'), 'approve');
   }

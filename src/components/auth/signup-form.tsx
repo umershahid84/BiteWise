@@ -8,6 +8,7 @@ import { AgreementDialog } from '@/components/app/agreement-dialog';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { StateSelect } from '@/components/ui/state-select';
 import { Field, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { AuthTitle } from './auth-card';
@@ -35,7 +36,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
       username: get('username'),
       password: get('password'),
       restaurant: role === 'restaurant'
-        ? { name: get('r-name'), address: get('r-address'), city: get('r-city'), zip: get('r-zip'), phone: get('r-phone'), cuisine: get('r-cuisine') }
+        ? { name: get('r-name'), address: get('r-address'), city: get('r-city'), state: get('r-state'), zip: get('r-zip'), phone: get('r-phone'), cuisine: get('r-cuisine') }
         : undefined,
     };
   };
@@ -114,15 +115,16 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
             <SectionLabel>Restaurant details</SectionLabel>
             <Field label="Restaurant name" htmlFor="r-name"><Input id="r-name" name="r-name" /></Field>
             <Field label="Street address" htmlFor="r-address"><Input id="r-address" name="r-address" autoComplete="street-address" /></Field>
+            <Field label="City" htmlFor="r-city"><Input id="r-city" name="r-city" autoComplete="address-level2" placeholder="City" /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="City" htmlFor="r-city"><Input id="r-city" name="r-city" autoComplete="address-level2" placeholder="City" /></Field>
+              <Field label="State" htmlFor="r-state"><StateSelect id="r-state" name="r-state" defaultValue="" /></Field>
               <Field label="ZIP code" htmlFor="r-zip"><Input id="r-zip" name="r-zip" autoComplete="postal-code" inputMode="numeric" /></Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Phone" htmlFor="r-phone"><PhoneInput id="r-phone" name="r-phone" /></Field>
               <Field label="Cuisine" htmlFor="r-cuisine"><Input id="r-cuisine" name="r-cuisine" placeholder="e.g. Thai" /></Field>
             </div>
-            <p className="mb-4 text-sm text-muted">You can set your exact map location and sales-tax rate in the portal after signing up.</p>
+            <p className="mb-4 text-sm text-muted">Your sales tax rate is set automatically from your address. You can fine-tune your map pin in the portal after signing up.</p>
           </>
         )}
         <p className="mb-3 text-sm text-muted">Next, you&apos;ll be asked to review and accept our terms. Your account is created only if you accept.</p>

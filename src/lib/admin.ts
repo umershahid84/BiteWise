@@ -161,8 +161,12 @@ export async function restaurants(params: URLSearchParams) {
   const rank = { pending: 0, suspended: 1, approved: 2, banned: 3, deleted: 4 };
   return rows
     .map((r) => ({
-      id: r.id, name: r.name, cuisine: r.cuisine, address: r.address, city: r.city, zip: r.zip, phone: r.phone, status: r.status,
+      id: r.id, name: r.name, cuisine: r.cuisine, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone, status: r.status,
       adminNote: r.admin_note, taxRateBps: r.tax_rate_bps, createdAt: r.created_at, suspendedUntil: r.suspended_until,
+      // Sales tax: where the rate came from (src/lib/restaurant-tax.ts) and anything an admin should check.
+      tax: {
+        source: r.tax_source, accuracy: r.tax_accuracy, jurisdiction: r.tax_jurisdiction, checkedAt: r.tax_checked_at, problem: r.tax_lookup_error,
+      },
       plan: sub.get(r.id) ? {
         plan: sub.get(r.id)!.plan, status: sub.get(r.id)!.status, foundingNumber: sub.get(r.id)!.founding_number,
         autoRenew: sub.get(r.id)!.auto_renew, periodEnd: sub.get(r.id)!.current_period_end,
@@ -422,6 +426,7 @@ export async function settings() {
     serviceFeePct: Number(get('service_fee_bps') ?? 500) / 100,
     defaultTaxRatePct: Number(get('default_tax_rate_bps') ?? 1035) / 100,
     requireRestaurantApproval: get('require_restaurant_approval') !== false,
+    planTaxStates: String(get('plan_tax_states') ?? 'WA'),
   };
 }
 

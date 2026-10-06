@@ -10,9 +10,12 @@ import * as subscriptions from '@/lib/subscriptions';
 import { money } from '@/lib/format';
 import * as orders from '@/lib/orders';
 import { onboardingMessage, sendOnboardingEmails } from '@/lib/restaurant-onboarding';
+import { refreshRestaurantTax, setManualTaxRate } from '@/lib/restaurant-tax';
+import { parseStates } from '@/lib/subscriptions';
+import { stateByCode } from '@/lib/tax/states';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { dollars, int, parse } from '@/lib/validate';
+import { dollars, int, parse, taxRateSchema } from '@/lib/validate';
 
 // Owner console actions. Every action checks for an admin session and is written to the audit log.
 const db = () => supabaseAdmin();
@@ -164,13 +167,19 @@ export async function updateSettings(input: unknown) {
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
+        // States where plan fees are taxed, e.g. "WA, NY" (empty: nowhere).
+        planTaxStates: z.string().max(200).optional(),
       }),
       input,
     );
+    const states = parseStates(d.planTaxStates ?? '');
+    const unknown = states.filter((c) => !stateByCode(c));
+    if (unknown.length) throw new AppError(400, `Unknown state code: ${unknown.join(', ')}. Use two-letter codes like WA, NY.`);
     const values = {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,
+      ...(d.planTaxStates !== undefined ? { plan_tax_states: [...new Set(states)].join(', ') } : {}),
     };
     const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));
     const changed = Object.entries(values).filter(([k, v]) => current.get(k) !== v);
@@ -300,6 +309,38 @@ export async function markAlertsRead(input: unknown) {
     let q = db().from('admin_alerts').update({ read_at: new Date().toISOString(), read_by: me.id }).is('read_at', null);
     if (d.id) q = q.eq('id', d.id);
     check(await q);
+    return null;
+  });
+}
+
+// ---------------------------------------------------------------- sales tax rates
+
+// Looks a restaurant's sales tax rate up again from its address (also hands a hand-set rate back to the lookup).
+export async function recheckRestaurantTax(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const { restaurantId } = parse(z.object({ restaurantId: z.coerce.number().int().positive() }), input);
+    const res = await refreshRestaurantTax(restaurantId, { force: true });
+    if (!res) throw new AppError(404, 'Restaurant not found.');
+    await log(me.id, 'restaurant.tax_lookup', 'restaurant', restaurantId, `${res.rateBps} bps · ${res.jurisdiction}${res.kept ? ' (kept)' : ''}`);
+    return res;
+  });
+}
+
+// Sets a restaurant's sales tax rate by hand. The automatic lookup then leaves it alone until "Look up again".
+export async function setRestaurantTaxRate(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(taxRateSchema, input);
+    if (d.mode === 'auto') {
+      const res = await refreshRestaurantTax(d.restaurantId, { force: true });
+      await log(me.id, 'restaurant.tax_auto', 'restaurant', d.restaurantId, `${res?.rateBps} bps`);
+      return res;
+    }
+    if (d.ratePct === undefined) throw new AppError(400, 'Enter the sales tax rate.');
+    const rateBps = Math.round(d.ratePct * 100);
+    await setManualTaxRate(d.restaurantId, rateBps, d.jurisdiction);
+    await log(me.id, 'restaurant.tax_manual', 'restaurant', d.restaurantId, `${rateBps} bps${d.jurisdiction ? ` · ${d.jurisdiction}` : ''}`);
     return null;
   });
 }

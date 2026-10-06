@@ -170,7 +170,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div>
           <h1 className="m-0 text-3xl font-extrabold">{restaurant.name}</h1>
-          <p className="m-0 text-sm text-muted">{restaurant.address}, {restaurant.city} {restaurant.zip} · Sales tax {pct(restaurant.tax_rate_bps)}</p>
+          <p className="m-0 text-sm text-muted">{restaurant.address}, {restaurant.city}, {restaurant.state} {restaurant.zip} · Sales tax {pct(restaurant.tax_rate_bps)}</p>
         </div>
         <span className="flex-1" />
         <DemoVideoButton tour="restaurant" label="Watch the tour" />

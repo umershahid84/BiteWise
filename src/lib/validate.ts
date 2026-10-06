@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { formatPhoneInput, phoneDigits } from '@/lib/phone';
 import { DIETARY_TAGS } from '@/lib/constants';
+import { STATE_CODES } from '@/lib/tax/states';
 import { AppError } from '@/lib/errors';
 
 // Parses input with a zod schema and throws a 400 AppError with the first problem's message.
@@ -40,6 +41,9 @@ export const restaurantFieldsSchema = z.object({
   name: text('Restaurant name', 2, 80),
   address: text('Street address', 3, 120),
   city: text('City', 2, 60),
+  // Two-letter state code. Sets the sales tax rules for the restaurant (src/lib/tax). Older clients that don't send
+  // it get WA; the forms always send it.
+  state: z.string().optional().default('WA').transform((v) => v.trim()).transform((v) => v.toUpperCase()).refine((v) => STATE_CODES.includes(v), 'Choose the state.'),
   zip: zipSchema,
   // Optional; when given, a 10-digit US number, stored as (xxx) xxx-xxxx.
   phone: z.string().trim().max(30).optional().default('')
@@ -61,8 +65,15 @@ export const signupSchema = z.object({
 
 export const restaurantProfileSchema = restaurantFieldsSchema.extend({
   description: optionalText('Description', 400),
-  taxRatePct: z.coerce.number({ error: 'Sales tax rate must be between 0% and 20%.' })
-    .min(0, 'Sales tax rate must be between 0% and 20%.').max(20, 'Sales tax rate must be between 0% and 20%.'),
+});
+
+// An admin sets a restaurant's sales tax rate by hand, or hands it back to the automatic lookup.
+export const taxRateSchema = z.object({
+  restaurantId: z.coerce.number().int().positive(),
+  mode: z.enum(['auto', 'manual']),
+  ratePct: z.coerce.number({ error: 'Sales tax rate must be between 0% and 20%.' })
+    .min(0, 'Sales tax rate must be between 0% and 20%.').max(20, 'Sales tax rate must be between 0% and 20%.').optional(),
+  jurisdiction: z.string().trim().max(80).optional().default(''),
 });
 
 export const dollars = (field: string, min: number, max: number) =>

@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
+import { StateSelect } from '@/components/ui/state-select';
+import { pct } from '@/lib/format';
 import type { Ctx } from './types';
 
 const PinMap = dynamic(() => import('./pin-map'), { ssr: false, loading: () => <div className="mb-4 h-72 rounded-xl border border-line" /> });
@@ -20,18 +22,18 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
   const r = ctx.restaurant;
   const router = useRouter();
   const [f, setF] = useState({
-    name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, zip: r.zip, phone: r.phone,
-    lat: r.lat != null ? r.lat.toFixed(5) : '', lng: r.lng != null ? r.lng.toFixed(5) : '', taxRatePct: (r.tax_rate_bps / 100).toFixed(2),
+    name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone,
+    lat: r.lat != null ? r.lat.toFixed(5) : '', lng: r.lng != null ? r.lng.toFixed(5) : '',
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
   const [locating, setLocating] = useState(false);
   // Changing the address clears the pin: saving then looks the new address up, unless the pin is placed again.
-  const setAddress = (k: 'address' | 'city' | 'zip') => (e: React.ChangeEvent<HTMLInputElement>) => setF((x) => ({ ...x, [k]: e.target.value, lat: '', lng: '' }));
+  const setAddress = (k: 'address' | 'city' | 'state' | 'zip') => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((x) => ({ ...x, [k]: e.target.value, lat: '', lng: '' }));
   const findOnMap = async () => {
     setLocating(true);
-    const res = await locateAddress({ address: f.address, city: f.city, zip: f.zip });
+    const res = await locateAddress({ address: f.address, city: f.city, state: f.state, zip: f.zip });
     setLocating(false);
     if (!res.ok) return toast.error(res.error);
     setPin(res.data.lat, res.data.lng);
@@ -60,8 +62,9 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
         </div>
         <Field label="About" htmlFor="p-desc"><Textarea id="p-desc" maxLength={400} value={f.description} onChange={set('description')} /></Field>
         <Field label="Street address" htmlFor="p-address"><Input id="p-address" value={f.address} onChange={setAddress('address')} /></Field>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-4">
           <Field label="City" htmlFor="p-city"><Input id="p-city" value={f.city} onChange={setAddress('city')} /></Field>
+          <Field label="State" htmlFor="p-state"><StateSelect id="p-state" value={f.state} onChange={setAddress('state')} /></Field>
           <Field label="ZIP" htmlFor="p-zip"><Input id="p-zip" value={f.zip} onChange={setAddress('zip')} /></Field>
           <Field label="Phone" htmlFor="p-phone"><PhoneInput id="p-phone" value={f.phone} onValueChange={(phone) => setF((x) => ({ ...x, phone }))} /></Field>
         </div>
@@ -82,10 +85,15 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
           </Field>
         </div>
         <SectionLabel>Sales tax</SectionLabel>
-        <Field label="Sales tax rate (%)" htmlFor="p-tax" className="max-w-60"
-          hint={<>Your combined WA state + local rate. <a href="https://dor.wa.gov/taxes-rates/sales-use-tax-rates/lookup-tax-rate" target="_blank" rel="noopener">Look up your rate</a>.</>}>
-          <Input id="p-tax" inputMode="decimal" value={f.taxRatePct} onChange={set('taxRatePct')} />
-        </Field>
+        <div className="mb-4 rounded-xl border border-line p-3 text-sm">
+          <p className="m-0"><b>{pct(r.tax_rate_bps)}</b>{r.tax_jurisdiction && <span className="text-muted"> · {r.tax_jurisdiction}</span>}</p>
+          <p className="m-0 mt-1 text-muted">
+            {r.tax_source === 'manual'
+              ? 'Set by Bite Wise. Contact us if your rate changes.'
+              : 'Set automatically from your address, since customers pick up at your restaurant. We check it every month, and right away when you change your address.'}
+            {r.tax_checked_at && ` Last checked ${new Date(r.tax_checked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`}
+          </p>
+        </div>
         <ErrorText error={error} />
         <Button variant="green" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</Button>
       </form>

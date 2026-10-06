@@ -11,6 +11,7 @@ import { action, AppError, check, maybe, must } from '@/lib/errors';
 import { payments } from '@/lib/payments';
 import * as orders from '@/lib/orders';
 import { locateRestaurant } from '@/lib/restaurant-location';
+import { refreshRestaurantTax } from '@/lib/restaurant-tax';
 import * as subscriptions from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -105,6 +106,7 @@ export async function saveRestaurantProfile(input: unknown) {
     const { restaurant } = await requireRestaurant();
     const data = parse(restaurantProfileSchema, input);
     const supabase = await supabaseServer();
+    const before = must(await supabase.from('restaurants').select('address, city, state, zip, tax_checked_at').eq('id', restaurant.id).single());
     let lat = data.lat;
     let lng = data.lng;
     // Without a pin from the owner, look the street address up (or, failing that, use the ZIP code's center).
@@ -115,10 +117,15 @@ export async function saveRestaurantProfile(input: unknown) {
     check(
       await supabase.from('restaurants').update({
         name: data.name, description: data.description, cuisine: data.cuisine, address: data.address, city: data.city, zip: data.zip,
-        phone: data.phone, tax_rate_bps: Math.round(data.taxRatePct * 100),
+        state: data.state, phone: data.phone,
         location: lat !== null && lng !== null ? `SRID=4326;POINT(${lng} ${lat})` : null,
       }).eq('id', restaurant.id),
     );
+    // A new address can mean a new sales tax rate: look it up now, so the next order is taxed right.
+    const moved = (['address', 'city', 'state', 'zip'] as const).some((k) => before[k] !== data[k]);
+    if (moved || !before.tax_checked_at) {
+      await refreshRestaurantTax(restaurant.id).catch((err) => console.warn('tax rate lookup failed:', err instanceof Error ? err.message : err));
+    }
     return null;
   });
 }
@@ -127,7 +134,10 @@ export async function saveRestaurantProfile(input: unknown) {
 export async function locateAddress(input: unknown) {
   return action(async () => {
     await requireRestaurant();
-    const a = parse(z.object({ address: z.string().trim().min(3, 'Enter the street address.'), city: z.string().trim().min(2, 'Enter the city.'), zip: zipSchema }), input);
+    const a = parse(z.object({
+      address: z.string().trim().min(3, 'Enter the street address.'), city: z.string().trim().min(2, 'Enter the city.'), zip: zipSchema,
+      state: z.string().trim().length(2).optional(),
+    }), input);
     const spot = await locateRestaurant(a);
     if (!spot) throw new AppError(404, 'We couldn\'t find that address. Check it, or drag the pin to your door.');
     return spot;

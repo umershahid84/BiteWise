@@ -11,6 +11,7 @@ import { getViewer } from '@/lib/auth';
 import { homeFor } from '@/lib/constants';
 import { action, AppError, fromDb } from '@/lib/errors';
 import { locateRestaurant } from '@/lib/restaurant-location';
+import { refreshRestaurantTax } from '@/lib/restaurant-tax';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -78,6 +79,16 @@ export async function validateSignup(input: unknown) {
 
 // Creates the account. It is only created when the current version of every required legal
 // document was accepted (checked here and again by the database trigger). Declining creates nothing.
+// A new restaurant's sales tax rate comes from its address (the scheduled jobs retry if the lookup fails now).
+async function lookUpTax(ownerId: string) {
+  try {
+    const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', ownerId).maybeSingle();
+    if (r) await refreshRestaurantTax(r.id);
+  } catch (err) {
+    console.warn('tax rate lookup failed:', err instanceof Error ? err.message : err);
+  }
+}
+
 export async function signUp(input: unknown) {
   return action(async () => {
     const data = checkSignup(input);
@@ -111,6 +122,7 @@ export async function signUp(input: unknown) {
         type: 'signup', email: data.email, password: data.password, options: { data: metadata, redirectTo: CONFIRM_URL() },
       });
       if (error) throw signupError(error);
+      if (data.role === 'restaurant') await lookUpTax(link.user.id);
       await sendConfirmation(data.email, link.properties.hashed_token, link.user.user_metadata);
       return { needsConfirmation: true, next: homeFor(data.role) };
     }
@@ -122,6 +134,7 @@ export async function signUp(input: unknown) {
       options: { emailRedirectTo: CONFIRM_URL(), data: metadata },
     });
     if (error) throw signupError(error);
+    if (data.role === 'restaurant' && res.user) await lookUpTax(res.user.id);
     // With email confirmation off, the email counts as confirmed at once: send the restaurant's onboarding email now.
     if (res.session && data.role === 'restaurant' && res.user) {
       const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', res.user.id).maybeSingle();

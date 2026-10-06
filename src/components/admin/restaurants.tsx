@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { deleteRestaurant, sendWelcomeEmail, setRestaurantStatus } from '@/app/actions/admin';
+import { deleteRestaurant, recheckRestaurantTax, sendWelcomeEmail, setRestaurantStatus, setRestaurantTaxRate } from '@/app/actions/admin';
 import { resendConfirmation } from '@/app/actions/auth';
 import { ErrorText } from '@/components/ui/alert';
 import { Badge, StatusBadge } from '@/components/ui/badge';
@@ -19,8 +19,9 @@ import { day, run, TableHead, useAdmin } from './shared';
 import { DaysPicker } from './users';
 
 type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_due' | 'expired'; foundingNumber: number | null; autoRenew: boolean; periodEnd: string | null };
+type Tax = { source: 'auto' | 'manual'; accuracy: '' | 'address' | 'zip' | 'state' | 'manual'; jurisdiction: string; checkedAt: string | null; problem: string };
 type Row = {
-  id: number; name: string; cuisine: string; address: string; city: string; zip: string; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
+  id: number; name: string; cuisine: string; address: string; city: string; state: string; zip: string; tax: Tax; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
   adminNote: string; taxRateBps: number; createdAt: string; suspendedUntil: string | null; ownerEmail: string; ownerUsername: string; activeOffers: number; orders: number;
   foodCents: number; stripeReady: boolean; stripeAccount: string | null; plan: Plan | null; ownerConfirmed: boolean; welcomeEmailSentAt: string | null;
 };
@@ -53,6 +54,7 @@ export function RestaurantsPanel() {
   const [suspendFor, setSuspendFor] = useState<Row | null>(null);
   const [banFor, setBanFor] = useState<Row | null>(null);
   const [deleteFor, setDeleteFor] = useState<Row | null>(null);
+  const [taxFor, setTaxFor] = useState<Row | null>(null);
   const { data, isLoading } = useAdmin<Row[]>(['restaurants', status, q], 'restaurants', { status, q });
   const pager = usePager(data ?? [], `${status}|${q}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -93,7 +95,11 @@ export function RestaurantsPanel() {
               <tbody>
                 {pager.rows.map((r) => (
                   <tr key={r.id} className={r.status === 'banned' || r.status === 'deleted' ? 'opacity-70' : undefined}>
-                    <td><b>{r.name}</b><div className="text-xs text-muted">{r.cuisine} · {r.address}, {r.city} {r.zip} · tax {pct(r.taxRateBps)}</div>{r.adminNote && <div className="text-xs text-accent-ink">Note: {r.adminNote}</div>}</td>
+                    <td><b>{r.name}</b><div className="text-xs text-muted">{r.cuisine} · {r.address}, {r.city}, {r.state} {r.zip}</div>
+                      <button type="button" className="mt-0.5 text-left text-xs text-muted underline decoration-dotted underline-offset-2 hover:text-ink" onClick={() => setTaxFor(r)}>
+                        Sales tax {pct(r.taxRateBps)}{r.tax.jurisdiction && ` · ${r.tax.jurisdiction}`}
+                      </button>
+                      {taxWarning(r.tax) && <div className="mt-0.5"><Badge tone="amber" title={r.tax.problem}>{taxWarning(r.tax)}</Badge></div>}{r.adminNote && <div className="text-xs text-accent-ink">Note: {r.adminNote}</div>}</td>
                     <td className="text-sm">
                       {r.ownerUsername}<div className="text-xs break-all text-muted">{r.ownerEmail}</div><div className="text-xs text-muted">joined {day(r.createdAt)}</div>
                       {!r.ownerConfirmed && r.status !== 'deleted' && (
@@ -142,7 +148,71 @@ export function RestaurantsPanel() {
       <Dialog open={!!banFor} onOpenChange={(o) => !o && setBanFor(null)}>
         {banFor && <BanRestaurant restaurant={banFor} onDone={() => { setBanFor(null); refresh(); }} />}
       </Dialog>
+      <Dialog open={!!taxFor} onOpenChange={(o) => !o && setTaxFor(null)}>
+        {taxFor && <SalesTax restaurant={taxFor} onDone={() => { setTaxFor(null); refresh(); }} />}
+      </Dialog>
     </>
+  );
+}
+
+// What an admin should check about a restaurant's tax rate, if anything.
+function taxWarning(t: Tax) {
+  if (t.accuracy === 'state') return 'Tax: state rate only, check it';
+  if (!t.accuracy && t.source === 'auto') return 'Tax: not looked up yet';
+  if (t.problem) return 'Tax: check';
+  return null;
+}
+
+const ACCURACY: Record<Tax['accuracy'], string> = {
+  address: 'Exact rate for the street address.',
+  zip: 'Rate for the ZIP code area (the street address wasn\'t matched exactly).',
+  state: 'Only the state rate is known: county and city taxes may be missing.',
+  manual: 'Set by hand by an admin. The app doesn\'t change it.',
+  '': 'Not looked up yet (the scheduled jobs do it within a few minutes).',
+};
+
+// Sales tax for one restaurant: where the rate came from, look it up again, or set it by hand.
+function SalesTax({ restaurant: r, onDone }: { restaurant: Row; onDone: () => void }) {
+  const [rate, setRate] = useState((r.taxRateBps / 100).toFixed(2));
+  const [place, setPlace] = useState(r.tax.source === 'manual' ? r.tax.jurisdiction : '');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const recheck = async () => {
+    setBusy(true);
+    const res = await recheckRestaurantTax({ restaurantId: r.id });
+    setBusy(false);
+    if (!res.ok) return setError(res.error);
+    const d = res.data;
+    if (d.kept) toast.warning(`Couldn't reach the tax rate service, so ${pct(d.rateBps)} was kept. ${d.note}`, { duration: 15_000 });
+    else if (d.accuracy === 'state') toast.warning(`Only the state rate was found: ${pct(d.rateBps)}. ${d.note}`, { duration: 15_000 });
+    else toast.success(`Sales tax ${pct(d.rateBps)} · ${d.jurisdiction}`);
+    onDone();
+  };
+  const save = async () => {
+    setBusy(true);
+    const res = await setRestaurantTaxRate({ restaurantId: r.id, mode: 'manual', ratePct: rate, jurisdiction: place });
+    setBusy(false);
+    if (!res.ok) return setError(res.error);
+    toast.success(`${r.name}: sales tax set to ${rate}%`);
+    onDone();
+  };
+  return (
+    <DialogContent title={`Sales tax · ${r.name}`} description={`Customers pick up at ${r.address}, ${r.city}, ${r.state} ${r.zip}, so that address sets the sales tax rate.`}>
+      <div className="mb-4 rounded-xl border border-line p-3 text-sm">
+        <p className="m-0"><b>{pct(r.taxRateBps)}</b>{r.tax.jurisdiction && <span className="text-muted"> · {r.tax.jurisdiction}</span>}</p>
+        <p className="m-0 mt-1 text-muted">{ACCURACY[r.tax.accuracy]}{r.tax.checkedAt && ` Checked ${day(r.tax.checkedAt)}.`}</p>
+        {r.tax.problem && <p className="m-0 mt-1 text-accent-ink">{r.tax.problem}</p>}
+      </div>
+      <Button block variant="ghost" disabled={busy} onClick={recheck}>{r.tax.source === 'manual' ? 'Switch back to automatic (look the rate up)' : 'Look the rate up again'}</Button>
+      <p className="mt-5 mb-2 text-sm font-bold">Or set the rate by hand</p>
+      <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
+        <Field label="Rate (%)" htmlFor="tx-rate"><Input id="tx-rate" inputMode="decimal" value={rate} onChange={(e) => setRate(e.target.value)} /></Field>
+        <Field label="Where (optional)" htmlFor="tx-place"><Input id="tx-place" value={place} onChange={(e) => setPlace(e.target.value)} placeholder="e.g. Portland, ME (meals tax)" /></Field>
+      </div>
+      <p className="mt-0 mb-3 text-xs text-muted">A rate set by hand isn&apos;t looked up again, until you switch it back to automatic. New orders use the new rate straight away.</p>
+      <ErrorText error={error} />
+      <Button block disabled={busy} onClick={save}>Save rate</Button>
+    </DialogContent>
   );
 }
 

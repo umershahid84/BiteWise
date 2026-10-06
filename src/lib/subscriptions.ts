@@ -52,12 +52,21 @@ export async function prices() {
 }
 export const priceOf = (p: Awaited<ReturnType<typeof prices>>, plan: PaidPlan) => (plan === 'annual' ? p.annualCents : p.monthlyCents);
 
-// Washington sales tax on a plan fee, at the restaurant's location rate (the same rate as its food sales).
+// Sales tax on a plan fee, at the restaurant's location rate (the same rate as its food sales, src/lib/restaurant-tax.ts),
+// in the states where plan fees are taxed (the plan_tax_states setting, e.g. "WA, NY"); 0 elsewhere.
 export const salesTax = (cents: number, rateBps: number) => Math.round((cents * rateBps) / 10000);
 const withTax = (cents: number, rateBps: number) => cents + salesTax(cents, rateBps);
-async function taxRate(restaurantId: number) {
-  return must(await db().from('restaurants').select('tax_rate_bps').eq('id', restaurantId).single()).tax_rate_bps;
+export const parseStates = (v: unknown) => String(v ?? '').toUpperCase().split(/[^A-Z]+/).filter((x) => x.length === 2);
+async function planTax(restaurantId: number) {
+  const [r, setting] = await Promise.all([
+    db().from('restaurants').select('tax_rate_bps, state, tax_jurisdiction').eq('id', restaurantId).single(),
+    db().from('settings').select('value').eq('key', 'plan_tax_states').maybeSingle(),
+  ]);
+  const row = must(r);
+  const taxed = parseStates(setting.data?.value ?? 'WA').includes(row.state);
+  return { rateBps: taxed ? row.tax_rate_bps : 0, jurisdiction: taxed ? row.tax_jurisdiction : '' };
 }
+const taxRate = async (restaurantId: number) => (await planTax(restaurantId)).rateBps;
 
 // One month or one year later. Month ends stay month ends (Jan 31 -> Feb 28), instead of spilling into the next month.
 export function addPeriod(start: Date, plan: PaidPlan) {
@@ -190,12 +199,12 @@ async function chargePeriod(o: {
   restaurantId: number; name: string; plan: PaidPlan; priceCents: number; customerId: string; card: Card | null; start: Date; key: string;
 }) {
   const end = addPeriod(o.start, o.plan);
-  const rateBps = await taxRate(o.restaurantId);
+  const { rateBps, jurisdiction } = await planTax(o.restaurantId);
   const taxCents = salesTax(o.priceCents, rateBps);
   const total = o.priceCents + taxCents;
   const record = async (row: { status: 'paid' | 'failed'; invoice_number?: string; transaction_id?: string; error?: string }) =>
     must(await db().from('subscription_payments').insert({
-      restaurant_id: o.restaurantId, plan: o.plan, amount_cents: total, list_price_cents: o.priceCents, tax_rate_bps: rateBps, tax_cents: taxCents,
+      restaurant_id: o.restaurantId, plan: o.plan, amount_cents: total, list_price_cents: o.priceCents, tax_rate_bps: rateBps, tax_cents: taxCents, tax_jurisdiction: jurisdiction,
       period_start: o.start.toISOString(), period_end: end.toISOString(), card_label: o.card ? label(o.card) : '', ...row,
     }).select('id'));
   const amounts = { totalCents: total, taxCents, taxRateBps: rateBps };

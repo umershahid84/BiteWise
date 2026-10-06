@@ -49,7 +49,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
         <Row left={`Discount ${it.discountPct}%`} right={`-${money(it.savingsCents)}`} />
         <Row left="Subtotal" right={money(r.subtotalCents)} />
         <Row left={`Service fee ${r.serviceFeePct}%`} right={money(r.serviceFeeCents)} />
-        <Row left={`WA sales tax ${pct(r.taxRateBps)}`} right={money(r.taxCents)} />
+        <Row left={`Sales tax ${pct(r.taxRateBps)}`} right={money(r.taxCents)} />
         <hr className="pos-double" />
         <Row left="Total" right={money(r.totalCents)} className="total" />
         {r.creditAppliedCents > 0 && (

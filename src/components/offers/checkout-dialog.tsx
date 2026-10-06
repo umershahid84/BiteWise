@@ -174,7 +174,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
               <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{money(q.originalUnitCents)}</span> {money(q.unitPriceCents)}</td><td>{money(q.subtotalCents)}</td></tr>
               <tr><td colSpan={2} className="text-primary-ink">You save {money(q.savingsCents)} ({q.discountPct}% off)</td></tr>
               <tr><td>Service fee ({pct(q.serviceFeeBps)})</td><td>{money(q.serviceFeeCents)}</td></tr>
-              <tr><td>WA sales tax ({pct(q.taxRateBps)})</td><td>{money(q.taxCents)}</td></tr>
+              <tr><td>Sales tax ({pct(q.taxRateBps)})</td><td>{money(q.taxCents)}</td></tr>
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{money(q.totalCents)}</td></tr>
               {creditCents > 0 && (
                 <>

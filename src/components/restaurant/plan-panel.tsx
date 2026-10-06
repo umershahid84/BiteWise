@@ -130,7 +130,7 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
               {approved && <Alert tone="warn">⭐ <b>Choose a plan to start posting offers.</b> No commission on your sales: just one simple fee.</Alert>}
             </>
           )}
-          <PlanChooser prices={p} pioneer={p.foundingLeft > 0} busy={choosing} onChoose={choose} />
+          <PlanChooser prices={p} pioneer={p.foundingLeft > 0} taxed={data.taxRateBps > 0} busy={choosing} onChoose={choose} />
         </>
       )}
 
@@ -249,12 +249,12 @@ function PioneerCard({ sub, onChanged }: { sub: NonNullable<PlanSummary['subscri
   );
 }
 
-function PlanChooser({ prices, pioneer, busy, onChoose }: { prices: PlanSummary['prices']; pioneer: boolean; busy: PaidPlan | null; onChoose: (plan: PaidPlan) => void }) {
+function PlanChooser({ prices, pioneer, taxed, busy, onChoose }: { prices: PlanSummary['prices']; pioneer: boolean; taxed: boolean; busy: PaidPlan | null; onChoose: (plan: PaidPlan) => void }) {
   const saving = prices.monthlyCents * 12 - prices.annualCents;
   const perks = ['Unlimited offers and menu items', 'Counter kiosk for your tablet', 'Live order bell and daily reports', 'Payouts at every pickup (Stripe)', 'No commission on your sales'];
   const plans: { plan: PaidPlan; price: string; per: string; note: string; best?: boolean }[] = [
-    { plan: 'monthly', price: usd(prices.monthlyCents), per: pioneer ? '/ month' : '/ month + tax', note: pioneer ? 'A $0.00 invoice every month.' : 'Billed monthly. Cancel any time.' },
-    { plan: 'annual', price: usd(prices.annualCents), per: pioneer ? '/ year' : '/ year + tax', note: pioneer ? 'A $0.00 invoice every year.' : `Billed yearly: ${usd(Math.round(prices.annualCents / 12))} a month.`, best: saving > 0 },
+    { plan: 'monthly', price: usd(prices.monthlyCents), per: pioneer || !taxed ? '/ month' : '/ month + tax', note: pioneer ? 'A $0.00 invoice every month.' : 'Billed monthly. Cancel any time.' },
+    { plan: 'annual', price: usd(prices.annualCents), per: pioneer || !taxed ? '/ year' : '/ year + tax', note: pioneer ? 'A $0.00 invoice every year.' : `Billed yearly: ${usd(Math.round(prices.annualCents / 12))} a month.`, best: saving > 0 },
   ];
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -313,7 +313,7 @@ function CurrentPlan({ data, onChanged }: { data: PlanSummary; onChanged: () => 
             {sub.status === 'past_due'
               ? <>Delinquent since {fmtDate(sub.periodEnd)}: pay to post offers again.</>
               : sub.autoRenew
-                ? <>Renews automatically on <b>{fmtDate(sub.periodEnd)}</b> for {usd(sub.nextAmountCents)} including {usd(sub.nextTaxCents)} WA sales tax ({NAMES[nextPlan].toLowerCase()}), charged to {defaultCard ? cardLabel(defaultCard) : 'your default card'}.</>
+                ? <>Renews automatically on <b>{fmtDate(sub.periodEnd)}</b> for {usd(sub.nextAmountCents)} {sub.nextTaxCents ? <> including {usd(sub.nextTaxCents)} sales tax</> : null} ({NAMES[nextPlan].toLowerCase()}), charged to {defaultCard ? cardLabel(defaultCard) : 'your default card'}.</>
                 : <>Auto-renewal is off: your plan ends on <b>{fmtDate(sub.periodEnd)}</b>.</>}
           </p>
         </div>
@@ -413,7 +413,7 @@ function CardPicker({ payment, cards, choice, onChoice, entryRef }: {
   );
 }
 
-// `amountCents` is the plan price; Washington sales tax (the restaurant's rate) is added at checkout.
+// `amountCents` is the plan price; sales tax (the restaurant's rate, where plan fees are taxed) is added at checkout.
 function SubscribeForm({ payment, plan, cards, amountCents, taxRateBps, onDone }: {
   payment: PaymentConfig; plan: PaidPlan; cards: SavedCard[]; amountCents: number; taxRateBps: number; onDone: () => void;
 }) {
@@ -441,10 +441,10 @@ function SubscribeForm({ payment, plan, cards, amountCents, taxRateBps, onDone }
     }
   };
   return (
-    <DialogContent title={`${NAMES[plan]} plan · ${usd(amountCents)} / ${plan === 'annual' ? 'year' : 'month'}`} description="Paid now, in advance, plus Washington sales tax. Your offers can go live straight away.">
+    <DialogContent title={`${NAMES[plan]} plan · ${usd(amountCents)} / ${plan === 'annual' ? 'year' : 'month'}`} description={`Paid now, in advance${taxRateBps ? ', plus sales tax' : ''}. Your offers can go live straight away.`}>
       <div className="mb-3 grid grid-cols-[1fr_auto] gap-y-1 rounded-xl bg-surface-2 px-4 py-3 text-sm">
         <span>{NAMES[plan]} plan</span><span className="text-right">{usd(amountCents)}</span>
-        <span className="text-muted">WA sales tax ({pct(taxRateBps)})</span><span className="text-right text-muted">{usd(tax)}</span>
+        <span className="text-muted">Sales tax ({pct(taxRateBps)})</span><span className="text-right text-muted">{usd(tax)}</span>
         <b>Total today</b><b className="text-right">{usd(total)}</b>
       </div>
       <CardPicker payment={payment} cards={cards} choice={choice} onChoice={setChoice} entryRef={ref} />
