@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'About us',
-  description: 'How three family members who grew up in Pakistan, where wasting food was never an option, started Bite Wise to rescue good restaurant food.',
+  description: 'How three family members who grew up in Pakistan, where wasting food was never an option, started Bite Wise in the United States and Canada to rescue good restaurant food.',
 };
 
 // Photos live in public/about/. Until a photo is there, its frame shows a placeholder that says which file to add,
@@ -56,9 +56,9 @@ const MEMORIES = [
 
 const STEPS = [
   ['🇵🇰', 'Growing up in Pakistan', 'We grew up surrounded by family, chai, cricket in the street and mango summers, and by the reality that many families struggle to put one meal on the table. Hunger was never far away.'],
-  ['✈️', 'A new home', 'We moved to North America, and this country gave us so much: opportunity, safety and a future. We are grateful for it every day.'],
+  ['✈️', 'Two new homes', 'Life took us across the world: Umer to the United States, Arham and Shaheer to Canada. Two countries, one family, and a lot of long-distance calls. Both countries gave us so much: opportunity, safety and a future. We are grateful for them every day.'],
   ['🗑️', 'The thing we couldn’t get used to', 'Good food in the bin. A wrong order, a late delivery, a meal nobody picked up, the end of the day. Strict food-safety rules mean restaurants often have to throw perfectly good food away.'],
-  ['🌱', 'Bite Wise is born', 'What if that food could go to someone nearby, at a great price, before it was too late? We built Bite Wise to make that one tap away.'],
+  ['🌱', 'Bite Wise is born', 'What if that food could go to someone nearby, at a great price, before it was too late? We built Bite Wise together across the border to make that one tap away, and we are launching it in the United States and Canada at the same time.'],
 ] as const;
 
 const SAVES = [
@@ -69,9 +69,9 @@ const SAVES = [
 ] as const;
 
 const FOUNDERS = [
-  { name: 'Umer', file: 'umer', emoji: '👨🏽‍🍳' },
-  { name: 'Arham', file: 'arham', emoji: '🧑🏽‍💻' },
-  { name: 'Shaheer', file: 'shaheer', emoji: '🧑🏽‍🚀' },
+  { name: 'Umer', file: 'umer', emoji: '👨🏽‍🍳', home: '🇺🇸 United States' },
+  { name: 'Arham', file: 'arham', emoji: '🧑🏽‍💻', home: '🇨🇦 Canada' },
+  { name: 'Shaheer', file: 'shaheer', emoji: '🧑🏽‍🚀', home: '🇨🇦 Canada' },
 ] as const;
 
 export default function AboutPage() {
@@ -90,7 +90,7 @@ export default function AboutPage() {
         <div className="container-page relative grid grid-cols-1 items-center gap-12 md:grid-cols-[1.1fr_.9fr]">
           <div className="min-w-0">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1.5 text-[0.8rem] font-bold text-primary-ink">
-              💚 Our story
+              💚 Our story · 🇺🇸 United States &amp; 🇨🇦 Canada
             </span>
             <h1 className="my-[18px] text-[clamp(2.2rem,5vw,3.7rem)] leading-[1.05] font-extrabold tracking-[-0.03em]">
               It started with one rule:
@@ -99,7 +99,7 @@ export default function AboutPage() {
             </h1>
             <p className="mb-4 max-w-[46ch] text-[1.15rem] text-ink-2">
               We are <b>Umer</b>, <b>Arham</b> and <b>Shaheer</b>: family first, founders second. We grew up in Pakistan, where wasting food
-              was never an option. Bite Wise is how we are carrying that lesson into our new home.
+              was never an option. Today Umer lives in the United States and Arham and Shaheer in Canada, and Bite Wise is how we are carrying that lesson into our new homes.
             </p>
             <p className="max-w-[46ch] text-ink-2">
               &ldquo;Put on your plate only what you can eat, and finish it.&rdquo; We heard it at every meal as children. Today it is the reason this
@@ -144,7 +144,7 @@ export default function AboutPage() {
 
       {/* Journey */}
       <section className="container-page py-12">
-        <h2 className="m-0 text-center text-[clamp(1.8rem,3.6vw,2.6rem)] font-extrabold tracking-tight">From Pakistan to the Pacific Northwest</h2>
+        <h2 className="m-0 text-center text-[clamp(1.8rem,3.6vw,2.6rem)] font-extrabold tracking-tight">From Pakistan to the United States and Canada</h2>
         <ol className="relative mx-auto mt-10 grid max-w-[880px] list-none gap-5 p-0">
           <span aria-hidden className="absolute top-4 bottom-4 left-[27px] w-[3px] rounded-full bg-grad opacity-60" />
           {STEPS.map(([emoji, title, text], i) => (
@@ -159,7 +159,7 @@ export default function AboutPage() {
           ))}
         </ol>
         <blockquote className="mx-auto mt-10 max-w-[760px] rounded-card border border-primary/30 bg-primary-soft/40 px-7 py-6 text-center text-[1.15rem] font-semibold text-ink">
-          &ldquo;We love this country and everything it has given us. The one thing we could never get used to was watching good food go to
+          &ldquo;We love the United States and Canada and everything they have given us. The one thing we could never get used to was watching good food go to
           waste, knowing how many people back home would be grateful for a single meal.&rdquo;
         </blockquote>
       </section>
@@ -187,12 +187,12 @@ export default function AboutPage() {
       {/* Founders */}
       <section className="container-page py-12">
         <h2 className="m-0 text-center text-[clamp(1.8rem,3.6vw,2.6rem)] font-extrabold tracking-tight">Meet the founders</h2>
-        <p className="mx-auto mt-3 max-w-[640px] text-center text-ink-2">Three family members, one dinner-table rule, and a lot of chai along the way.</p>
+        <p className="mx-auto mt-3 max-w-[640px] text-center text-ink-2">Three family members in two countries, one dinner-table rule, and a lot of chai along the way.</p>
         <div className="mx-auto mt-9 grid max-w-[920px] grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 [&>*:last-child]:col-span-2 [&>*:last-child]:mx-auto [&>*:last-child]:w-1/2 sm:[&>*:last-child]:col-span-1 sm:[&>*:last-child]:w-auto">
           {FOUNDERS.map((f, i) => (
             <div key={f.name} className="text-center">
               <Photo name={f.file} label={f.name} emoji={f.emoji} tilt={[-2, 1.5, -1][i]} />
-              <div className="mt-1 text-sm text-muted">Co-founder</div>
+              <div className="mt-1 text-sm text-muted">Co-founder · {f.home}</div>
             </div>
           ))}
         </div>
@@ -235,7 +235,7 @@ export default function AboutPage() {
           helps all of us waste a little less. If our story makes you think twice before throwing away a good meal, we have already done
           something right.
         </p>
-        <p className="mx-auto max-w-[680px] font-semibold text-ink">Thank you for being part of it. Take only what you can eat, and enjoy every bite.</p>
+        <p className="mx-auto max-w-[680px] font-semibold text-ink">Thank you for being part of it, in the United States and in Canada. Take only what you can eat, and enjoy every bite.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link href="/signup" className={buttonVariants({ size: 'lg' })}>Find food near me →</Link>
           <Link href="/signup?role=restaurant" className={buttonVariants({ size: 'lg', variant: 'ghost' })}>Partner with us</Link>
