@@ -204,6 +204,8 @@ The "confirm your email" message sent after sign-up comes from **Supabase Auth**
 
 For a project on supabase.com, install it with `npm run email:template`. It uploads the logo to a public `brand` storage bucket in your project (email apps need a public web address for images), then sets the **Confirm signup** email's subject and body through the Supabase Management API. That needs a personal access token: create one at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) and add `SUPABASE_ACCESS_TOKEN=...` to `.env.local` (or the script uses the one `npx supabase login` saved, where it can find it). Building the app doesn't change the email: it lives in Supabase. Without a token, the script writes `confirm-signup-email.html` and tells you where to paste it (**Authentication → Emails → Confirm signup**, source view).
 
+It also sets the emails' sender name to **Bite Wise** (Authentication → Emails → SMTP Settings → Sender name), and gives the logo a new address whenever it changes so email apps don't keep showing a cached old one. **Run `npm run email:template` again whenever the template or logo changes** (for example after the rename to Bite Wise): Supabase keeps its own copy and doesn't pick up changes from the code.
+
 Keep **Authentication → URL Configuration → Site URL** set to your site's address: the button links to `<Site URL>/auth/confirm`. After signing up, people see a "Check your email" page with **Resend confirmation email** (once a minute) and **Back to login**; trying to log in before confirming offers the resend button too.
 
 **Free Supabase projects** can only change the email design after connecting their own email provider (below); until then `npm run email:template` says so.

@@ -8,6 +8,7 @@
 // in .env.local, or the one `npx supabase login` saved. Without a token it writes confirm-signup-email.html
 // to paste into the dashboard by hand. The local Supabase stack (npm run db:start) uses the template
 // directly, through supabase/config.toml.
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -23,7 +24,11 @@ if (!url || !key) throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SEC
 const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
 const BUCKET = 'brand';
-const LOGO = 'email-logo.png';
+const SENDER_NAME = 'Bite Wise';
+// The logo's name includes a fingerprint of the file, so a new logo gets a new address: email apps (Gmail's image proxy)
+// and the storage CDN keep showing a cached image for an address they have seen before.
+const logoFile = fs.readFileSync('public/assets/email-logo.png');
+const LOGO = `email-logo-${createHash('sha256').update(logoFile).digest('hex').slice(0, 10)}.png`;
 const OUT = 'confirm-signup-email.html';
 const SUBJECT = 'Confirm your email for Bite Wise 🍃';
 
@@ -33,7 +38,7 @@ async function main() {
     const created = await db.storage.createBucket(BUCKET, { public: true });
     if (created.error) throw new Error(`create the ${BUCKET} bucket: ${created.error.message}`);
   }
-  const upload = await db.storage.from(BUCKET).upload(LOGO, fs.readFileSync(`public/assets/${LOGO}`), {
+  const upload = await db.storage.from(BUCKET).upload(LOGO, logoFile, {
     contentType: 'image/png', cacheControl: '86400', upsert: true,
   });
   if (upload.error) throw new Error(`upload the logo: ${upload.error.message}`);
@@ -53,6 +58,15 @@ async function main() {
     if (res.ok) {
       console.log(`Installed the "Confirm signup" email in project ${ref}. New sign-ups get the Bite Wise email from now on.
 The button links to your Site URL (Authentication → URL Configuration), so keep that set to your site's address.`);
+      // The "from" name of Supabase's emails is a separate setting of its SMTP connection.
+      const sender = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ smtp_sender_name: SENDER_NAME }),
+      });
+      console.log(sender.ok
+        ? `Sender name set to "${SENDER_NAME}".`
+        : `Couldn't set the sender name (${sender.status}). Change it by hand: Authentication → Emails → SMTP Settings → Sender name: ${SENDER_NAME}.`);
       return;
     }
     const body = await res.text();
@@ -75,7 +89,8 @@ a token at https://supabase.com/dashboard/account/tokens and add SUPABASE_ACCESS
   console.log(`Or paste it by hand: wrote ${OUT}.
   1. Supabase dashboard → Authentication → Emails → "Confirm signup".
   2. Subject:  ${SUBJECT}
-  3. Body: switch to the source (<>) view, delete what is there, and paste the whole of ${OUT}. Save.`);
+  3. Body: switch to the source (<>) view, delete what is there, and paste the whole of ${OUT}. Save.
+  4. Authentication → Emails → SMTP Settings → Sender name: ${SENDER_NAME}.`);
 }
 
 // A personal access token: SUPABASE_ACCESS_TOKEN, or the file `npx supabase login` writes when it can't use the
