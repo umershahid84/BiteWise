@@ -59,8 +59,12 @@
 
 /* Wider pages full of tables (the owner console). */
 @utility container-wide {
-  width: min(1480px, 100% - 32px);
+  /* Owner console: wider than the rest of the site for its tables, with roomy margins on big screens. */
+  width: min(1320px, 100% - 32px);
   margin-inline: auto;
+  @media (min-width: 1024px) {
+    width: min(1320px, 100% - 96px);
+  }
 }
 
 @utility grad-text {

@@ -43,7 +43,8 @@ export function AdminConsole({ adminId }: { adminId: string }) {
       <Tabs value={tab} onValueChange={go}>
         <TabsList>
           {TABS.map(([k, label, Icon]) => (
-            <TabsTrigger key={k} value={k}>
+            // Tighter tabs below 1536px, so all of them fit on one row on laptop screens.
+            <TabsTrigger key={k} value={k} className="px-2 text-[13px] 2xl:px-3 2xl:text-sm">
               <Icon /> {label}
               {k === 'alerts' && unread > 0 && <span className="ml-1 rounded-full bg-danger px-1.5 text-[11px] leading-[18px] font-extrabold text-white" aria-label={`${unread} new`}>{unread}</span>}
             </TabsTrigger>
