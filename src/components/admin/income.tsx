@@ -1,14 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { FileSpreadsheet } from 'lucide-react';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { money } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { RangePicker, daysAgo, todayPT, useAdmin, type Range } from './shared';
+import { DownloadIcons, RangePicker, daysAgo, todayPT, useAdmin, type Range } from './shared';
 
 type Line = {
   orders: number; meals: number; gmvCents: number; serviceFeesCents: number; planFeesCents: number; planInvoices: number; pioneerDiscountsCents: number;
@@ -41,6 +40,8 @@ export function IncomePanel() {
   const periods = usePager(useMemo(() => [...(data?.periods ?? [])].reverse(), [data]), key);
   const restaurants = usePager(data?.restaurants ?? [], key);
   const year = today.slice(0, 4);
+  const qs = `from=${range.from}&to=${range.to}&by=${by}`;
+  const perLabel = by === 'day' ? 'per day' : by === 'month' ? 'per month' : 'per year';
   const presets: [string, Range, By][] = [
     ['This month', { from: `${today.slice(0, 8)}01`, to: today }, 'day'],
     ['This year', { from: `${year}-01-01`, to: today }, 'month'],
@@ -69,7 +70,8 @@ export function IncomePanel() {
             </button>
           ))}
         </div>
-        <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/admin/export/income?from=${range.from}&to=${range.to}&by=${by}`}><FileSpreadsheet /> Export CSV</a>
+        {/* The whole tab (cards, figures, chart and both tables) as one PDF. */}
+        <DownloadIcons what="the full income report" pdf={`/api/admin/export/income-pdf?${qs}&section=all`} />
       </div>
 
       {isLoading || !data ? <div className="grid place-items-center py-10"><Spinner /></div> : (
@@ -95,6 +97,10 @@ export function IncomePanel() {
           </Card>
 
           <Card className="mb-4 p-2">
+            <div className="flex flex-wrap items-center gap-2 px-2 pt-2">
+              <h3 className="m-0 flex-1 text-lg font-extrabold">Income {perLabel}</h3>
+              <DownloadIcons what={`income ${perLabel}`} csv={`/api/admin/export/income?${qs}&section=periods`} pdf={`/api/admin/export/income-pdf?${qs}&section=periods`} />
+            </div>
             <PagerBar pager={periods} label={by === 'day' ? 'days' : by === 'month' ? 'months' : 'years'} />
             <Table>
               <thead><tr><th>{by === 'day' ? 'Day' : by === 'month' ? 'Month' : 'Year'}</th><th>Orders</th><th>Service fees</th><th>Plan fees</th><th>Credit cost</th><th>Net income</th><th>Sales tax collected</th></tr></thead>
@@ -120,8 +126,13 @@ export function IncomePanel() {
             <PagerFooter pager={periods} />
           </Card>
 
-          <h3 className="mt-6 mb-2 text-lg font-extrabold">Income by restaurant</h3>
-          <Card className="p-2">
+          <Card className="mt-6 p-2">
+            <div className="flex flex-wrap items-center gap-2 px-2 pt-2">
+              <h3 className="m-0 flex-1 text-lg font-extrabold">Income by restaurant</h3>
+              {data.restaurants.length > 0 && (
+                <DownloadIcons what="income by restaurant" csv={`/api/admin/export/income?${qs}&section=restaurants`} pdf={`/api/admin/export/income-pdf?${qs}&section=restaurants`} />
+              )}
+            </div>
             {!data.restaurants.length ? <p className="p-4 text-center text-sm text-muted">No income in this period.</p> : (
               <>
                 <PagerBar pager={restaurants} label="restaurants" />

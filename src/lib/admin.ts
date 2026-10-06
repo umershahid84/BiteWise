@@ -469,6 +469,7 @@ const emptyLine = (): IncomeLine => ({
   orders: 0, meals: 0, gmvCents: 0, serviceFeesCents: 0, planFeesCents: 0, planInvoices: 0, pioneerDiscountsCents: 0, creditCostCents: 0, netCents: 0, orderTaxCents: 0, planTaxCents: 0,
 });
 
+export type Income = Awaited<ReturnType<typeof income>>;
 export async function income(params: URLSearchParams) {
   const r = range(params, 30);
   const by: IncomeBy = (['day', 'month', 'year'] as const).find((b) => b === params.get('by')) ?? 'day';
@@ -553,24 +554,29 @@ export async function income(params: URLSearchParams) {
   };
 }
 
+export type IncomeSection = 'all' | 'periods' | 'restaurants';
+export const incomeSection = (params: URLSearchParams): IncomeSection =>
+  (['periods', 'restaurants'] as const).find((s) => s === params.get('section')) ?? 'all';
+const incomeHead = ['Orders', 'Meals', 'Total charged to customers', 'Service fees', 'Plan fees', 'Plan invoices', 'Pioneer discounts given',
+  'Platform credit cost', 'Net income', 'Sales tax on orders', 'Sales tax on plans'];
+const incomeVals = (l: IncomeLine) => [l.orders, l.meals, dollars(l.gmvCents), dollars(l.serviceFeesCents), dollars(l.planFeesCents), l.planInvoices,
+  dollars(l.pioneerDiscountsCents), dollars(l.creditCostCents), dollars(l.netCents), dollars(l.orderTaxCents), dollars(l.planTaxCents)];
+export const INCOME_NOTE = 'Net income = service fees + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is collected for Washington State and is not income.';
+
+// ?section=periods (income per day/month/year), restaurants (income by restaurant) or all (both).
 export async function incomeCsv(params: URLSearchParams) {
   const x = await income(params);
-  const head = ['Orders', 'Meals', 'Total charged to customers', 'Service fees', 'Plan fees', 'Plan invoices', 'Pioneer discounts given',
-    'Platform credit cost', 'Net income', 'Sales tax on orders', 'Sales tax on plans'];
-  const vals = (l: IncomeLine) => [l.orders, l.meals, dollars(l.gmvCents), dollars(l.serviceFeesCents), dollars(l.planFeesCents), l.planInvoices,
-    dollars(l.pioneerDiscountsCents), dollars(l.creditCostCents), dollars(l.netCents), dollars(l.orderTaxCents), dollars(l.planTaxCents)];
+  const section = incomeSection(params);
+  const periods = [
+    [x.by === 'day' ? 'Date' : x.by === 'month' ? 'Month' : 'Year', ...incomeHead],
+    ...x.periods.map((p) => [p.key, ...incomeVals(p)]),
+    ['Total', ...incomeVals(x.totals)],
+  ];
+  const restaurants = [['Restaurant', 'City', ...incomeHead], ...x.restaurants.map((p) => [p.name, p.city, ...incomeVals(p)])];
+  const rows = section === 'periods' ? periods : section === 'restaurants' ? restaurants : [...periods, [], ['Income by restaurant'], ...restaurants];
+  const what = section === 'restaurants' ? 'income-by-restaurant' : `income-by-${x.by}`;
   return {
-    name: `BiteWise-income-${x.range.from}-to-${x.range.to}-by-${x.by}.csv`,
-    csv: toCsv([
-      [x.by === 'day' ? 'Date' : x.by === 'month' ? 'Month' : 'Year', ...head],
-      ...x.periods.map((p) => [p.key, ...vals(p)]),
-      ['Total', ...vals(x.totals)],
-      [],
-      ['Income by restaurant'],
-      ['Restaurant', 'City', ...head],
-      ...x.restaurants.map((p) => [p.name, p.city, ...vals(p)]),
-      [],
-      ['Net income = service fees + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is collected for Washington State and is not income.'],
-    ]),
+    name: `BiteWise-${what}-${x.range.from}-to-${x.range.to}.csv`,
+    csv: toCsv([...rows, [], [INCOME_NOTE]]),
   };
 }

@@ -5,6 +5,7 @@ import { code128 } from '@/lib/code128';
 import { money, pct } from '@/lib/format';
 import type { Receipt, Report } from './data';
 import type { PlanInvoice } from './plan-invoice';
+import type { Income } from '@/lib/admin';
 import { displayPhone } from '@/lib/phone';
 
 // PDF receipts (80 mm point-of-sale roll) and daily reports (landscape letter).
@@ -343,5 +344,182 @@ export function planInvoicePdf(inv: PlanInvoice) {
   doc.font('regular').fontSize(8.5).fillColor(MUTED).text(
     `${inv.from.entity} · Eat well, waste less · ${inv.from.email}`, L, doc.page.height - 70, { width: W, align: 'center', lineBreak: false },
   );
+  return finish(doc);
+}
+
+// ---------------------------------------------------------------- owner console: income report
+
+type IncomeLineT = Income['totals'];
+const FEES_COLOR = '#0fa874';
+const PLANS_COLOR = '#5b8def';
+
+const periodLabel = (key: string, by: Income['by'], short = false) =>
+  by === 'year' ? key
+    : by === 'month'
+      ? new Date(`${key}-15T12:00:00Z`).toLocaleDateString('en-US', { month: short ? 'short' : 'long', year: short ? '2-digit' : 'numeric', timeZone: 'UTC' })
+      : new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', short ? { month: 'numeric', day: 'numeric', timeZone: 'UTC' } : { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+// The Income tab as a PDF (landscape letter): `all` = the whole page (today / this month / this year, the range's
+// figures, the chart and both tables); `periods` or `restaurants` = just that table.
+export function incomePdf(x: Income, section: 'all' | 'periods' | 'restaurants', o: { generatedAt: string; note: string }) {
+  // No bottom margin: page breaks are placed by hand, and the footer sits below the content area.
+  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margins: { top: 36, left: 36, right: 36, bottom: 0 }, info: { Title: `Bite Wise income ${x.range.from} to ${x.range.to}`, Author: 'Bite Wise' } });
+  fonts(doc);
+  const L = 36;
+  const R = doc.page.width - 36;
+  const W = R - L;
+  const bottom = doc.page.height - 50;
+  const per = x.by === 'day' ? 'day' : x.by === 'month' ? 'month' : 'year';
+  const rangeText = `${periodLabel(x.range.from, 'day')} – ${periodLabel(x.range.to, 'day')}`;
+  const title = section === 'periods' ? `Income per ${per}` : section === 'restaurants' ? 'Income by restaurant' : 'Income report';
+
+  const footer = () => {
+    doc.font('regular').fontSize(7.5).fillColor(MUTED).text(`${o.note} Generated ${o.generatedAt}.`, L, doc.page.height - 34, { width: W, lineBreak: false, ellipsis: true });
+  };
+  doc.image(LOGO, L, 30, { height: 34 });
+  doc.font('head').fontSize(18).fillColor(INK).text(title, L, 30, { width: W, align: 'right' });
+  doc.font('regular').fontSize(9.5).fillColor(MUTED).text(`${rangeText} · by ${per} · Pacific Time`, L, 54, { width: W, align: 'right' });
+  rule(doc, L, R, 76);
+  let y = 90;
+  const newPage = () => {
+    footer();
+    doc.addPage();
+    y = 40;
+  };
+
+  const box = (bx: number, by: number, bw: number, bh: number, k: string, v: string, color = INK) => {
+    doc.roundedRect(bx, by, bw, bh, 8).fill('#f2f7f4');
+    label(doc, k.toUpperCase(), bx + 10, by + 9, { width: bw - 20, lineBreak: false, ellipsis: true });
+    doc.font('head').fontSize(15).fillColor(color).text(v, bx + 10, by + 23, { width: bw - 20, lineBreak: false });
+  };
+
+  if (section === 'all') {
+    // Today / this month / this year.
+    const qw = (W - 2 * 10) / 3;
+    ([['Today', x.quick.today], ['This month', x.quick.month], ['This year', x.quick.year]] as const).forEach(([k, l], i) => {
+      const bx = L + i * (qw + 10);
+      doc.roundedRect(bx, y, qw, 86, 8).fill('#f2f7f4');
+      label(doc, k.toUpperCase(), bx + 12, y + 10);
+      doc.font('head').fontSize(18).fillColor(GREEN).text(money(l.netCents), bx + 12, y + 24, { lineBreak: false });
+      const line = (t: string, v: string, ly: number) => {
+        doc.font('regular').fontSize(8.5).fillColor(MUTED).text(t, bx + 12, ly, { width: qw - 100, lineBreak: false });
+        doc.fillColor(INK).text(v, bx + 12, ly, { width: qw - 24, align: 'right', lineBreak: false });
+      };
+      line(`Service fees · ${l.orders} orders`, money(l.serviceFeesCents), y + 49);
+      line(`Plan fees · ${l.planInvoices} invoices`, money(l.planFeesCents), y + 60);
+      line('Platform credit funded', l.creditCostCents ? `−${money(l.creditCostCents)}` : money(0), y + 71);
+    });
+    y += 98;
+
+    // The range's figures.
+    const t = x.totals;
+    const kw = (W - 3 * 8) / 4;
+    const kpis: [string, string, string?][] = [
+      ['Net income', money(t.netCents), GREEN], [`Service fees · ${t.orders} orders`, money(t.serviceFeesCents)],
+      [`Plan fees · ${t.planInvoices} invoices`, money(t.planFeesCents)], ['Platform credit funded', t.creditCostCents ? `−${money(t.creditCostCents)}` : money(0)],
+      ['Avg service fee per order', money(t.orders ? Math.round(t.serviceFeesCents / t.orders) : 0)], ['Charged to customers', money(t.gmvCents)],
+      ['Pioneer discounts given', money(t.pioneerDiscountsCents)], ['Sales tax (owed to WA)', money(t.orderTaxCents + t.planTaxCents)],
+    ];
+    kpis.forEach(([k, v, c], i) => box(L + (i % 4) * (kw + 8), y + Math.floor(i / 4) * 52, kw, 46, k, v, c));
+    y += 110;
+
+    // Chart: stacked bars, service fees under plan fees.
+    const ch = 150;
+    const cl = L + 50;
+    const cw = R - cl;
+    doc.font('bold').fontSize(10).fillColor(INK).text(`Income per ${per}`, L, y);
+    doc.rect(R - 190, y + 2, 8, 8).fill(FEES_COLOR);
+    doc.font('regular').fontSize(8.5).fillColor(MUTED).text('Service fees', R - 178, y + 1);
+    doc.rect(R - 100, y + 2, 8, 8).fill(PLANS_COLOR);
+    doc.fillColor(MUTED).text('Plan fees', R - 88, y + 1);
+    y += 18;
+    const max = Math.max(100, ...x.periods.map((p) => p.serviceFeesCents + p.planFeesCents));
+    const rough = max / 4;
+    const pow = 10 ** Math.floor(Math.log10(rough));
+    const step = [1, 2, 2.5, 5, 10].map((f) => f * pow).find((s) => s >= rough) ?? rough;
+    const top = Math.ceil(max / step) * step;
+    const yv = (v: number) => y + ch - (v / top) * ch;
+    for (let v = 0; v <= top; v += step) {
+      doc.moveTo(cl, yv(v)).lineTo(R, yv(v)).lineWidth(0.5).strokeColor(LINE).stroke();
+      doc.font('regular').fontSize(7.5).fillColor(MUTED).text(money(v).replace('.00', ''), L, yv(v) - 4, { width: 44, align: 'right' });
+    }
+    const n = Math.max(1, x.periods.length);
+    const bw = cw / n;
+    const barW = Math.max(1, Math.min(36, bw - 2));
+    const every = Math.ceil(n / 12);
+    x.periods.forEach((p, i) => {
+      const bx = cl + i * bw + (bw - barW) / 2;
+      const fh = (Math.max(0, p.serviceFeesCents) / top) * ch;
+      const ph = (Math.max(0, p.planFeesCents) / top) * ch;
+      if (fh > 0) doc.rect(bx, y + ch - fh, barW, fh).fill(FEES_COLOR);
+      if (ph > 0) doc.rect(bx, y + ch - fh - ph, barW, ph).fill(PLANS_COLOR);
+      if (i % every === 0) doc.font('regular').fontSize(7).fillColor(MUTED).text(periodLabel(p.key, x.by, true), cl + i * bw - 10, y + ch + 4, { width: bw + 20, align: 'center', lineBreak: false });
+    });
+    doc.moveTo(cl, y + ch).lineTo(R, y + ch).lineWidth(0.8).strokeColor(MUTED).stroke();
+    y += ch + 24;
+  }
+
+  // A table that continues on new pages, repeating its header.
+  type Col = { h: string; w: number; a?: 'left' | 'right' };
+  const table = (heading: string, cols: Col[], rows: string[][], total?: string[]) => {
+    const scale = W / cols.reduce((s, c) => s + c.w, 0);
+    const ws = cols.map((c) => c.w * scale);
+    const header = () => {
+      doc.rect(L, y, W, 18).fill(INK);
+      let cx = L;
+      cols.forEach((c, i) => {
+        doc.font('bold').fontSize(7.5).fillColor('#ffffff').text(c.h.toUpperCase(), cx + 5, y + 5, { width: ws[i] - 10, align: c.a ?? 'right', lineBreak: false });
+        cx += ws[i];
+      });
+      y += 20;
+    };
+    if (section === 'all') {
+      if (y > bottom - 80) newPage();
+      doc.font('bold').fontSize(11).fillColor(INK).text(heading, L, y);
+      y += 16;
+    }
+    header();
+    const draw = (vals: string[], bold: boolean, shade: boolean) => {
+      if (y > bottom - 16) {
+        newPage();
+        header();
+      }
+      if (shade) doc.rect(L, y - 3, W, 16).fill('#f6f9f7');
+      let cx = L;
+      vals.forEach((v, i) => {
+        doc.font(bold ? 'bold' : i === 0 ? 'medium' : 'regular').fontSize(8.5).fillColor(INK)
+          .text(v, cx + 5, y, { width: ws[i] - 10, align: cols[i].a ?? 'right', lineBreak: false, ellipsis: true });
+        cx += ws[i];
+      });
+      y += 16;
+    };
+    if (!rows.length) {
+      doc.font('regular').fontSize(9).fillColor(MUTED).text('Nothing in this period.', L + 5, y);
+      y += 16;
+    }
+    rows.forEach((r, i) => draw(r, false, i % 2 === 1));
+    if (total) {
+      rule(doc, L, R, y - 2);
+      y += 3;
+      draw(total, true, false);
+    }
+    y += 14;
+  };
+
+  const lineVals = (l: IncomeLineT) => [String(l.orders), money(l.serviceFeesCents), money(l.planFeesCents),
+    l.creditCostCents ? `−${money(l.creditCostCents)}` : '–', money(l.netCents), money(l.orderTaxCents + l.planTaxCents)];
+  if (section !== 'restaurants') {
+    table(`Income per ${per}`, [
+      { h: per === 'day' ? 'Day' : per === 'month' ? 'Month' : 'Year', w: 150, a: 'left' }, { h: 'Orders', w: 60 }, { h: 'Service fees', w: 90 },
+      { h: 'Plan fees', w: 90 }, { h: 'Credit cost', w: 90 }, { h: 'Net income', w: 90 }, { h: 'Sales tax collected', w: 110 },
+    ], [...x.periods].reverse().map((p) => [periodLabel(p.key, x.by), ...lineVals(p)]), ['Total', ...lineVals(x.totals)]);
+  }
+  if (section !== 'periods') {
+    table('Income by restaurant', [
+      { h: 'Restaurant', w: 190, a: 'left' }, { h: 'City', w: 90, a: 'left' }, { h: 'Orders', w: 55 }, { h: 'Service fees', w: 85 },
+      { h: 'Plan fees', w: 85 }, { h: 'Income', w: 85 }, { h: 'Sales charged', w: 90 },
+    ], x.restaurants.map((r) => [r.name, r.city, String(r.orders), money(r.serviceFeesCents), money(r.planFeesCents), money(r.netCents), money(r.gmvCents)]));
+  }
+  footer();
   return finish(doc);
 }

@@ -2,6 +2,7 @@
 
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { FileSpreadsheet, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const tz = 'America/Los_Angeles';
@@ -51,3 +52,22 @@ export function RangePicker({ range, onChange }: { range: Range; onChange: (r: R
 
 export const day = (iso: string | null | undefined) =>
   iso ? new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+
+// Download buttons shown as file icons: a green spreadsheet for CSV and a red document for PDF.
+export function DownloadIcons({ csv, pdf, what }: { csv?: string; pdf?: string; what: string }) {
+  const cls = 'inline-flex h-9 items-center gap-1 rounded-full border border-line px-3 text-xs font-extrabold tracking-wide text-ink-2 no-underline transition-colors hover:bg-surface-2 hover:text-ink';
+  return (
+    <span className="no-print inline-flex items-center gap-1.5">
+      {csv && (
+        <a href={csv} className={cls} title={`Download ${what} as CSV (spreadsheet)`} aria-label={`Download ${what} as CSV`}>
+          <FileSpreadsheet className="size-4 text-primary-ink" aria-hidden /> CSV
+        </a>
+      )}
+      {pdf && (
+        <a href={pdf} className={cls} title={`Download ${what} as PDF`} aria-label={`Download ${what} as PDF`}>
+          <FileText className="size-4 text-danger" aria-hidden /> PDF
+        </a>
+      )}
+    </span>
+  );
+}
