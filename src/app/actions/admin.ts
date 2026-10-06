@@ -9,7 +9,7 @@ import * as moderation from '@/lib/moderation';
 import * as subscriptions from '@/lib/subscriptions';
 import { money } from '@/lib/format';
 import * as orders from '@/lib/orders';
-import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
+import { onboardingMessage, sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { dollars, int, parse } from '@/lib/validate';
@@ -27,8 +27,22 @@ export async function setRestaurantStatus(input: unknown) {
     const d = parse(z.object({ id: z.number().int(), status: z.enum(['approved', 'suspended', 'banned', 'pending']), days, note: note('Note').default('') }), input);
     const name = await moderation.setRestaurantStatus(d.id, d);
     await log(me.id, `restaurant.${d.status}`, 'restaurant', d.id, `${name}${d.days ? ` for ${d.days} days` : ''}${d.note ? `: ${d.note}` : ''}`);
-    if (d.status === 'approved') await sendOnboardingEmails(d.id); // welcome email: signed agreement + kiosk link
-    return null;
+    // Welcome email (signed agreement + kiosk link); the console shows whether it went out, and why not.
+    if (d.status === 'approved') return { email: onboardingMessage(await sendOnboardingEmails(d.id)) };
+    return { email: null };
+  });
+}
+
+// Sends an approved restaurant its welcome email (again), e.g. after email settings were fixed.
+export async function sendWelcomeEmail(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(z.object({ id: z.number().int() }), input);
+    const r = must(await db().from('restaurants').select('name, status').eq('id', d.id).single());
+    if (r.status !== 'approved') throw new AppError(409, 'Only approved restaurants get the welcome email.');
+    const res = await sendOnboardingEmails(d.id, { resend: true });
+    if (res.sent) await log(me.id, 'restaurant.welcome_email', 'restaurant', d.id, `${r.name}: sent to ${res.to}`);
+    return { email: onboardingMessage(res) };
   });
 }
 

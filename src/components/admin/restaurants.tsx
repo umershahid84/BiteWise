@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { deleteRestaurant, setRestaurantStatus } from '@/app/actions/admin';
+import { deleteRestaurant, sendWelcomeEmail, setRestaurantStatus } from '@/app/actions/admin';
+import { resendConfirmation } from '@/app/actions/auth';
 import { ErrorText } from '@/components/ui/alert';
 import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,15 @@ type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_
 type Row = {
   id: number; name: string; cuisine: string; address: string; city: string; zip: string; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
   adminNote: string; taxRateBps: number; createdAt: string; suspendedUntil: string | null; ownerEmail: string; ownerUsername: string; activeOffers: number; orders: number;
-  foodCents: number; stripeReady: boolean; stripeAccount: string | null; plan: Plan | null;
+  foodCents: number; stripeReady: boolean; stripeAccount: string | null; plan: Plan | null; ownerConfirmed: boolean; welcomeEmailSentAt: string | null;
 };
+
+// Shows what happened to the welcome email: a success, or a longer warning that stays until dismissed.
+function emailToast(email: { ok: boolean; text: string } | null) {
+  if (!email) return;
+  if (email.ok) toast.success(email.text);
+  else toast.warning(email.text, { duration: 15_000 });
+}
 
 function PlanBadge({ plan }: { plan: Plan | null }) {
   if (!plan) return <Badge tone="neutral">No plan</Badge>;
@@ -51,7 +59,20 @@ export function RestaurantsPanel() {
   const approve = async (r: Row) => {
     const label = r.status === 'pending' ? 'approved' : r.status === 'banned' ? 'unbanned and reinstated' : 'reinstated';
     if (r.status === 'banned' && !confirm(`Lift the ban on ${r.name}? The restaurant and its owner's login are reinstated.`)) return;
-    if (await run(() => setRestaurantStatus({ id: r.id, status: 'approved' }), `${r.name} is ${label}`)) refresh();
+    const res = await setRestaurantStatus({ id: r.id, status: 'approved' });
+    if (!res.ok) return toast.error(res.error);
+    toast.success(`${r.name} is ${label}.`);
+    emailToast(res.data.email);
+    refresh();
+  };
+  const welcome = async (r: Row) => {
+    const res = await sendWelcomeEmail({ id: r.id });
+    if (!res.ok) return toast.error(res.error);
+    emailToast(res.data.email);
+    refresh();
+  };
+  const reconfirm = async (r: Row) => {
+    if (await run(() => resendConfirmation({ login: r.ownerEmail }), `Confirmation email sent again to ${r.ownerEmail}.`)) refresh();
   };
   return (
     <>
@@ -73,7 +94,15 @@ export function RestaurantsPanel() {
                 {pager.rows.map((r) => (
                   <tr key={r.id} className={r.status === 'banned' || r.status === 'deleted' ? 'opacity-70' : undefined}>
                     <td><b>{r.name}</b><div className="text-xs text-muted">{r.cuisine} · {r.address}, {r.city} {r.zip} · tax {pct(r.taxRateBps)}</div>{r.adminNote && <div className="text-xs text-accent-ink">Note: {r.adminNote}</div>}</td>
-                    <td className="text-sm">{r.ownerUsername}<div className="text-xs break-all text-muted">{r.ownerEmail}</div><div className="text-xs text-muted">joined {day(r.createdAt)}</div></td>
+                    <td className="text-sm">
+                      {r.ownerUsername}<div className="text-xs break-all text-muted">{r.ownerEmail}</div><div className="text-xs text-muted">joined {day(r.createdAt)}</div>
+                      {!r.ownerConfirmed && r.status !== 'deleted' && (
+                        <div className="mt-1"><Badge tone="amber" title="The owner hasn't clicked the link in the confirmation email. The welcome email is sent once they do.">Email not confirmed</Badge></div>
+                      )}
+                      {r.status === 'approved' && r.ownerConfirmed && (
+                        <div className="mt-1 text-xs text-muted">{r.welcomeEmailSentAt ? `Welcome email sent ${day(r.welcomeEmailSentAt)}` : <span className="text-accent-ink">Welcome email not sent</span>}</div>
+                      )}
+                    </td>
                     <td className="text-sm">{r.activeOffers} live offers<div className="text-xs text-muted">{r.orders} orders · {money(r.foodCents)}</div></td>
                     <td><PlanBadge plan={r.plan} /></td>
                     <td>
@@ -88,6 +117,12 @@ export function RestaurantsPanel() {
                         {(r.status === 'approved' || r.status === 'pending') && <Button size="sm" variant="danger" onClick={() => setSuspendFor(r)}>Suspend</Button>}
                         {r.status !== 'banned' && r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(r)}>Ban</Button>}
                         {r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(r)}>Delete</Button>}
+                        {!r.ownerConfirmed && r.status !== 'deleted' && r.status !== 'banned' && (
+                          <Button size="sm" variant="ghost" className="col-span-2" onClick={() => reconfirm(r)}>Resend confirmation</Button>
+                        )}
+                        {r.status === 'approved' && r.ownerConfirmed && (
+                          <Button size="sm" variant="ghost" className="col-span-2" onClick={() => welcome(r)}>{r.welcomeEmailSentAt ? 'Resend welcome email' : 'Send welcome email'}</Button>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -218,7 +218,7 @@ A restaurant that signs up gets three emails:
 
 1. **Confirm your email** (the branded email above).
 2. **Application pending**, as soon as the email is confirmed, while it waits for approval in the owner console.
-3. **Welcome**, when an admin approves it: its **electronically signed Restaurant Partner Agreement** as a PDF (the full text plus a signature record: who accepted, when, IP address, device, document version and SHA-256 fingerprint, and Bite Wise's acceptance on approval), and its **kiosk link** with buttons for Android tablets and iPads.
+3. **Welcome**, when an admin approves it (or, if the owner hasn't confirmed their email yet, as soon as they do; the Restaurants tab shows **Email not confirmed** with a **Resend confirmation** button, says after approving whether the welcome email went out and why not, and has **Send welcome email** to send it again): its **electronically signed Restaurant Partner Agreement** as a PDF (the full text plus a signature record: who accepted, when, IP address, device, document version and SHA-256 fingerprint, and Bite Wise's acceptance on approval), and its **kiosk link** with buttons for Android tablets and iPads.
 
 Emails 2 and 3 are sent by the app through the SMTP account in `.env.local` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`; the same Gmail app password as Supabase works). Each is sent once (`restaurant_onboarding`); without SMTP they are only logged, and go out on the next event once SMTP is set. If approval is turned off in Settings, restaurants get the welcome email right after confirming.
 

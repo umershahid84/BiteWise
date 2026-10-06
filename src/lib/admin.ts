@@ -121,6 +121,17 @@ export async function overview(params: URLSearchParams) {
 
 // ---------------------------------------------------------------- restaurants & users
 
+// Ids of the accounts whose email address is confirmed (from Supabase Auth).
+async function confirmedUsers() {
+  const ids = new Set<string>();
+  for (let page = 1; ; page++) {
+    const { data, error } = await db().auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new AppError(500, error.message);
+    for (const u of data.users) if (u.email_confirmed_at) ids.add(u.id);
+    if (data.users.length < 1000) return ids;
+  }
+}
+
 export async function restaurants(params: URLSearchParams) {
   const status = params.get('status') ?? '';
   const q = (params.get('q') ?? '').trim().toLowerCase();
@@ -132,6 +143,11 @@ export async function restaurants(params: URLSearchParams) {
     all<{ restaurant_id: number; charges_enabled: boolean; stripe_account_id: string | null }>((a, b) => db().from('restaurant_payment_accounts').select('restaurant_id, charges_enabled, stripe_account_id').range(a, b)),
     all<Database['public']['Tables']['restaurant_subscriptions']['Row']>((a, b) => db().from('restaurant_subscriptions').select('*').range(a, b)),
   ]);
+  const [onboarding, confirmed] = await Promise.all([
+    all<{ restaurant_id: number; welcome_email_sent_at: string | null }>((a, b) => db().from('restaurant_onboarding').select('restaurant_id, welcome_email_sent_at').range(a, b)),
+    confirmedUsers(),
+  ]);
+  const welcome = new Map(onboarding.map((x) => [x.restaurant_id, x.welcome_email_sent_at]));
   const sub = new Map(subs.map((x) => [x.restaurant_id, x]));
   const owner = new Map(owners.map((o) => [o.id, o]));
   const acct = new Map(accounts.map((a) => [a.restaurant_id, a]));
@@ -149,6 +165,8 @@ export async function restaurants(params: URLSearchParams) {
       ownerEmail: owner.get(r.owner_id)?.email ?? '', ownerUsername: owner.get(r.owner_id)?.username ?? '',
       activeOffers: count(offers, r.id), orders: count(sold, r.id), foodCents: count(sold, r.id, (x) => x.subtotal_cents),
       stripeReady: !!acct.get(r.id)?.charges_enabled, stripeAccount: acct.get(r.id)?.stripe_account_id ?? null,
+      // Whether the owner confirmed their email (the welcome email waits for it) and when the welcome email went out.
+      ownerConfirmed: confirmed.has(r.owner_id), welcomeEmailSentAt: welcome.get(r.id) ?? null,
     }))
     // Deleted restaurants only show when asked for.
     .filter((r) => (status ? r.status === status : r.status !== 'deleted') && (!q || [r.name, r.city, r.zip, r.ownerEmail].join(' ').toLowerCase().includes(q)))
