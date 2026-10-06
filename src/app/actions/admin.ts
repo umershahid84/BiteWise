@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { log } from '@/lib/admin';
 import { requireActor } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
+import * as feeChanges from '@/lib/fee-changes';
 import * as moderation from '@/lib/moderation';
 import * as subscriptions from '@/lib/subscriptions';
 import { money } from '@/lib/format';
@@ -167,29 +168,96 @@ export async function updateSettings(input: unknown) {
   });
 }
 
-// Restaurant plan prices and the number of free Founding Partner spots. New prices apply to new plans straight away
-// and to existing plans from their next renewal (or the next payment of a delinquent plan).
-export async function updatePlanPrices(input: unknown) {
+// Founding Partner spots and when renewal reminders go out. (Prices change through a scheduled fee change.)
+export async function updatePlanSettings(input: unknown) {
   return action(async () => {
     const me = await requireActor('admin');
+    const days = (what: string) => z.coerce.number().int(`${what} must be a whole number of days.`).min(1, `${what} must be 1 to 60 days.`).max(60, `${what} must be 1 to 60 days.`);
     const d = parse(
       z.object({
-        monthlyPrice: z.coerce.number().min(0.5, 'Monthly price must be $0.50 to $1,000.').max(1000, 'Monthly price must be $0.50 to $1,000.'),
-        annualPrice: z.coerce.number().min(0.5, 'Annual price must be $0.50 to $10,000.').max(10000, 'Annual price must be $0.50 to $10,000.'),
         foundingSpots: z.coerce.number().int('Founding spots must be a whole number.').min(0, 'Founding spots must be 0 to 10,000.').max(10000, 'Founding spots must be 0 to 10,000.'),
+        reminderDaysAnnual: days('The annual reminder'),
+        reminderDaysMonthly: days('The monthly reminder'),
       }),
       input,
     );
-    const values = {
-      subscription_monthly_cents: Math.round(d.monthlyPrice * 100),
-      subscription_annual_cents: Math.round(d.annualPrice * 100),
-      founding_spots: d.foundingSpots,
-    };
+    const values = { founding_spots: d.foundingSpots, renewal_reminder_days_annual: d.reminderDaysAnnual, renewal_reminder_days_monthly: d.reminderDaysMonthly };
     const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));
     const changed = Object.entries(values).filter(([k, v]) => Number(current.get(k)) !== v);
     for (const [key, value] of changed) check(await db().from('settings').upsert({ key, value, updated_at: new Date().toISOString() }));
-    if (changed.length) await log(me.id, 'plans.prices', 'settings', null, changed.map(([k, v]) => `${k}=${v}`).join(', '));
+    if (changed.length) await log(me.id, 'plans.settings', 'settings', null, changed.map(([k, v]) => `${k}=${v}`).join(', '));
     return { changed: changed.map(([k]) => k) };
+  });
+}
+
+const feeChangeSchema = z.object({
+  monthlyPrice: z.coerce.number().min(0.5, 'Monthly price must be $0.50 to $1,000.').max(1000, 'Monthly price must be $0.50 to $1,000.'),
+  annualPrice: z.coerce.number().min(0.5, 'Annual price must be $0.50 to $10,000.').max(10000, 'Annual price must be $0.50 to $10,000.'),
+  effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose the date the new fees take effect.'),
+  appliesToExisting: z.boolean(),
+  templateName: z.string().trim().max(60).default(''),
+  subject: z.string().trim().min(3, 'Write a subject for the email.').max(200, 'The subject must be at most 200 characters.'),
+  body: z.string().trim().min(20, 'Write the email message.').max(5000, 'The message must be at most 5,000 characters.'),
+  includeFounding: z.boolean().default(false),
+});
+const feeChange = (input: unknown) => {
+  const d = parse(feeChangeSchema, input);
+  return { ...d, monthlyCents: Math.round(d.monthlyPrice * 100), annualCents: Math.round(d.annualPrice * 100) };
+};
+
+// The fee-change email as one restaurant will see it.
+export async function previewFeeChange(input: unknown) {
+  return action(async () => {
+    await requireActor('admin');
+    return feeChanges.preview(feeChange(input));
+  });
+}
+
+// Schedules new subscription fees (12:01 AM Pacific Time on the effective date) and emails every restaurant now.
+export async function scheduleFeeChange(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = feeChange(input);
+    const res = await feeChanges.scheduleChange(d, me.id);
+    await log(me.id, 'plans.fee_change', 'settings', res.id,
+      `monthly ${money(d.monthlyCents)}, annual ${money(d.annualCents)} from ${d.effectiveDate} 12:01 AM PT; ` +
+      `${d.appliesToExisting ? 'existing plans pay the new fees at renewal' : 'existing plans keep their fees'}; ${res.sent} emails sent${res.failed ? `, ${res.failed} not sent` : ''}`);
+    return res;
+  });
+}
+
+// Cancels a scheduled fee change before it takes effect (restaurants that were emailed aren't told automatically).
+export async function cancelFeeChange(id: number) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const c = await feeChanges.cancelChange(parse(z.number().int(), id));
+    await log(me.id, 'plans.fee_change_cancel', 'settings', c.id, 'scheduled fee change cancelled');
+    return null;
+  });
+}
+
+const templateSchema = z.object({
+  id: z.number().int().positive().nullish(),
+  name: z.string().trim().min(2, 'Give the template a name.').max(60, 'The name must be at most 60 characters.'),
+  subject: z.string().trim().min(2, 'Write a subject.').max(200, 'The subject must be at most 200 characters.'),
+  body: z.string().trim().min(2, 'Write the message.').max(5000, 'The message must be at most 5,000 characters.'),
+});
+
+export async function saveFeeTemplate(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const t = await feeChanges.saveTemplate(parse(templateSchema, input));
+    await log(me.id, 'plans.template_save', 'settings', t.id, t.name);
+    return t;
+  });
+}
+
+export async function deleteFeeTemplate(id: number) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    await feeChanges.deleteTemplate(parse(z.number().int(), id));
+    await log(me.id, 'plans.template_delete', 'settings', id, '');
+    return null;
   });
 }
 

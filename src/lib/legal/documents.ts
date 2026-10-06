@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-07.1';
-export const EFFECTIVE = 'October 7, 2026';
+export const LEGAL_VERSION = '2026-10-09.1';
+export const EFFECTIVE = 'October 9, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -280,8 +280,10 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
   renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
   is charged the plan price then in effect. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
-  ends at the end of the period you have paid for. For annual plans we email you a reminder before each renewal. We will give you at
-  least 30 days' notice of any price change, which applies from your next renewal.</li>
+  ends at the end of the period you have paid for. Before each renewal we email you a reminder (about 30 days ahead for annual plans and 7 days ahead for monthly plans) with the amount, the date and the card that will be charged. We will email you at least 30 days before any price change takes effect (at 12:01 AM Pacific Time on the
+  effective date) and tell you whether it applies to your plan. If it does, it applies from your first renewal on or after
+  that date; if we tell you that existing partners keep their current price, your price stays the same for as long as your
+  plan stays active.</li>
   <li><b>Declined payments.</b> If a payment is declined, your plan becomes <b>delinquent</b> straight away: your Offers are paused and
   you cannot post or turn on Offers until a payment for your plan succeeds. We will tell you by email and retry your card on file
   automatically for up to 7 days; you can also pay at any time from the Plan tab with any card. Your new plan period starts when the

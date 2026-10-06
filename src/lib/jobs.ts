@@ -1,12 +1,15 @@
 import 'server-only';
+import { applyDuePriceChanges } from '@/lib/fee-changes';
 import { sweep } from '@/lib/orders';
 import { renewDue } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-// The app's scheduled work: the cleanup sweep (stale checkouts, missed pickups, card holds) and restaurant plan
-// renewals. Run by /api/cron/sweep and, on a self-hosted server, every few minutes by src/instrumentation.ts.
+// The app's scheduled work: the cleanup sweep (stale checkouts, missed pickups, card holds), subscription fee
+// changes that take effect, and restaurant plan renewals and reminders. Run by /api/cron/sweep and, on a self-hosted server, every few minutes by src/instrumentation.ts.
+// Fee changes that take effect are applied first, so renewals charged in the same run use the new prices.
 export async function runScheduledJobs() {
-  return { ...(await sweep()), subscriptions: await renewDue() };
+  const priceChanges = await applyDuePriceChanges();
+  return { ...(await sweep()), priceChanges, subscriptions: await renewDue() };
 }
 
 // Null when the database has the tables this version of the app needs; otherwise what to do about it. Checked by

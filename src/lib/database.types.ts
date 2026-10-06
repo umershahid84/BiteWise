@@ -55,6 +55,19 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"fee_email_templates": {
+                  Row: {
+                    "body": string,"id": number,"name": string,"subject": string,"updated_at": string
+                  }
+                  Insert: {
+                    "body": string,"id"?: never,"name": string,"subject": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "body"?: string,"id"?: never,"name"?: string,"subject"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"legal_documents": {
                   Row: {
                     "id": string,"roles": (Database["public"]['Enums']["user_role"])[],"title": string,"version": string
@@ -388,13 +401,13 @@ isOneToOne: true
                   ]
                 },"restaurant_subscriptions": {
                   Row: {
-                    "auto_renew": boolean,"card_label": string,"card_ref": string | null,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"customer_ref": string | null,"founding_number": number | null,"last_payment_error": string,"plan": Database["public"]['Enums']["subscription_plan"],"price_cents": number,"reminder_sent_for": string | null,"renew_plan": Database["public"]['Enums']["subscription_plan"] | null,"renewing_at": string | null,"restaurant_id": number,"retry_at": string | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at": string
+                    "auto_renew": boolean,"card_label": string,"card_ref": string | null,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"customer_ref": string | null,"founding_number": number | null,"last_payment_error": string,"locked_annual_cents": number | null,"locked_monthly_cents": number | null,"plan": Database["public"]['Enums']["subscription_plan"],"price_cents": number,"reminder_sent_for": string | null,"renew_plan": Database["public"]['Enums']["subscription_plan"] | null,"renewing_at": string | null,"restaurant_id": number,"retry_at": string | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at": string
                   }
                   Insert: {
-                    "auto_renew"?: boolean,"card_label"?: string,"card_ref"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"customer_ref"?: string | null,"founding_number"?: number | null,"last_payment_error"?: string,"plan": Database["public"]['Enums']["subscription_plan"],"price_cents"?: number,"reminder_sent_for"?: string | null,"renew_plan"?: Database["public"]['Enums']["subscription_plan"] | null,"renewing_at"?: string | null,"restaurant_id": number,"retry_at"?: string | null,"status"?: Database["public"]['Enums']["subscription_status"],"updated_at"?: string
+                    "auto_renew"?: boolean,"card_label"?: string,"card_ref"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"customer_ref"?: string | null,"founding_number"?: number | null,"last_payment_error"?: string,"locked_annual_cents"?: number | null,"locked_monthly_cents"?: number | null,"plan": Database["public"]['Enums']["subscription_plan"],"price_cents"?: number,"reminder_sent_for"?: string | null,"renew_plan"?: Database["public"]['Enums']["subscription_plan"] | null,"renewing_at"?: string | null,"restaurant_id": number,"retry_at"?: string | null,"status"?: Database["public"]['Enums']["subscription_status"],"updated_at"?: string
                   }
                   Update: {
-                    "auto_renew"?: boolean,"card_label"?: string,"card_ref"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"customer_ref"?: string | null,"founding_number"?: number | null,"last_payment_error"?: string,"plan"?: Database["public"]['Enums']["subscription_plan"],"price_cents"?: number,"reminder_sent_for"?: string | null,"renew_plan"?: Database["public"]['Enums']["subscription_plan"] | null,"renewing_at"?: string | null,"restaurant_id"?: number,"retry_at"?: string | null,"status"?: Database["public"]['Enums']["subscription_status"],"updated_at"?: string
+                    "auto_renew"?: boolean,"card_label"?: string,"card_ref"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"customer_ref"?: string | null,"founding_number"?: number | null,"last_payment_error"?: string,"locked_annual_cents"?: number | null,"locked_monthly_cents"?: number | null,"plan"?: Database["public"]['Enums']["subscription_plan"],"price_cents"?: number,"reminder_sent_for"?: string | null,"renew_plan"?: Database["public"]['Enums']["subscription_plan"] | null,"renewing_at"?: string | null,"restaurant_id"?: number,"retry_at"?: string | null,"status"?: Database["public"]['Enums']["subscription_status"],"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -465,6 +478,25 @@ isOneToOne: false
       columns: ["restaurant_id"]
 isOneToOne: false
       referencedRelation: "restaurants"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"subscription_price_changes": {
+                  Row: {
+                    "annual_cents": number,"applied_at": string | null,"applies_to_existing": boolean,"body": string,"cancelled_at": string | null,"created_at": string,"created_by": string | null,"effective_at": string,"emails_failed": number,"emails_sent": number,"id": number,"include_founding": boolean,"monthly_cents": number,"previous_annual_cents": number,"previous_monthly_cents": number,"subject": string,"template_name": string
+                  }
+                  Insert: {
+                    "annual_cents": number,"applied_at"?: string | null,"applies_to_existing": boolean,"body": string,"cancelled_at"?: string | null,"created_at"?: string,"created_by"?: string | null,"effective_at": string,"emails_failed"?: number,"emails_sent"?: number,"id"?: never,"include_founding"?: boolean,"monthly_cents": number,"previous_annual_cents": number,"previous_monthly_cents": number,"subject": string,"template_name"?: string
+                  }
+                  Update: {
+                    "annual_cents"?: number,"applied_at"?: string | null,"applies_to_existing"?: boolean,"body"?: string,"cancelled_at"?: string | null,"created_at"?: string,"created_by"?: string | null,"effective_at"?: string,"emails_failed"?: number,"emails_sent"?: number,"id"?: never,"include_founding"?: boolean,"monthly_cents"?: number,"previous_annual_cents"?: number,"previous_monthly_cents"?: number,"subject"?: string,"template_name"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "subscription_price_changes_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]

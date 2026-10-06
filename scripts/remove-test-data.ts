@@ -91,6 +91,7 @@ async function main() {
   counts.orders = await remove('orders', 'id', orderList);
   counts.offers = await remove('offers', 'restaurant_id', restaurantIds);
   counts.restaurants = await remove('restaurants', 'id', restaurantIds);
+  await remove('subscription_price_changes', 'created_by', userIds); // fee changes the tests scheduled
 
   let accounts = 0;
   for (const id of userIds) {

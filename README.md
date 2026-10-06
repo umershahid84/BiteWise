@@ -239,7 +239,13 @@ An approved restaurant needs a plan to post offers. It chooses one in the dashbo
 | **Monthly** | $15 / month | Paid in advance. |
 | **Annual** | $150 / year | Paid in advance; $30 less than 12 months. |
 
-**Changing the fees:** owner console → **Plans** tab → *Subscription fees*. Change the monthly and annual price and the number of founding spots whenever you need to: new prices apply to new plans straight away and to existing plans from their next renewal. The tab also shows monthly recurring revenue, every restaurant's plan (delinquent ones first) and a **Charge default card** button for delinquent plans. Every change is in the audit log.
+**Changing the fees:** owner console → **Plans** tab → *Change subscription fees*. Enter the new monthly and annual fees and the date they take effect (at **12:01 AM Pacific Time**), and choose who pays them:
+- **Keep existing restaurants at their current fees:** restaurants with a plan keep paying what they pay now (their price is locked when the change takes effect); only plans started from that date pay the new fees.
+- **Existing restaurants also pay the new fees:** from their first renewal on or after that date (this also ends any earlier lock).
+
+Pick the email that announces it from the templates (*Rising operating costs*, *New features and improvements*, *Annual price review*, *Introductory pricing ends*), edit it, save your own templates, **Preview** it as a restaurant will see it, and **Schedule & send**: every restaurant is emailed straight away, with a sentence about what the change means for its own plan (`{{your_plan}}`). Founding Partners are only emailed if you tick the box. One change can be scheduled at a time and cancelled before it takes effect; the tab keeps a history. The agreement promises 30 days' notice, and the form warns about shorter dates. *Plan settings* has the number of founding spots and when renewal reminders go out. The tab also shows monthly recurring revenue, every restaurant's plan (delinquent ones first) and a **Charge default card** button for delinquent plans. Every change is in the audit log.
+
+**Emails restaurants get about their plan:** a receipt for every payment; a **renewal reminder** 30 days before an annual plan renews and 7 days before a monthly one (both adjustable), saying the card on file will be charged this amount on this date; a **delinquent** notice when a payment is declined (offers paused, no new offers until the payment is made, with the renewal link); and fee-change announcements.
 
 **Cards on file:** restaurants keep one or more cards on file in the Plan tab (Stripe SetupIntents, or the mock processor without Stripe keys) and choose a **default** card. A plan is paid with a saved card or a new one (which is saved), and **auto-renewal charges the default card** at the end of each period, with an invoice number (`BW-SUB-000001`) and an emailed receipt. Auto-renewal is on by default and can be turned off any time (the plan then ends at the end of the paid period); the last card of an auto-renewing plan can't be removed. Restaurants can switch between monthly and annual from their next renewal, and annual plans get a reminder email a week before renewing.
 
@@ -262,7 +268,7 @@ Suspensions and bans are in the owner console (**Customers** and **Restaurants**
 
 ## Legal documents
 
-Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-10-07.1`, which added the restaurant subscription fees, delinquent plans and permanent bans) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
+Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib/legal/documents.ts` (version `2026-10-09.1`, which added the restaurant subscription fees, renewal reminders, fee-change notices, delinquent plans and permanent bans) and are shown at `/legal/...`. When you change the text, bump `LEGAL_VERSION` and add a migration updating `legal_documents`; a test checks they match. Signed-in users are then asked to accept the new version (declining signs them out). Have a Washington-licensed attorney review them before launch.
 
 ## Upgrading from the first version
 

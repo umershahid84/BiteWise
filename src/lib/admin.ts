@@ -4,6 +4,7 @@ import { serverEnv } from '@/lib/env';
 import { AppError, must } from '@/lib/errors';
 import { dollars, toCsv } from '@/lib/receipts/data';
 import { dayKey, dayRange, todayIn } from '@/lib/receipts/time';
+import * as feeChanges from '@/lib/fee-changes';
 import { prices } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -342,15 +343,22 @@ export async function plans() {
       return {
         restaurantId: r.id, name: r.name, city: r.city, restaurantStatus: r.status, ownerEmail: email.get(r.owner_id) ?? '',
         plan: s?.plan ?? null, status: s?.status ?? null, foundingNumber: s?.founding_number ?? null, autoRenew: s?.auto_renew ?? false,
-        priceCents: s?.price_cents ?? 0, periodEnd: s?.current_period_end ?? null, cardLabel: s?.card_label ?? '', lastPaymentError: s?.last_payment_error ?? '',
+        priceCents: s?.price_cents ?? 0, periodEnd: s?.current_period_end ?? null,
+        // A grandfathered (locked) price for the plan it renews on, if any.
+        lockedCents: s ? ((s.renew_plan ?? s.plan) === 'annual' ? s.locked_annual_cents : s.locked_monthly_cents) : null, cardLabel: s?.card_label ?? '', lastPaymentError: s?.last_payment_error ?? '',
         paid12mCents: paid.filter((x) => x.restaurant_id === r.id && Date.parse(x.created_at) >= yearAgo).reduce((n, x) => n + x.amount_cents, 0),
       };
     });
   const rank = (x: (typeof list)[number]) => (x.status === 'past_due' ? 0 : !x.plan ? 1 : x.status === 'expired' ? 2 : 3);
   list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
   const active = subs.filter((x) => x.plan !== 'founding' && x.status === 'active');
+  const [templates, pending, changes, audience] = await Promise.all([feeChanges.listTemplates(), feeChanges.pendingChange(), feeChanges.history(), feeChanges.recipientCounts()]);
   return {
     prices: p,
+    templates,
+    pendingChange: pending && { ...pending, effectiveLabel: feeChanges.effectiveLabel(pending.effective_at) },
+    changes: changes.map((c) => ({ ...c, effectiveLabel: feeChanges.effectiveLabel(c.effective_at) })),
+    audience,
     summary: {
       founding: subs.filter((x) => x.plan === 'founding').length,
       monthly: active.filter((x) => x.plan === 'monthly').length,

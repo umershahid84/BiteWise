@@ -61,7 +61,7 @@ We'll email you once you're approved.`,
   };
 }
 
-const usd = (cents: number) => `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: serverEnv.timeZone });
 
 // The restaurant's plan, for the welcome email: a Founding Partner number, or the prices of the paid plans.
@@ -158,40 +158,90 @@ Manage your plan: ${o.planUrl}`,
   };
 }
 
-// A subscription payment was declined: the plan is delinquent and the restaurant can't post until it pays.
+// A subscription payment was declined: the account is delinquent and the restaurant can't post until it pays.
 export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; planUrl: string }) {
   return {
-    subject: `Action needed: your Bite Wise payment was declined`,
+    subject: `Your Bite Wise account is delinquent: please renew your plan`,
     html: layout({
-      preview: 'Your offers are paused until your plan is paid.',
-      emoji: '💳',
-      title: 'Your payment was declined',
+      preview: 'Your payment was declined. You can\'t post new offers until your plan is paid.',
+      emoji: '⚠️',
+      title: 'Your account is now delinquent',
       subtitle: esc(o.restaurant),
-      body: `<p style="margin:0 0 14px;">We couldn't charge <b>${usd(o.amountCents)}</b> for your Bite Wise plan${o.error ? ` (${esc(o.error)})` : ''}.</p>
-        <p style="margin:0 0 14px;">Your plan is now <b>delinquent</b>: your offers are paused and you can't post new ones until the payment goes through.</p>
-        <p style="margin:0 0 18px;">Pay now with another card (or add a new one) in the Plan tab. We'll also retry your default card automatically over the next few days.</p>
-        ${button(o.planUrl, 'Pay now', '#D97706')}`,
+      body: `<p style="margin:0 0 14px;">We couldn't charge <b>${usd(o.amountCents)}</b> for your Bite Wise plan${o.error ? `: ${esc(o.error)}` : ''}.</p>
+        <p style="margin:0 0 14px;">Your account is now <b>delinquent</b>. Your live offers are paused, and you <b>won't be able to post new offers until the payment is made</b>.</p>
+        <p style="margin:0 0 18px;">Renew now with the card on file or another card. As soon as the payment goes through, you can post offers again.</p>
+        ${button(o.planUrl, `Renew now: ${usd(o.amountCents)}`, '#D97706')}
+        <p style="margin:16px 0 0;font:13px/1.5 ${FONT};color:#64748B;">Renewal link: <a href="${esc(o.planUrl)}" style="color:#2563EB;word-break:break-all;">${esc(o.planUrl)}</a></p>`,
     }),
-    text: `We couldn't charge ${usd(o.amountCents)} for the Bite Wise plan of ${o.restaurant}${o.error ? ` (${o.error})` : ''}.
-Your plan is delinquent: your offers are paused and you can't post until it is paid. Pay now: ${o.planUrl}`,
+    text: `Your Bite Wise account (${o.restaurant}) is now delinquent: we couldn't charge ${usd(o.amountCents)}${o.error ? ` (${o.error})` : ''}.
+Your offers are paused and you won't be able to post new offers until the payment is made.
+Renew now: ${o.planUrl}`,
   };
 }
 
-// Sent about a week before an annual plan renews.
-export function renewalReminderEmail(o: { restaurant: string; amountCents: number; renewsOn: string; cardLabel: string; planUrl: string }) {
+// Sent before a plan renews (30 days ahead for annual plans, 7 for monthly by default): the card on file will be
+// charged this amount on this date.
+export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; renewsOn: string; cardLabel: string; planUrl: string }) {
+  const when = date(o.renewsOn);
+  const plan = o.plan === 'annual' ? 'annual' : 'monthly';
   return {
-    subject: `Your Bite Wise annual plan renews on ${date(o.renewsOn)}`,
+    subject: `Your Bite Wise plan renews on ${when}: ${usd(o.amountCents)} will be charged`,
     html: layout({
-      preview: `${usd(o.amountCents)} will be charged to ${o.cardLabel}.`,
+      preview: `${usd(o.amountCents)} will be charged to ${o.cardLabel} on ${when}.`,
       emoji: '🔔',
-      title: 'Your annual plan renews soon',
+      title: 'Your plan renews soon',
       subtitle: esc(o.restaurant),
-      body: `<p style="margin:0 0 14px;">Just a heads-up: your Bite Wise annual plan renews automatically on <b>${date(o.renewsOn)}</b>, and
-          <b>${usd(o.amountCents)}</b> will be charged to ${esc(o.cardLabel)}.</p>
-        <p style="margin:0 0 18px;">Nothing to do if you'd like to continue. To switch to monthly, change your card or turn auto-renewal off, open the Plan tab before then.</p>
+      body: `<p style="margin:0 0 16px;">This is a friendly reminder that your Bite Wise ${plan} plan renews automatically on <b>${when}</b>.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:16px;margin:0 0 18px;">
+          <tr><td style="padding:16px 20px;font:15px/1.7 ${FONT};color:#334155;">
+            <b style="color:#14284B;">Amount:</b> ${usd(o.amountCents)}<br>
+            <b style="color:#14284B;">Charged on:</b> ${when}<br>
+            <b style="color:#14284B;">Card on file:</b> ${esc(o.cardLabel)}
+          </td></tr>
+        </table>
+        <p style="margin:0 0 18px;">Nothing to do if you'd like to continue. To change your card, switch plans or turn off auto-renewal, open the Plan tab before then.</p>
         ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
     }),
-    text: `Your Bite Wise annual plan for ${o.restaurant} renews on ${date(o.renewsOn)}: ${usd(o.amountCents)} will be charged to ${o.cardLabel}.
+    text: `Your Bite Wise ${plan} plan for ${o.restaurant} renews automatically on ${when}.
+Your card on file (${o.cardLabel}) will be charged ${usd(o.amountCents)} on ${when}.
 Manage your plan: ${o.planUrl}`,
+  };
+}
+
+// Announces a change of subscription fees. The subject and message come from an editable template, already filled in.
+export function feeChangeEmail(o: {
+  subject: string; body: string; effective: string; oldMonthlyCents: number; newMonthlyCents: number; oldAnnualCents: number; newAnnualCents: number; planUrl: string;
+}) {
+  const paragraphs = o.body.trim().split(/\n\s*\n/).map((p) => `<p style="margin:0 0 14px;">${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
+  const row = (name: string, before: number, after: number) => `<tr>
+    <td style="padding:8px 0;font:15px ${FONT};color:#334155;">${name}</td>
+    <td align="right" style="padding:8px 0;font:15px ${FONT};color:#94A3B8;text-decoration:line-through;">${usd(before)}</td>
+    <td align="right" style="padding:8px 0 8px 14px;font:800 16px ${FONT};color:#14284B;">${usd(after)}</td></tr>`;
+  return {
+    subject: o.subject,
+    html: layout({
+      preview: `Subscription fees change on ${o.effective}.`,
+      emoji: '📣',
+      title: 'Subscription fee update',
+      subtitle: `Effective ${esc(o.effective)}`,
+      body: `${paragraphs}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:16px;margin:6px 0 18px;">
+          <tr><td style="padding:14px 20px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              ${row('Monthly plan (per month)', o.oldMonthlyCents, o.newMonthlyCents)}
+              ${row('Annual plan (per year)', o.oldAnnualCents, o.newAnnualCents)}
+            </table>
+            <p style="margin:8px 0 0;font:13px ${FONT};color:#64748B;">New prices from ${esc(o.effective)}.</p>
+          </td></tr>
+        </table>
+        ${button(o.planUrl, 'View my plan', '#14284B')}`,
+    }),
+    text: `${o.body.trim()}
+
+Monthly plan: ${usd(o.oldMonthlyCents)} → ${usd(o.newMonthlyCents)} per month
+Annual plan: ${usd(o.oldAnnualCents)} → ${usd(o.newAnnualCents)} per year
+New prices from ${o.effective}.
+
+Your plan: ${o.planUrl}`,
   };
 }

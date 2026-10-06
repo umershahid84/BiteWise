@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/email/send';
 import { paymentFailedEmail, renewalReminderEmail, subscriptionReceiptEmail } from '@/lib/email/templates';
 import { publicEnv } from '@/lib/env';
 import { AppError, check, maybe, must } from '@/lib/errors';
+import { planPrice, priceContext } from '@/lib/fee-changes';
 import * as orders from '@/lib/orders';
 import { PaymentError, payments } from '@/lib/payments';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -21,14 +22,14 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 export type Subscription = Database['public']['Tables']['restaurant_subscriptions']['Row'];
 export type PaidPlan = 'monthly' | 'annual';
 const RETRY_DAYS = 7;
-const REMINDER_DAYS = 7;
 const DAY = 86_400_000;
 
 const db = () => supabaseAdmin();
 const planUrl = () => `${publicEnv.siteUrl}/restaurant?tab=plan`;
 
 export async function prices() {
-  const rows = must(await db().from('settings').select('key, value').in('key', ['subscription_monthly_cents', 'subscription_annual_cents', 'founding_spots']));
+  const rows = must(await db().from('settings').select('key, value')
+    .in('key', ['subscription_monthly_cents', 'subscription_annual_cents', 'founding_spots', 'renewal_reminder_days_annual', 'renewal_reminder_days_monthly']));
   const get = (key: string, fallback: number) => Number(rows.find((r) => r.key === key)?.value ?? fallback);
   const { count } = await db().from('restaurant_subscriptions').select('restaurant_id', { count: 'exact', head: true }).not('founding_number', 'is', null);
   const foundingSpots = get('founding_spots', 50);
@@ -38,6 +39,9 @@ export async function prices() {
     foundingSpots,
     foundingTaken: count ?? 0,
     foundingLeft: Math.max(0, foundingSpots - (count ?? 0)),
+    // How many days before a renewal the reminder email goes out.
+    reminderDaysAnnual: get('renewal_reminder_days_annual', 30),
+    reminderDaysMonthly: get('renewal_reminder_days_monthly', 7),
   };
 }
 export const priceOf = (p: Awaited<ReturnType<typeof prices>>, plan: PaidPlan) => (plan === 'annual' ? p.annualCents : p.monthlyCents);
@@ -79,12 +83,13 @@ export async function cardsOf(userId: string) {
 // What the restaurant's Plan tab shows.
 export async function planSummary(restaurantId: number) {
   const { owner } = await ownerOf(restaurantId);
-  const [sub, p, history, ok, cards] = await Promise.all([
+  const [sub, p, history, ok, cards, ctx] = await Promise.all([
     getSubscription(restaurantId),
     prices(),
     db().from('subscription_payments').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }).limit(24),
     db().rpc('restaurant_plan_ok', { p_restaurant_id: restaurantId }),
     cardsOf(owner.id),
+    priceContext(),
   ]);
   const nextPlan = sub && sub.plan !== 'founding' ? ((sub.renew_plan ?? sub.plan) as PaidPlan) : null;
   return {
@@ -95,8 +100,17 @@ export async function planSummary(restaurantId: number) {
       plan: sub.plan, renewPlan: sub.renew_plan, status: sub.status, foundingNumber: sub.founding_number, autoRenew: sub.auto_renew,
       priceCents: sub.price_cents, periodStart: sub.current_period_start, periodEnd: sub.current_period_end, cardLabel: sub.card_label,
       lastPaymentError: sub.last_payment_error,
-      // What the next payment (a renewal, or paying a delinquent plan) will cost at today's prices.
-      nextAmountCents: nextPlan ? priceOf(p, nextPlan) : 0,
+      // What the next payment will cost: a renewal on its date, or a delinquent plan paid now. Includes a locked
+      // (grandfathered) price and a scheduled fee change.
+      nextAmountCents: nextPlan
+        ? planPrice(ctx, sub, nextPlan, sub.status === 'past_due' ? new Date() : new Date(sub.current_period_end ?? Date.now()))
+        : 0,
+      grandfathered: !!(sub.locked_monthly_cents || sub.locked_annual_cents),
+    },
+    // A scheduled fee change, so the Plan tab can tell restaurants about it.
+    upcomingChange: ctx.pending && {
+      effectiveAt: ctx.pending.effective_at, monthlyCents: ctx.pending.monthly_cents, annualCents: ctx.pending.annual_cents,
+      appliesToExisting: ctx.pending.applies_to_existing,
     },
     payments: must(history).map((x) => ({
       id: x.id, plan: x.plan, amountCents: x.amount_cents, status: x.status, invoiceNumber: x.invoice_number, cardLabel: x.card_label,
@@ -213,8 +227,9 @@ export async function subscribe(restaurantId: number, input: { plan: PaidPlan; c
     cardId = (await addCard(restaurantId, input.token, true)).id;
   }
   const card = await chargeCard(owner.id, cardId);
-  const amountCents = priceOf(await prices(), input.plan);
   const start = new Date();
+  // A lapsed plan restarts at the price new plans pay (any lock went with it).
+  const amountCents = planPrice(await priceContext(), null, input.plan, start);
   const res = await chargePeriod({
     restaurantId, name: restaurant.name, plan: input.plan, amountCents, customerId, card, start,
     key: `sub-start-${restaurantId}-${cardId}-${Math.floor(start.getTime() / 60_000)}`,
@@ -227,7 +242,7 @@ export async function subscribe(restaurantId: number, input: { plan: PaidPlan; c
     restaurant_id: restaurantId, plan: input.plan, renew_plan: null, status: 'active', founding_number: null, auto_renew: input.autoRenew,
     price_cents: amountCents, current_period_start: start.toISOString(), current_period_end: res.end.toISOString(),
     customer_ref: customerId, card_ref: card!.provider_ref, card_label: label(card!), last_payment_error: '', retry_at: null, renewing_at: null,
-    reminder_sent_for: null, updated_at: new Date().toISOString(),
+    reminder_sent_for: null, locked_monthly_cents: null, locked_annual_cents: null, updated_at: new Date().toISOString(),
   }).select('restaurant_id'));
   await receipt({ to: owner.email, restaurant: restaurant.name, plan: input.plan, amountCents, invoice: res.invoice, cardLabel: label(card!), end: res.end, autoRenew: input.autoRenew, renewal: false });
   return { invoiceNumber: res.invoice, periodEnd: res.end.toISOString() };
@@ -286,7 +301,7 @@ async function charge(restaurantId: number, o: { manual: boolean; cardId?: numbe
       return 'skipped';
     }
     const plan = (claimed.renew_plan ?? claimed.plan) as PaidPlan;
-    const amountCents = priceOf(await prices(), plan);
+    const amountCents = planPrice(await priceContext(), claimed, plan, now);
     const { restaurant, owner } = await ownerOf(restaurantId);
     const card = await chargeCard(owner.id, o.cardId);
     const customerId = claimed.customer_ref ?? (await customerRef(owner));
@@ -331,7 +346,7 @@ export async function payNow(restaurantId: number, cardId?: number | null) {
   return { periodEnd: sub.current_period_end };
 }
 
-// Scheduled job: charges renewals that are due, retries delinquent plans once a day, and reminds annual plans a week ahead.
+// Scheduled job: charges renewals that are due, retries delinquent plans once a day, and sends renewal reminders.
 export async function renewDue() {
   const now = new Date();
   const due = must(await db().from('restaurant_subscriptions').select('restaurant_id')
@@ -346,16 +361,30 @@ export async function renewDue() {
     }
   }
 
+  // Renewal reminders: the card on file will be charged this amount on this date. Sent once per period, the set
+  // number of days before it renews (30 for annual plans and 7 for monthly ones by default).
+  const p = await prices();
+  const lead = (plan: PaidPlan) => (plan === 'annual' ? p.reminderDaysAnnual : p.reminderDaysMonthly);
+  const horizon = new Date(now.getTime() + Math.max(p.reminderDaysAnnual, p.reminderDaysMonthly) * DAY);
   const soon = must(await db().from('restaurant_subscriptions').select('*')
-    .eq('plan', 'annual').eq('auto_renew', true).eq('status', 'active')
-    .gt('current_period_end', now.toISOString()).lte('current_period_end', new Date(now.getTime() + REMINDER_DAYS * DAY).toISOString()));
-  for (const s of soon.filter((x) => x.reminder_sent_for !== x.current_period_end && (x.renew_plan ?? 'annual') === 'annual')) {
+    .neq('plan', 'founding').eq('auto_renew', true).eq('status', 'active')
+    .gt('current_period_end', now.toISOString()).lte('current_period_end', horizon.toISOString()));
+  const ctx = await priceContext();
+  for (const s of soon) {
+    const plan = (s.renew_plan ?? s.plan) as PaidPlan;
+    const renewsOn = new Date(s.current_period_end!);
+    if (s.reminder_sent_for === s.current_period_end || renewsOn.getTime() - now.getTime() > lead(plan) * DAY) continue;
+    // A plan bought less than a day ago doesn't need a reminder right away (e.g. a monthly plan with a 30-day lead).
+    if (s.current_period_start && now.getTime() - Date.parse(s.current_period_start) < DAY) continue;
     try {
       const { restaurant, owner } = await ownerOf(s.restaurant_id);
       const card = await chargeCard(owner.id);
       const sent = await sendEmail({
         to: owner.email,
-        ...renewalReminderEmail({ restaurant: restaurant.name, amountCents: priceOf(await prices(), 'annual'), renewsOn: s.current_period_end!, cardLabel: card ? label(card) : 'your card on file', planUrl: planUrl() }),
+        ...renewalReminderEmail({
+          restaurant: restaurant.name, plan, amountCents: planPrice(ctx, s, plan, renewsOn), renewsOn: s.current_period_end!,
+          cardLabel: card ? label(card) : 'your card on file', planUrl: planUrl(),
+        }),
       });
       if (sent) {
         await db().from('restaurant_subscriptions').update({ reminder_sent_for: s.current_period_end }).eq('restaurant_id', s.restaurant_id);

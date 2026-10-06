@@ -60,8 +60,18 @@ export function PlanPanel({ payment, approved }: { payment: PaymentConfig; appro
   const p = data.prices;
   const paid = sub && sub.plan !== 'founding';
 
+  const change = data.upcomingChange;
+  const keepsFee = !!paid && sub!.status !== 'expired' && (sub!.grandfathered || (change && !change.appliesToExisting));
   return (
     <div className="grid gap-5">
+      {change && sub?.plan !== 'founding' && (
+        <Alert tone="info">
+          📣 <b>Subscription fees change on {fmtDate(change.effectiveAt)} (12:01 AM Pacific):</b> {usd(change.monthlyCents)} a month or {usd(change.annualCents)} a year.{' '}
+          {paid && sub!.status !== 'expired'
+            ? keepsFee ? 'Good news: your current fee stays the same.' : 'Your plan pays the new fee from your first renewal on or after that date.'
+            : 'Plans started from that date pay the new fees.'}
+        </Alert>
+      )}
       {sub?.status === 'past_due' && (
         <Card className="border-2 border-danger/60">
           <div className="flex flex-wrap items-center gap-4">
@@ -209,6 +219,7 @@ function CurrentPlan({ data, onChanged }: { data: PlanSummary; onChanged: () => 
         <div className="flex-1">
           <p className="m-0 text-sm font-bold tracking-wide text-muted uppercase">Your plan</p>
           <h2 className="m-0 text-2xl font-extrabold">{NAMES[sub.plan]} · {usd(sub.priceCents)}<span className="text-base font-semibold text-muted"> / {sub.plan === 'annual' ? 'year' : 'month'}</span></h2>
+          {sub.grandfathered && <p className="m-0 mt-1 text-sm font-semibold text-primary-ink">🔒 Your fee is locked in: you keep this price when it renews.</p>}
           <p className="m-0 mt-1 text-ink-2">
             {sub.status === 'past_due'
               ? <>Delinquent since {fmtDate(sub.periodEnd)}: pay to post offers again.</>
