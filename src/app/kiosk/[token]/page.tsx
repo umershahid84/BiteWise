@@ -36,5 +36,5 @@ export default async function KioskPage({ params, searchParams }: PageProps<'/ki
       </div>
     );
   }
-  return <KioskApp token={token} name={k.name} initialStatus={k.status} install={install === 'android' || install === 'apple' ? install : null} />;
+  return <KioskApp token={token} name={k.name} initialStatus={k.status} install={install === 'android' || install === 'apple' || install === 'windows' ? install : null} />;
 }

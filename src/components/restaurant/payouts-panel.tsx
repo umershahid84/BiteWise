@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Kpi, Table } from '@/components/ui/misc';
+import { isTestStripeAccount } from '@/lib/constants';
 import { fmtDateTime, money } from '@/lib/format';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import type { Ctx } from './types';
@@ -54,7 +55,9 @@ export function PayoutsPanel({ ctx, stripeReturn }: { ctx: Ctx; stripeReturn: bo
 
   const acct = data.data?.acct;
   const bal = data.data?.bal;
-  const ready = !!acct?.charges_enabled;
+  const testMode = ctx.paymentMode === 'mock';
+  // An account set up during test payments doesn't count once live payments are on: connect the real one.
+  const ready = !!acct?.charges_enabled && (testMode || !isTestStripeAccount(acct.stripe_account_id));
   return (
     <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-3">
@@ -76,8 +79,15 @@ export function PayoutsPanel({ ctx, stripeReturn }: { ctx: Ctx; stripeReturn: bo
                 <Badge tone={acct?.payouts_enabled ? 'green' : 'amber'}>{acct?.payouts_enabled ? 'Bank payouts on' : 'Bank payouts pending'}</Badge>
                 <code className="text-xs">{acct?.stripe_account_id}</code>
               </div>
+              {testMode && (
+                <Alert tone="info" className="mt-3">
+                  🧪 <b>Test payments.</b> Bite Wise hasn&apos;t switched on live payments yet, so this is a practice Stripe account with a test bank: no
+                  real money moves and there is no Stripe dashboard to open. Your earnings are recorded, and once live payments are on you&apos;ll be
+                  asked to connect your real Stripe account here.
+                </Alert>
+              )}
               <div className="mt-4 flex flex-wrap gap-2">
-                <Button variant="ghost" size="sm" disabled={busy} onClick={() => go(stripeDashboardLink)}><ExternalLink /> Open Stripe dashboard</Button>
+                {!testMode && <Button variant="ghost" size="sm" disabled={busy} onClick={() => go(stripeDashboardLink)}><ExternalLink /> Open Stripe dashboard</Button>}
                 <Button variant="ghost" size="sm" onClick={async () => { await refreshStripeStatus(); queryClient.invalidateQueries({ queryKey: ['payouts', rid] }); }}><RefreshCw /> Refresh</Button>
               </div>
             </>
@@ -91,7 +101,7 @@ export function PayoutsPanel({ ctx, stripeReturn }: { ctx: Ctx; stripeReturn: bo
               <Button disabled={busy} onClick={() => go(startStripeOnboarding)}>
                 {busy ? 'Opening Stripe…' : acct?.stripe_account_id ? 'Continue Stripe setup' : 'Set up payouts with Stripe'}
               </Button>
-              {ctx.paymentMode === 'mock' && <p className="mt-2 text-xs text-muted">🧪 Test mode: setup completes instantly with a test bank account.</p>}
+              {testMode && <p className="mt-2 text-xs text-muted">🧪 Test payments: setup completes instantly with a practice account and a test bank. No real money moves until Bite Wise switches on live payments.</p>}
             </>
           )}
           <p className="mt-4 text-xs text-muted">See section 5 of the <a href="/legal/restaurant-agreement" target="_blank">Partner Agreement</a> for how payouts, refunds and platform credit work.</p>

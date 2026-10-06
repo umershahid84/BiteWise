@@ -59,3 +59,12 @@ describe('legal documents', () => {
     expect(renderDocument('nope', company)).toBeNull();
   });
 });
+
+describe('test-payments Stripe accounts', async () => {
+  const { isTestStripeAccount } = await import('@/lib/constants');
+  it('recognises accounts made without Stripe keys', () => {
+    expect(isTestStripeAccount('acct_mock_000095')).toBe(true);
+    expect(isTestStripeAccount('acct_1PqRsT2eZvKYlo2C')).toBe(false);
+    expect(isTestStripeAccount(null)).toBe(false);
+  });
+});

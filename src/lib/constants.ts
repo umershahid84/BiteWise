@@ -51,3 +51,7 @@ export const cuisineHue = (c?: string | null) => CUISINE_HUE[String(c ?? '').toL
 // cancelled order can put the food back on sale).
 export const offerStatus = (o: { status: string; quantity_available: number }) =>
   o.status === 'active' && o.quantity_available <= 0 ? 'sold_out' : o.status;
+
+// Stripe accounts "connected" while the site ran without Stripe keys (test payments) don't exist at Stripe. Once real
+// keys are set they count as not connected, so the restaurant connects its real Stripe account.
+export const isTestStripeAccount = (id: string | null | undefined) => !!id && id.startsWith('acct_mock_');

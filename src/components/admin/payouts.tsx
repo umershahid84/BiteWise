@@ -24,7 +24,7 @@ type History = { id: number; paid_at: string; invoice_number: string | null; kin
 export function PayoutsPanel() {
   const queryClient = useQueryClient();
   const [paying, setPaying] = useState<Balance | null>(null);
-  const { data, isLoading } = useAdmin<{ balances: Balance[]; history: History[] }>(['payouts'], 'payouts');
+  const { data, isLoading } = useAdmin<{ balances: Balance[]; history: History[]; paymentMode: 'stripe' | 'mock' }>(['payouts'], 'payouts');
   const balances = usePager(data?.balances ?? []);
   const history = usePager(data?.history ?? []);
 
@@ -32,6 +32,15 @@ export function PayoutsPanel() {
   const owed = data.balances.reduce((n, b) => n + Math.max(0, b.balanceCents), 0);
   return (
     <>
+      {data.paymentMode === 'mock' && (
+        <Alert tone="warn" className="mb-4">
+          🧪 <b>Test payments are on</b>: this server has no Stripe keys, so card payments and restaurant payouts are simulated (no real money moves,
+          and restaurants can&apos;t open a Stripe dashboard). To go live: in your Stripe account turn on <b>Connect</b> (Express accounts), then put
+          <code className="mx-1">STRIPE_SECRET_KEY</code>, <code className="mx-1">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> and
+          <code className="mx-1">STRIPE_WEBHOOK_SECRET</code> in <code>.env.local</code> and run <code>npm run update</code>. Restaurants then
+          connect their real Stripe accounts from their Payouts tab (test-mode connections don&apos;t carry over).
+        </Alert>
+      )}
       <Alert tone="info" className="mb-4">
         Restaurants connected to <b>Stripe Connect</b> are paid automatically at each pickup (destination charges with Bite Wise&apos;s application fee).
         Anything still owed, for example orders completed before a restaurant connected Stripe, shows below: send it through Stripe, or record a payment made another way.

@@ -12,7 +12,7 @@ const RESOURCES: Record<string, (p: URLSearchParams) => Promise<unknown>> = {
   orders: admin.orders,
   refunds: (p) => admin.orderRefunds(Number(p.get('orderId'))),
   offers: () => admin.liveOffers(),
-  payouts: () => admin.payouts(),
+  payouts: async () => ({ ...(await admin.payouts()), paymentMode: paymentMode() }),
   plans: () => admin.plans(),
   tax: admin.tax,
   settings: async () => ({ settings: await admin.settings(), paymentMode: paymentMode() }),

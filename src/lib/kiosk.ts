@@ -36,5 +36,5 @@ export async function rotateKioskToken(restaurantId: number): Promise<string> {
 
 export function kioskUrls(token: string) {
   const kioskUrl = `${publicEnv.siteUrl}/kiosk/${token}`;
-  return { kioskUrl, androidUrl: `${kioskUrl}?install=android`, appleUrl: `${kioskUrl}?install=apple` };
+  return { kioskUrl, androidUrl: `${kioskUrl}?install=android`, appleUrl: `${kioskUrl}?install=apple`, windowsUrl: `${kioskUrl}?install=windows` };
 }

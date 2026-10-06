@@ -1,6 +1,7 @@
 import 'server-only';
 import type { Database } from '@/lib/database.types';
-import { serverEnv } from '@/lib/env';
+import { isTestStripeAccount } from '@/lib/constants';
+import { paymentMode, serverEnv } from '@/lib/env';
 import { AppError, must } from '@/lib/errors';
 import { dollars, toCsv } from '@/lib/receipts/data';
 import { dayKey, dayRange, todayIn } from '@/lib/receipts/time';
@@ -21,6 +22,10 @@ const tz = () => serverEnv.timeZone;
 const foodRefund = (o: Order) => (o.refunded_cents && o.total_cents ? Math.round((o.refunded_cents * o.subtotal_cents) / o.total_cents) : 0);
 const feeRefund = (o: Order) => (o.refunded_cents && o.total_cents ? Math.round((o.refunded_cents * o.service_fee_cents) / o.total_cents) : 0);
 const taxRefund = (o: Order) => (o.refunded_cents && o.total_cents ? o.refunded_cents - foodRefund(o) - feeRefund(o) : 0);
+
+// A restaurant can be paid through Stripe: its account is ready, and (with live keys) isn't a test-payments account.
+const liveStripe = (a: { charges_enabled: boolean; stripe_account_id: string | null } | undefined) =>
+  !!a?.charges_enabled && (paymentMode() === 'mock' || !isTestStripeAccount(a.stripe_account_id));
 
 // Reads every row of a query in pages of 1000 (PostgREST's default row limit).
 async function all<T>(query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) {
@@ -164,7 +169,7 @@ export async function restaurants(params: URLSearchParams) {
       } : null,
       ownerEmail: owner.get(r.owner_id)?.email ?? '', ownerUsername: owner.get(r.owner_id)?.username ?? '',
       activeOffers: count(offers, r.id), orders: count(sold, r.id), foodCents: count(sold, r.id, (x) => x.subtotal_cents),
-      stripeReady: !!acct.get(r.id)?.charges_enabled, stripeAccount: acct.get(r.id)?.stripe_account_id ?? null,
+      stripeReady: liveStripe(acct.get(r.id)), stripeAccount: acct.get(r.id)?.stripe_account_id ?? null,
       // Whether the owner confirmed their email (the welcome email waits for it) and when the welcome email went out.
       ownerConfirmed: confirmed.has(r.owner_id), welcomeEmailSentAt: welcome.get(r.id) ?? null,
     }))
@@ -293,7 +298,7 @@ export async function payouts() {
         return {
           restaurantId: b.restaurant_id!, name: b.name!, city: b.city!, status: b.status!, email: emails.get(ownerOf.get(b.restaurant_id!) ?? '') ?? '',
           orders: b.orders ?? 0, earnedCents: b.earned_cents ?? 0, paidCents: b.paid_cents ?? 0, balanceCents: b.balance_cents ?? 0, lastPaidAt: b.last_paid_at,
-          stripeAccount: a?.stripe_account_id ?? null, stripeReady: !!a?.charges_enabled, bank: a?.bank_summary ?? '',
+          stripeAccount: a?.stripe_account_id ?? null, stripeReady: liveStripe(a), bank: a?.bank_summary ?? '',
         };
       }),
     history,

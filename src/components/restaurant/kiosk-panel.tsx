@@ -9,7 +9,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/misc';
 
-type Kiosk = { kioskUrl: string; androidUrl: string; appleUrl: string; qr: string };
+type Kiosk = { kioskUrl: string; androidUrl: string; appleUrl: string; windowsUrl: string; qr: string };
 
 // The restaurant's counter kiosk: its private link, a QR code to open it on the tablet, how to add it to the
 // tablet's home screen, and the signed Restaurant Partner Agreement.
@@ -61,12 +61,13 @@ export function KioskPanel({ approved }: { approved: boolean }) {
           <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(kiosk.kioskUrl).then(() => toast.success('Kiosk link copied'))}><Copy /> Copy</Button>
           <a href={kiosk.kioskUrl} target="_blank" rel="noopener" className={buttonVariants({ size: 'sm' })}><ExternalLink /> Open kiosk</a>
         </div>
-        <h3 className="mb-2 text-base font-extrabold">Put it on your tablet</h3>
+        <h3 className="mb-2 text-base font-extrabold">Put it on your tablet or computer</h3>
         <ol className="mt-0 space-y-2 pl-5 text-ink-2">
           <li>On the tablet, scan the QR code with the camera (or open the link from your welcome email).</li>
           <li><b>Android tablet</b> (Chrome): tap <b>Add to home screen</b> on the kiosk, then <b>Install</b>.</li>
           <li><b>iPad</b> (Safari): tap the Share button, then <b>Add to Home Screen</b>, then <b>Add</b>.</li>
-          <li>Open the kiosk any time from the <b>Bite Wise Kiosk</b> icon on the home screen. It opens full-screen.</li>
+          <li><b>Windows computer</b> (Edge or Chrome): open <a href={kiosk.windowsUrl} target="_blank" rel="noopener">the kiosk on the computer</a> and click <b>Install on this computer</b> (Edge: menu → <b>Apps</b> → <b>Install this site as an app</b>).</li>
+          <li>Open the kiosk any time from the <b>Bite Wise Kiosk</b> icon on the home screen (or the Start menu on Windows). It opens full-screen.</li>
         </ol>
         <div className="mt-5 flex flex-wrap gap-2">
           {agreement}

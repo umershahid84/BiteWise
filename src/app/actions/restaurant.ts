@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { requireRestaurant } from '@/lib/auth';
+import { isTestStripeAccount } from '@/lib/constants';
 import { publicEnv } from '@/lib/env';
 import { ensureKioskToken, kioskUrls, rotateKioskToken } from '@/lib/kiosk';
 import { action, AppError, check, maybe, must } from '@/lib/errors';
@@ -157,10 +158,13 @@ export async function stripeDashboardLink() {
   return action(async () => {
     const { restaurant } = await requireRestaurant();
     const supabase = await supabaseServer();
+    if (payments().mode === 'mock') {
+      throw new AppError(409, 'Payouts are in test mode on Bite Wise right now, so there is no real Stripe account or dashboard yet. Your earnings are recorded and will be paid once Bite Wise switches on live payments.');
+    }
     const acct = maybe(await supabase.from('restaurant_payment_accounts').select('stripe_account_id').eq('restaurant_id', restaurant.id).maybeSingle());
-    if (!acct?.stripe_account_id) throw new AppError(409, 'Set up payouts with Stripe first.');
+    if (!acct?.stripe_account_id || isTestStripeAccount(acct.stripe_account_id)) throw new AppError(409, 'Set up payouts with Stripe first.');
     const url = await payments().dashboardLink(acct.stripe_account_id);
-    if (!url) throw new AppError(409, payments().mode === 'mock' ? 'The Stripe dashboard is not available in test mode.' : 'Finish Stripe onboarding to open your dashboard.');
+    if (!url) throw new AppError(409, 'Finish Stripe onboarding to open your dashboard.');
     return { url };
   });
 }

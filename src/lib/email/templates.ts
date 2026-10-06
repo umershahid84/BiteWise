@@ -92,7 +92,7 @@ function planBox(p: WelcomePlan, planUrl: string) {
   </div>`;
 }
 
-export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidUrl: string; appleUrl: string; dashboardUrl: string; plan: WelcomePlan }) {
+export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidUrl: string; appleUrl: string; windowsUrl: string; dashboardUrl: string; plan: WelcomePlan }) {
   const r = esc(o.restaurant);
   const planUrl = `${o.dashboardUrl}?tab=plan`;
   const step = (n: number, html: string) => `<tr><td width="34" valign="top" style="padding:6px 0;"><div style="width:26px;height:26px;border-radius:13px;background:#E8F5E1;color:#3E8230;font:800 14px/26px ${FONT};text-align:center;">${n}</div></td><td style="padding:6px 0;font:15px/1.5 ${FONT};color:#334155;">${html}</td></tr>`;
@@ -111,15 +111,16 @@ export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidU
           <p style="margin:0 0 16px;font:15px/1.55 ${FONT};color:#475569;">Put this on the tablet at your counter. It shows new orders with a bell, and staff hand them
             over by typing the customer's PIN. No password needed: the link below is your kiosk's key, so only share it with your staff.</p>
           <p style="margin:0 0 18px;font:14px ${FONT};"><a href="${esc(o.kioskUrl)}" style="color:#2563EB;word-break:break-all;">${esc(o.kioskUrl)}</a></p>
-          <p style="margin:0 0 10px;font:700 14px ${FONT};color:#14284B;">Open this email on the tablet and tap your device:</p>
+          <p style="margin:0 0 10px;font:700 14px ${FONT};color:#14284B;">Open this email on the tablet or computer and tap your device:</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td width="50%" style="padding:0 6px 0 0;">${button(o.androidUrl, '🤖 Android tablet', '#3E8230')}</td>
-            <td width="50%" style="padding:0 0 0 6px;">${button(o.appleUrl, '📱 iPad / iPhone', '#14284B')}</td>
+            <td width="33%" style="padding:0 4px 8px 0;">${button(o.androidUrl, '🤖 Android', '#3E8230')}</td>
+            <td width="34%" style="padding:0 4px 8px;">${button(o.appleUrl, '📱 iPad / iPhone', '#14284B')}</td>
+            <td width="33%" style="padding:0 0 8px 4px;">${button(o.windowsUrl, '🖥️ Windows PC', '#0F6CBD')}</td>
           </tr></table>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">
-            ${step(1, 'The kiosk opens with an <b>Add to Home screen</b> guide for your device.')}
-            ${step(2, 'Confirm, and a <b>Bite Wise Kiosk</b> icon appears on the tablet\'s home screen.')}
-            ${step(3, 'Tap the icon any time to open your kiosk full-screen.')}
+            ${step(1, 'The kiosk opens with an install guide for your device.')}
+            ${step(2, 'Confirm, and a <b>Bite Wise Kiosk</b> icon appears on the tablet\'s home screen (or in the Start menu and on the desktop on Windows).')}
+            ${step(3, 'Open the icon any time to start your kiosk.')}
           </table>
         </div>
         <p style="margin:22px 0 10px;">Next steps: post your first offer, and connect Stripe in the <b>Payouts</b> tab so you're paid at every pickup.</p>
@@ -133,6 +134,7 @@ Your restaurant kiosk (open it on your counter tablet; share it only with your s
 ${o.kioskUrl}
 Android tablet: ${o.androidUrl}
 iPad / iPhone: ${o.appleUrl}
+Windows PC: ${o.windowsUrl}
 
 Dashboard: ${o.dashboardUrl}`,
   };

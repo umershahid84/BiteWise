@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BellRing, Check, Delete, MoreVertical, Share, SquarePlus, Store, Wifi, WifiOff, X } from 'lucide-react';
+import { BellRing, Check, Delete, MonitorDown, MoreHorizontal, MoreVertical, Share, SquarePlus, Store, Wifi, WifiOff, X } from 'lucide-react';
 import { kioskConfirm, kioskLookup, kioskOrders, type KioskOrder } from '@/app/actions/kiosk';
 import type { PickupOrder } from '@/app/actions/restaurant';
 import { ringBell, unlockOnInteraction } from '@/components/restaurant/bell';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 // over. Installed to the tablet's home screen, it opens full-screen like an app (see the manifest route).
 
 type Status = 'pending' | 'approved' | 'suspended';
-export type InstallTarget = 'android' | 'apple';
+export type InstallTarget = 'android' | 'apple' | 'windows';
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }> };
 type Done = { quantity: number; itemTitle: string; customerUsername: string; totalCents: number; creditAppliedCents: number };
 
@@ -38,6 +38,7 @@ function detectDevice(): InstallTarget | null {
   const ua = navigator.userAgent;
   if (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'apple';
   if (/Android/.test(ua)) return 'android';
+  if (/Windows/.test(ua)) return 'windows';
   return null;
 }
 
@@ -125,7 +126,7 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
         </div>
         {!standalone && (
           <button type="button" onClick={() => setInstallChoice(detectDevice() ?? 'choose')} className="hidden rounded-full border border-line px-4 py-2 text-sm font-bold text-primary-ink sm:block">
-            <SquarePlus className="mr-1.5 inline size-4" />Add to home screen
+            <SquarePlus className="mr-1.5 inline size-4" />Install kiosk
           </button>
         )}
         <span className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold', online ? 'bg-primary-soft text-primary-ink' : 'bg-danger-soft text-danger')}>
@@ -346,14 +347,18 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/kiosk-icon-192.png" alt="" className="size-16 rounded-2xl" />
           <div>
-            <h2 className="m-0 font-heading text-2xl font-extrabold">Add the kiosk to this tablet&apos;s home screen</h2>
-            <p className="m-0 text-ink-2">An icon for <b>{name}</b> appears on the home screen. Tap it to open your kiosk full-screen.</p>
+            <h2 className="m-0 font-heading text-2xl font-extrabold">{target === 'windows' ? 'Install the kiosk on this computer' : 'Add the kiosk to this tablet\u2019s home screen'}</h2>
+            <p className="m-0 text-ink-2">
+              {target === 'windows'
+                ? <>A <b>Bite Wise Kiosk</b> app for <b>{name}</b> appears in the Start menu and on the desktop. It opens in its own window.</>
+                : <>An icon for <b>{name}</b> appears on the home screen. Tap it to open your kiosk full-screen.</>}
+            </p>
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-2 rounded-full border border-line bg-bg-2 p-1">
-          {(['android', 'apple'] as const).map((t) => (
-            <button key={t} type="button" onClick={() => onChoose(t)} className={cn('rounded-full py-2.5 font-bold text-muted', target === t && 'bg-primary-soft text-primary-ink')}>
-              {t === 'android' ? 'Android tablet' : 'iPad / iPhone'}
+        <div className="mt-5 grid grid-cols-3 gap-1 rounded-full border border-line bg-bg-2 p-1">
+          {(['android', 'apple', 'windows'] as const).map((t) => (
+            <button key={t} type="button" onClick={() => onChoose(t)} className={cn('rounded-full px-2 py-2.5 text-sm font-bold text-muted sm:text-base', target === t && 'bg-primary-soft text-primary-ink')}>
+              {t === 'android' ? 'Android tablet' : t === 'apple' ? 'iPad / iPhone' : 'Windows PC'}
             </button>
           ))}
         </div>
@@ -388,7 +393,33 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
           </ol>
         )}
 
-        {target === 'choose' && <p className="mt-6 text-center text-lg text-ink-2">Which tablet is this?</p>}
+        {target === 'windows' && (installed || accepted ? (
+          <p className="mt-6 rounded-2xl bg-primary-soft p-5 text-lg font-bold text-primary-ink">✓ Done! Open <b>Bite Wise Kiosk</b> from the Start menu or the desktop. Right-click its taskbar icon and choose <b>Pin to taskbar</b> to keep it one click away.</p>
+        ) : (
+          <>
+            {promptEvent && (
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={async () => { await promptEvent.prompt(); if ((await promptEvent.userChoice).outcome === 'accepted') setAccepted(true); }}
+                  className="rounded-full bg-grad px-10 py-5 text-xl font-extrabold text-[#04130d]"
+                >
+                  <MonitorDown className="mr-2 inline size-6" />Install on this computer
+                </button>
+                <p className="mt-3 text-muted">Then click <b>Install</b> in the box that appears.</p>
+              </div>
+            )}
+            <p className={cn('mb-0 font-bold text-ink-2', promptEvent ? 'mt-6' : 'mt-6')}>{promptEvent ? 'Or do it from the browser menu:' : 'Use Microsoft Edge or Google Chrome:'}</p>
+            <ol className="mt-3 grid list-none gap-3 p-0">
+              <Step n={1}><b>Microsoft Edge:</b> click the menu <Pill><MoreHorizontal className="size-4" /></Pill> at the top right, then <b>Apps</b> → <b>Install this site as an app</b> → <b>Install</b>.</Step>
+              <Step n={2}><b>Google Chrome:</b> click the install icon <Pill><MonitorDown className="size-4" /></Pill> at the right end of the address bar (or the menu <Pill><MoreVertical className="size-4" /></Pill> → <b>Cast, save and share</b> → <b>Install page as app</b>), then <b>Install</b>.</Step>
+              <Step n={3}>Tick <b>Pin to taskbar</b>, <b>Create desktop shortcut</b> and, for a counter computer, <b>Auto-start on device login</b> if your browser offers them. Then open <b>Bite Wise Kiosk</b> from the Start menu or the desktop.</Step>
+            </ol>
+            <p className="mt-3 mb-0 text-sm text-muted">Tip: press <b>F11</b> in the kiosk window for full screen; press it again to leave.</p>
+          </>
+        ))}
+
+        {target === 'choose' && <p className="mt-6 text-center text-lg text-ink-2">Which device is this?</p>}
         <p className="mt-6 mb-0 text-sm text-muted">Keep this link private: anyone who has it can see your pickup orders. You can get a new link any time in your dashboard (Kiosk tab).</p>
       </div>
     </div>

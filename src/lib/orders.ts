@@ -1,6 +1,7 @@
 import 'server-only';
 import { after } from 'next/server';
 import type { Database } from '@/lib/database.types';
+import { isTestStripeAccount } from '@/lib/constants';
 import { AppError, check, maybe, must } from '@/lib/errors';
 import { orderInvoiceEmail } from '@/lib/email/templates';
 import { sendEmail } from '@/lib/email/send';
@@ -28,7 +29,12 @@ export async function getOrder(id: number): Promise<Order> {
 // ---------------------------------------------------------------- restaurant Connect accounts
 
 async function paymentAccount(restaurantId: number) {
-  return maybe(await db().from('restaurant_payment_accounts').select('*').eq('restaurant_id', restaurantId).maybeSingle());
+  const acct = maybe(await db().from('restaurant_payment_accounts').select('*').eq('restaurant_id', restaurantId).maybeSingle());
+  // A test-payments account (see isTestStripeAccount) is not connected once real Stripe keys are set.
+  if (acct && payments().mode !== 'mock' && isTestStripeAccount(acct.stripe_account_id)) {
+    return { ...acct, stripe_account_id: null, charges_enabled: false, payouts_enabled: false, details_submitted: false, bank_summary: '' };
+  }
+  return acct;
 }
 
 // A restaurant can receive transfers once its Stripe Connect account is active.

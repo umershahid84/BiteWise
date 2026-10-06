@@ -110,7 +110,7 @@ Requirements: Node.js 20.9+ and a Supabase database. Use a free project on supab
    SUPABASE_SECRET_KEY=sb_secret_...
    ```
 
-   Leave the Stripe keys empty to use the built-in test payments. Keep the secret key private; `.env.local` is never committed.
+   Leave the Stripe keys empty to use the built-in test payments: cards and payouts are simulated, restaurants "connect" a practice account with a test bank instantly, and there is no Stripe dashboard (the Payouts tabs say so). To go live, turn on **Connect** (Express accounts) in Stripe, set `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`, and restart; restaurants then connect their real Stripe accounts (practice connections don't carry over). Keep the secret key private; `.env.local` is never committed.
 4. **Send login emails back to your computer.** In **Authentication → URL Configuration**, set **Site URL** to `http://localhost:3000` and add `http://localhost:3000/auth/confirm` to **Redirect URLs**.
 5. **Load demo data and start:**
 
@@ -226,6 +226,7 @@ Emails 2 and 3 are sent by the app through the SMTP account in `.env.local` (`SM
 
 - **Android (Chrome):** the kiosk's **Add to home screen** button opens Chrome's install prompt (one tap to confirm).
 - **iPad / iPhone (Safari):** Apple doesn't let websites add home-screen icons themselves, so the kiosk shows the steps (Share → Add to Home Screen → Add).
+- **Windows computer (Edge or Chrome):** the kiosk offers **Install on this computer** (Edge: menu → Apps → Install this site as an app; Chrome: the install icon in the address bar). The **Bite Wise Kiosk** app then opens in its own window from the Start menu or desktop, and can be pinned to the taskbar or started at login.
 
 No website or email can put an icon on a home screen without the person confirming it. The welcome email's buttons open the kiosk with the right guide for each device.
 
