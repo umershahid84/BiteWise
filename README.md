@@ -295,4 +295,4 @@ Customer Terms, Restaurant Partner Agreement and Privacy Policy live in `src/lib
 
 ## Upgrading from the first version
 
-The original Express + SQLite app is in `legacy/` for reference. Its demo data isn't migrated: run `npm run seed` for fresh demo data. Everyone accepts the updated terms (new version) on first sign-in.
+The original Express + SQLite app is in `legacy/` for reference. Its demo data isn't migrated: run `npm run seed` for fresh demo data. Everyone accepts the updated terms (new version) on first sign-in. 
