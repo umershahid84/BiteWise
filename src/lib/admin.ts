@@ -161,7 +161,7 @@ export async function restaurants(params: URLSearchParams) {
   const rank = { pending: 0, suspended: 1, approved: 2, banned: 3, deleted: 4 };
   return rows
     .map((r) => ({
-      id: r.id, name: r.name, cuisine: r.cuisine, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone, status: r.status,
+      id: r.id, name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone, status: r.status,
       adminNote: r.admin_note, taxRateBps: r.tax_rate_bps, createdAt: r.created_at, suspendedUntil: r.suspended_until,
       // Sales tax: where the rate came from (src/lib/restaurant-tax.ts) and anything an admin should check.
       tax: {
@@ -183,13 +183,14 @@ export async function restaurants(params: URLSearchParams) {
 }
 
 export async function users(params: URLSearchParams) {
-  const role = (['customer', 'restaurant', 'admin'].includes(params.get('role') ?? '') ? params.get('role') : 'customer') as Database['public']['Enums']['user_role'];
+  const role = (['customer', 'restaurant', 'staff', 'admin'].includes(params.get('role') ?? '') ? params.get('role') : 'customer') as Database['public']['Enums']['user_role'];
   const q = (params.get('q') ?? '').trim().toLowerCase();
-  const [profiles, orders, credit, terms] = await Promise.all([
+  const [profiles, orders, credit, terms, confirmed] = await Promise.all([
     all<Database['public']['Tables']['profiles']['Row']>((a, b) => db().from('profiles').select('*').eq('role', role).neq('status', 'deleted').order('created_at', { ascending: false }).range(a, b)),
     all<{ user_id: string; status: string; total_cents: number; refunded_cents: number }>((a, b) => db().from('orders').select('user_id, status, total_cents, refunded_cents').in('status', ['picked_up', 'expired']).range(a, b)),
     all<{ user_id: string; amount_cents: number }>((a, b) => db().from('credit_ledger').select('user_id, amount_cents').range(a, b)),
     all<{ user_id: string; accepted_at: string }>((a, b) => db().from('terms_acceptances').select('user_id, accepted_at').range(a, b)),
+    confirmedUsers(),
   ]);
   return profiles
     .filter((u) => !q || `${u.email} ${u.username}`.toLowerCase().includes(q))
@@ -203,6 +204,7 @@ export async function users(params: URLSearchParams) {
         noShowStreak: u.no_show_strikes, noShowProbation: u.no_show_probation,
         creditCents: credit.filter((c) => c.user_id === u.id).reduce((n, c) => n + c.amount_cents, 0),
         termsAcceptedAt: terms.filter((t) => t.user_id === u.id).map((t) => t.accepted_at).sort().at(-1) ?? null,
+        emailConfirmed: confirmed.has(u.id), welcomeEmailSentAt: u.welcome_email_sent_at,
       };
     });
 }

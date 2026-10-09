@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signUp, validateSignup } from '@/app/actions/auth';
 import { AgreementDialog } from '@/components/app/agreement-dialog';
+import { markActive } from '@/components/app/idle-logout';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -13,14 +14,14 @@ import { Field, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { AuthTitle } from './auth-card';
 import { CheckEmail } from './check-email';
-import { cn } from '@/lib/utils';
+import { LOGIN_PATH, SIGNUP_PATH } from '@/lib/constants';
 
 type Role = 'customer' | 'restaurant';
 
-export function SignupForm({ initialRole }: { initialRole: Role }) {
+// Customers sign up at /signup and restaurants at /restaurant/signup.
+export function SignupForm({ role }: { role: Role }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [role, setRole] = useState<Role>(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<React.ReactNode>(null);
   const [agreementOpen, setAgreementOpen] = useState(false);
@@ -76,30 +77,18 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
         setSentTo(values().email.trim());
         return;
       }
+      markActive();
       router.replace(res.data.next);
       router.refresh();
     });
   };
 
-  if (sentTo) return <CheckEmail email={sentTo} />;
+  if (sentTo) return <CheckEmail email={sentTo} loginPath={LOGIN_PATH[role]} />;
 
   return (
     <>
-      <AuthTitle>Create your free account</AuthTitle>
-      <div role="tablist" className="mb-5 grid grid-cols-2 gap-1 rounded-full border border-line bg-bg-2 p-1">
-        {(['customer', 'restaurant'] as const).map((r) => (
-          <button
-            key={r}
-            type="button"
-            role="tab"
-            aria-selected={role === r}
-            onClick={() => setRole(r)}
-            className={cn('rounded-full py-2 text-sm font-bold text-muted', role === r && 'bg-primary-soft text-primary-ink')}
-          >
-            {r === 'customer' ? 'I want food' : "I'm a restaurant"}
-          </button>
-        ))}
-      </div>
+      <AuthTitle>{role === 'restaurant' ? 'Join Bite Wise' : 'Create your free account'}</AuthTitle>
+      {role === 'restaurant' && <p className="-mt-3 mb-5 text-center text-sm text-muted">Sell your surplus food to customers nearby, instead of throwing it away.</p>}
       {notice}
       <ErrorText error={error} />
       <form ref={formRef} onSubmit={onSubmit} noValidate>
@@ -132,7 +121,14 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
           {pending ? 'Please wait…' : role === 'restaurant' ? 'Create restaurant account' : 'Create account'}
         </Button>
       </form>
-      <p className="mt-4 text-center text-sm text-muted">Already have an account? <Link href="/login">Log in</Link></p>
+      <div className="mt-4 grid gap-1 text-center text-sm text-muted">
+        <p className="m-0">Already have an account? <Link href={LOGIN_PATH[role]}>Log in</Link></p>
+        <p className="m-0">
+          {role === 'restaurant'
+            ? <>Looking for food? <Link href={SIGNUP_PATH.customer}>Sign up as a customer</Link></>
+            : <>Own a restaurant? <Link href={SIGNUP_PATH.restaurant}>Join as a restaurant partner</Link></>}
+        </p>
+      </div>
       <AgreementDialog
         open={agreementOpen}
         role={role}

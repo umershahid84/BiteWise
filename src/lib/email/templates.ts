@@ -408,3 +408,56 @@ export function adminAlertEmail(o: { title: string; message: string; customer: s
     text: `${o.title}\n${o.message}\nCustomer: ${o.customer} (${o.email}). Missed pickups in total: ${o.noShowsTotal}.\nDone automatically by the platform. Review it in the owner console: ${o.consoleUrl}`,
   };
 }
+
+// Forgot password: the 6-digit code to type on the reset screen.
+export function passwordResetEmail(o: { username: string; code: string; minutes: number }) {
+  const digits = o.code.split('').map((d) => `<td style="padding:0 3px;"><div style="width:42px;height:54px;border-radius:12px;background:#F1F5F9;border:1px solid #E2E8F0;font:800 28px/54px ${FONT};color:#14284B;text-align:center;">${esc(d)}</div></td>`).join('');
+  return {
+    subject: `${o.code} is your Bite Wise password reset code`,
+    html: layout({
+      preview: `Your code is ${o.code}. It works for ${o.minutes} minutes.`,
+      emoji: '🔑',
+      title: 'Reset your password',
+      subtitle: 'Your 6-digit code',
+      body: `<p style="margin:0 0 18px;">Hi ${esc(o.username)}, enter this code on the Bite Wise reset screen, then choose your new password:</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;"><tr>${digits}</tr></table>
+        <p style="margin:0 0 10px;font-size:15px;color:#475569;">The code works for <b>${o.minutes} minutes</b> and only once. Never share it: Bite Wise will never ask you for it.</p>
+        <p style="margin:0;font-size:15px;color:#475569;">Didn't ask to reset your password? You can ignore this email; your password stays the same.</p>`,
+    }),
+    text: `Hi ${o.username}, your Bite Wise password reset code is ${o.code}. Enter it on the reset screen, then choose your new password.
+The code works for ${o.minutes} minutes and only once. Didn't ask for it? Ignore this email; your password stays the same.`,
+  };
+}
+
+// A customer who just confirmed their email: congratulations, and buttons to put Bite Wise on their phone's home screen.
+export function customerWelcomeEmail(o: { username: string; androidUrl: string; iphoneUrl: string; windowsUrl: string; dealsUrl: string }) {
+  return {
+    subject: `Congratulations, ${o.username}! You're ready to rescue food 🎉`,
+    html: layout({
+      preview: 'Your Bite Wise account is confirmed. Put Bite Wise on your phone in one tap.',
+      emoji: '🎉',
+      title: `Congratulations, ${esc(o.username)}!`,
+      subtitle: 'Your account is confirmed',
+      body: `<p style="margin:0 0 14px;">Welcome to Bite Wise! Restaurants near you post their surplus food at big discounts, and you pick it up before it goes to waste.</p>
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:18px;padding:22px 22px 16px;">
+          <h2 style="margin:0 0 6px;font:800 19px ${FONT};color:#14284B;">📲 Get Bite Wise on your phone</h2>
+          <p style="margin:0 0 16px;font:15px/1.55 ${FONT};color:#475569;">Open this email on your phone and tap your phone below. A <b>Bite Wise</b> icon appears on
+            your home screen, so the best deals near you are always one tap away.</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td width="33%" style="padding:0 4px 8px 0;">${button(o.androidUrl, '🤖 Android', '#3E8230')}</td>
+            <td width="34%" style="padding:0 4px 8px;">${button(o.iphoneUrl, '📱 iPhone', '#14284B')}</td>
+            <td width="33%" style="padding:0 0 8px 4px;">${button(o.windowsUrl, '🪟 Windows', '#0F6CBD')}</td>
+          </tr></table>
+        </div>
+        <p style="margin:22px 0 10px;">How it works: find a deal, order and pay in the app, then show your 4-digit PIN at the restaurant. Your card is only charged when you pick up.</p>
+        <div style="padding:6px 0 0;">${button(o.dealsUrl, 'Find deals near me', '#14284B')}</div>`,
+    }),
+    text: `Congratulations, ${o.username}! Your Bite Wise account is confirmed.
+Get Bite Wise on your phone (open this on your phone):
+Android: ${o.androidUrl}
+iPhone: ${o.iphoneUrl}
+Windows: ${o.windowsUrl}
+
+Find deals near you: ${o.dealsUrl}`,
+  };
+}

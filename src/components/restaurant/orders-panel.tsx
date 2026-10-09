@@ -8,7 +8,8 @@ import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { fmtDateTime, money } from '@/lib/format';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
-export function OrdersPanel({ restaurantId }: { restaurantId: number }) {
+// Staff (`showMoney` false) see the orders to hand over, without sales amounts.
+export function OrdersPanel({ restaurantId, showMoney = true }: { restaurantId: number; showMoney?: boolean }) {
   const supabase = supabaseBrowser();
   const { data, isLoading } = useQuery({
     queryKey: ['restaurant-orders'],
@@ -20,7 +21,7 @@ export function OrdersPanel({ restaurantId }: { restaurantId: number }) {
   return (
     <Card className="p-2">
       <Table>
-        <thead><tr><th>#</th><th>Item</th><th>Customer</th><th>Food sales</th><th>Total charged</th><th>Status</th><th>When</th></tr></thead>
+        <thead><tr><th>#</th><th>Item</th><th>Customer</th>{showMoney && <><th>Food sales</th><th>Total charged</th></>}<th>Status</th><th>When</th></tr></thead>
         <tbody>
           {data.map((o) => (
             <tr key={o.id}>
@@ -35,8 +36,7 @@ export function OrdersPanel({ restaurantId }: { restaurantId: number }) {
                 </div>
               </td>
               <td>{o.customer_username}</td>
-              <td>{money(o.subtotal_cents)}</td>
-              <td>{money(o.total_cents)}</td>
+              {showMoney && <><td>{money(o.subtotal_cents)}</td><td>{money(o.total_cents)}</td></>}
               <td><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} /></td>
               <td className="text-xs whitespace-nowrap">{fmtDateTime(o.picked_up_at ?? o.created_at)}</td>
             </tr>

@@ -8,14 +8,16 @@ import { confirmationEmail, sendsOwnConfirmation } from '@/lib/email/confirmatio
 import { sendEmail } from '@/lib/email/send';
 import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
-import { homeFor } from '@/lib/constants';
+import { homeFor, loginFor, PORTAL_NAMES, portalFor } from '@/lib/constants';
 import { action, AppError, fromDb } from '@/lib/errors';
+import { sendCustomerWelcome } from '@/lib/customer-welcome';
+import { requestPasswordReset, resetPassword } from '@/lib/password-reset';
 import { locateRestaurant } from '@/lib/restaurant-location';
 import { refreshRestaurantTax } from '@/lib/restaurant-tax';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
-import { parse, signupSchema } from '@/lib/validate';
+import { parse, passwordSchema, signupSchema } from '@/lib/validate';
 import { z } from 'zod';
 
 async function requestInfo() {
@@ -136,6 +138,7 @@ export async function signUp(input: unknown) {
     if (error) throw signupError(error);
     if (data.role === 'restaurant' && res.user) await lookUpTax(res.user.id);
     // With email confirmation off, the email counts as confirmed at once: send the restaurant's onboarding email now.
+    if (res.session && data.role === 'customer' && res.user) await sendCustomerWelcome(res.user.id).catch((err) => console.error('customer welcome email:', err));
     if (res.session && data.role === 'restaurant' && res.user) {
       const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', res.user.id).maybeSingle();
       if (r) await sendOnboardingEmails(r.id);
@@ -148,12 +151,17 @@ export async function signUp(input: unknown) {
 const untilText = (until: string | null | undefined) =>
   until ? ` until ${new Date(until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: serverEnv.timeZone })}` : '';
 
-const loginSchema = z.object({ login: z.string().trim().min(1, 'Enter your email or user name.'), password: z.string().min(1, 'Enter your password.') });
+const loginSchema = z.object({
+  login: z.string().trim().min(1, 'Enter your email or user name.'),
+  password: z.string().min(1, 'Enter your password.'),
+  // The log-in page used: customers, restaurant partners (owners and staff) and admins each have their own.
+  portal: z.enum(['customer', 'restaurant', 'admin']).optional(),
+});
 
 // Log in with an email address or a user name.
 export async function signIn(input: unknown) {
   return action(async () => {
-    const { login, password } = parse(loginSchema, input);
+    const { login, password, portal } = parse(loginSchema, input);
     let email = login.toLowerCase();
     if (!login.includes('@')) {
       const { data } = await supabaseAdmin().from('profiles').select('email').eq('username', login).maybeSingle();
@@ -165,8 +173,9 @@ export async function signIn(input: unknown) {
       if (error.status === 429) throw new AppError(429, 'Too many attempts. Please wait a few minutes and try again.');
       if (/banned/i.test(error.message)) {
         // Supabase calls suspensions and bans both "banned"; the profile says which.
-        const { data: p } = await supabaseAdmin().from('profiles').select('status, suspended_until').eq('email', email).maybeSingle();
+        const { data: p } = await supabaseAdmin().from('profiles').select('status, suspended_until, role').eq('email', email).maybeSingle();
         if (p?.status === 'banned') throw new AppError(403, BANNED);
+        if (p?.role === 'staff') throw new AppError(403, 'Your restaurant owner has paused your account. Ask them to turn it back on.');
         throw new AppError(403, `This account has been suspended${untilText(p?.suspended_until)}. Contact Bite Wise support for help.`);
       }
       if (/not confirmed/i.test(error.message)) throw new AppError(403, 'Please confirm your email address first. Check your inbox for the link.');
@@ -182,6 +191,21 @@ export async function signIn(input: unknown) {
       await supabase.auth.signOut();
       if (profile?.status === 'banned') throw new AppError(403, BANNED);
       throw new AppError(403, `This account has been suspended${untilText(profile?.status === 'suspended' ? profile.suspended_until : null)}. Contact Bite Wise support for help.`);
+    }
+    // Staff can't log in while their restaurant is banned or deleted.
+    if (profile.role === 'staff') {
+      const { data: job } = await supabaseAdmin().from('restaurant_staff').select('restaurants(status)').eq('user_id', data.user.id).maybeSingle();
+      const st = job?.restaurants?.status;
+      if (!st || st === 'banned' || st === 'deleted') {
+        await supabase.auth.signOut();
+        throw new AppError(403, 'This restaurant is no longer on Bite Wise, so its staff accounts are closed.');
+      }
+    }
+    // An account logging in on another kind of account's page is sent to its own page.
+    const own = portalFor(profile.role);
+    if (portal && own !== portal) {
+      await supabase.auth.signOut();
+      throw new AppError(403, `This log-in page is for ${PORTAL_NAMES[portal]} accounts. Please use the ${PORTAL_NAMES[own]} log-in page.`, `portal:${own}`);
     }
     return { next: homeFor(profile.role) };
   });
@@ -242,5 +266,40 @@ export async function acceptUpdatedTerms(accepted: Record<string, string>) {
     const err = fromDb((await supabase.rpc('accept_terms', { p_accepted: accepted, p_ip: ip, p_user_agent: userAgent })).error);
     if (err) throw err;
     return null;
+  });
+}
+
+// ---------------------------------------------------------------- forgot password (src/lib/password-reset.ts)
+
+export async function forgotPassword(input: unknown) {
+  return action(async () => {
+    const { login } = parse(z.object({ login: z.string().trim().min(3, 'Enter your email address.').max(254) }), input);
+    await requestPasswordReset(login);
+    return null;
+  });
+}
+
+const resetSchema = z.object({
+  login: z.string().trim().min(3).max(254),
+  code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from the email.'),
+  password: passwordSchema,
+  confirm: z.string(),
+}).refine((d) => d.password === d.confirm, { message: 'The two passwords don\'t match.', path: ['confirm'] });
+
+export async function resetPasswordWithCode(input: unknown) {
+  return action(async () => {
+    const d = parse(resetSchema, input);
+    const portal = await resetPassword(d.login, d.code, d.password);
+    return { portal };
+  });
+}
+
+// Log out without leaving the page (the idle timer); returns the account's log-in page.
+export async function logOut() {
+  return action(async () => {
+    const viewer = await getViewer();
+    const supabase = await supabaseServer();
+    await supabase.auth.signOut();
+    return { login: loginFor(viewer?.role) };
   });
 }

@@ -1,6 +1,5 @@
 'use server';
 
-import { randomBytes } from 'node:crypto';
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { requireRestaurant } from '@/lib/auth';
@@ -11,11 +10,14 @@ import { action, AppError, check, maybe, must } from '@/lib/errors';
 import { payments } from '@/lib/payments';
 import * as orders from '@/lib/orders';
 import { locateRestaurant } from '@/lib/restaurant-location';
+import { importMenu, parseImportInput, parsePreviewInput, previewFromSpreadsheet, previewFromWebsite } from '@/lib/menu-import';
+import { storePhoto } from '@/lib/photos';
 import { refreshRestaurantTax } from '@/lib/restaurant-tax';
+import { createStaff, listStaff, removeStaff, updateStaff } from '@/lib/staff';
 import * as subscriptions from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
-import { menuItemSchema, parse, restaurantProfileSchema, zipSchema } from '@/lib/validate';
+import { menuItemSchema, parse, passwordSchema, restaurantProfileSchema, usernameSchema, zipSchema } from '@/lib/validate';
 
 // ---------------------------------------------------------------- pickup
 
@@ -30,7 +32,7 @@ const pinSchema = z.string().trim().regex(/^\d{4}$/, 'Enter the 4-digit PIN.');
 // Finds the open order for a PIN. Wrong PINs are counted (15 in 10 minutes locks lookups).
 export async function lookupPickup(pin: string) {
   return action(async () => {
-    await requireRestaurant();
+    await requireRestaurant({ staff: true });
     const supabase = await supabaseServer();
     const order = maybe(await supabase.rpc('restaurant_find_pickup', { p_pin: parse(pinSchema, pin) }));
     if (!order) throw new AppError(404, 'No order awaiting pickup matches that PIN.');
@@ -41,7 +43,7 @@ export async function lookupPickup(pin: string) {
 // Hands over the food: the customer's card is charged now and the restaurant is paid through Stripe Connect.
 export async function confirmPickup(pin: string, orderId: number) {
   return action(async () => {
-    await requireRestaurant();
+    await requireRestaurant({ staff: true });
     const supabase = await supabaseServer();
     const claimed = must(await supabase.rpc('restaurant_begin_pickup', { p_pin: parse(pinSchema, pin), p_order_id: orderId })) as unknown as {
       id: number; paymentRef: string | null; destinationAccount: string | null;
@@ -54,28 +56,10 @@ export async function confirmPickup(pin: string, orderId: number) {
 
 // ---------------------------------------------------------------- menu
 
-const MAX_PHOTO = 3 * 1024 * 1024;
-
-// Only JPEG, PNG or WebP, checked by file signature (not just the name or declared type).
-function detectImage(buf: Buffer): { ext: string; type: string } | null {
-  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return { ext: 'jpg', type: 'image/jpeg' };
-  if (buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return { ext: 'png', type: 'image/png' };
-  if (buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP') return { ext: 'webp', type: 'image/webp' };
-  return null;
-}
-
 async function uploadPhoto(restaurantId: number, dataUrl: string) {
   const m = /^data:image\/(?:jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
   if (!m) throw new AppError(400, 'Please choose a JPEG, PNG or WebP photo.');
-  const buf = Buffer.from(m[1], 'base64');
-  if (buf.length > MAX_PHOTO) throw new AppError(400, 'Photo is too large (max 3 MB).');
-  const kind = detectImage(buf);
-  if (!kind) throw new AppError(400, 'Please choose a JPEG, PNG or WebP photo.');
-  const path = `${restaurantId}/${randomBytes(12).toString('hex')}.${kind.ext}`;
-  const storage = supabaseAdmin().storage.from('food-photos');
-  const { error } = await storage.upload(path, buf, { contentType: kind.type, cacheControl: '31536000', upsert: false });
-  if (error) throw new AppError(500, 'Could not save the photo. Please try again.');
-  return storage.getPublicUrl(path).data.publicUrl;
+  return storePhoto(restaurantId, Buffer.from(m[1], 'base64'));
 }
 
 const menuInput = menuItemSchema.extend({
@@ -86,7 +70,7 @@ const menuInput = menuItemSchema.extend({
 
 export async function saveMenuItem(input: unknown) {
   return action(async () => {
-    const { restaurant } = await requireRestaurant();
+    const { restaurant } = await requireRestaurant({ staff: true });
     const data = parse(menuInput, input);
     const supabase = await supabaseServer();
     // Old photos are kept because existing offers and orders may still show them.
@@ -293,5 +277,65 @@ export async function removePlanCard(cardId: number) {
     const { restaurant } = await requireRestaurant();
     await subscriptions.removeCard(restaurant.id, parse(z.number().int().positive(), cardId));
     return null;
+  });
+}
+
+// ---------------------------------------------------------------- staff accounts (owner only; src/lib/staff.ts)
+
+const staffFields = z.object({
+  fullName: z.string().trim().min(2, 'Enter their name.').max(80),
+  title: z.enum(['Manager', 'Supervisor']),
+});
+
+export async function getStaff() {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    return listStaff(restaurant.id);
+  });
+}
+
+export async function addStaff(input: unknown) {
+  return action(async () => {
+    const { viewer, restaurant } = await requireRestaurant();
+    const d = parse(staffFields.extend({ username: usernameSchema, password: passwordSchema }), input);
+    await createStaff(restaurant.id, viewer.id, d);
+    return null;
+  });
+}
+
+export async function editStaff(input: unknown) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    const d = parse(staffFields.extend({
+      userId: z.string().uuid(), password: z.union([z.literal(''), passwordSchema]).optional(), active: z.boolean().optional(),
+    }), input);
+    await updateStaff(restaurant.id, d.userId, { fullName: d.fullName, title: d.title, password: d.password || undefined, active: d.active });
+    return null;
+  });
+}
+
+export async function deleteStaff(userId: string) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant();
+    await removeStaff(restaurant.id, parse(z.string().uuid(), userId));
+    return null;
+  });
+}
+
+// ---------------------------------------------------------------- menu import (src/lib/menu-import)
+
+export async function previewMenuImport(input: unknown) {
+  return action(async () => {
+    await requireRestaurant({ staff: true });
+    const d = parsePreviewInput(input);
+    return d.kind === 'website' ? previewFromWebsite(d.url) : previewFromSpreadsheet(d.text);
+  });
+}
+
+export async function importMenuItems(input: unknown) {
+  return action(async () => {
+    const { restaurant } = await requireRestaurant({ staff: true });
+    const d = parseImportInput(input);
+    return importMenu(restaurant.id, d.items, { updateExisting: d.updateExisting });
   });
 }

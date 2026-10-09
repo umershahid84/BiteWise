@@ -238,7 +238,7 @@ export default function AboutPage() {
         <p className="mx-auto max-w-[680px] font-semibold text-ink">Thank you for being part of it, in the United States and in Canada. Take only what you can eat, and enjoy every bite.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Link href="/signup" className={buttonVariants({ size: 'lg' })}>Find food near me →</Link>
-          <Link href="/signup?role=restaurant" className={buttonVariants({ size: 'lg', variant: 'ghost' })}>Partner with us</Link>
+          <Link href="/restaurant/signup" className={buttonVariants({ size: 'lg', variant: 'ghost' })}>Partner with us</Link>
         </div>
         <p className="mt-6 text-sm text-muted">Umer, Arham &amp; Shaheer · Founders of Bite Wise</p>
       </section>

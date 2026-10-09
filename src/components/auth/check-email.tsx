@@ -10,7 +10,7 @@ import { AuthTitle } from './auth-card';
 const WAIT_SECONDS = 60; // Supabase allows one confirmation email a minute per address
 
 // Shown after sign-up when the account still needs its email confirmed.
-export function CheckEmail({ email }: { email: string }) {
+export function CheckEmail({ email, loginPath = '/login' }: { email: string; loginPath?: string }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
@@ -42,7 +42,7 @@ export function CheckEmail({ email }: { email: string }) {
         <Button block variant="ghost" disabled={pending || wait > 0} onClick={resend}>
           {pending ? 'Sending…' : wait > 0 ? `Resend confirmation email (${wait}s)` : 'Resend confirmation email'}
         </Button>
-        <Link href="/login" className={buttonVariants({ block: true })}>Back to login</Link>
+        <Link href={loginPath} className={buttonVariants({ block: true })}>Back to login</Link>
       </div>
     </div>
   );

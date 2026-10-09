@@ -450,6 +450,8 @@ export type DocumentId = keyof typeof DOCUMENTS;
 export const REQUIRED: Record<Exclude<Role, 'admin'>, DocumentId[]> = {
   customer: ['customer-terms', 'privacy'],
   restaurant: ['restaurant-agreement', 'privacy'],
+  // Staff work under their restaurant's agreement, accepted by the owner.
+  staff: [],
 };
 
 export type LegalDocument = { id: DocumentId; title: string; version: string; effective: string; html: string };

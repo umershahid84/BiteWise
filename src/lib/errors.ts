@@ -55,13 +55,13 @@ export function check(res: { error: { code?: string; message: string } | null })
 }
 
 // Server Actions return errors as values: thrown errors are hidden in production builds.
-export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error: string; status: number };
+export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error: string; status: number; code?: string };
 
 export async function action<T>(fn: () => Promise<T>): Promise<ActionResult<T>> {
   try {
     return { ok: true, data: await fn() };
   } catch (err) {
-    if (err instanceof AppError) return { ok: false, error: err.message, status: err.status };
+    if (err instanceof AppError) return { ok: false, error: err.message, status: err.status, ...(err.code ? { code: err.code } : {}) };
     // redirect() and notFound() work by throwing; let Next.js handle them.
     if (err && typeof err === 'object' && 'digest' in err && String((err as { digest: unknown }).digest).startsWith('NEXT_')) throw err;
     console.error(err);

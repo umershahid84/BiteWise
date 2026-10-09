@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { log } from '@/lib/admin';
 import { requireActor } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
+import { updateAccount, updateRestaurantDetails } from '@/lib/admin-edit';
+import { importMenu, parseImportInput, parsePreviewInput, previewFromSpreadsheet, previewFromWebsite } from '@/lib/menu-import';
+import { sendCustomerWelcome } from '@/lib/customer-welcome';
 import * as feeChanges from '@/lib/fee-changes';
 import * as moderation from '@/lib/moderation';
 import * as subscriptions from '@/lib/subscriptions';
@@ -15,7 +18,7 @@ import { parseStates } from '@/lib/subscriptions';
 import { stateByCode } from '@/lib/tax/states';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { dollars, int, parse, taxRateSchema } from '@/lib/validate';
+import { dollars, emailSchema, int, parse, restaurantFieldsSchema, taxRateSchema, usernameSchema } from '@/lib/validate';
 
 // Owner console actions. Every action checks for an admin session and is written to the audit log.
 const db = () => supabaseAdmin();
@@ -342,5 +345,72 @@ export async function setRestaurantTaxRate(input: unknown) {
     await setManualTaxRate(d.restaurantId, rateBps, d.jurisdiction);
     await log(me.id, 'restaurant.tax_manual', 'restaurant', d.restaurantId, `${rateBps} bps${d.jurisdiction ? ` · ${d.jurisdiction}` : ''}`);
     return null;
+  });
+}
+
+// ---------------------------------------------------------------- editing account details (src/lib/admin-edit.ts)
+
+export async function updateUserAccount(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(z.object({ id: z.string().uuid(), email: emailSchema, username: usernameSchema }), input);
+    const changed = await updateAccount(d.id, { email: d.email, username: d.username });
+    if (changed.length) await log(me.id, 'user.update', 'user', d.id, changed.join('; '));
+    return { changed: changed.length };
+  });
+}
+
+// A restaurant's details and its owner's email and user name.
+export async function updateRestaurant(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const d = parse(restaurantFieldsSchema.pick({ name: true, address: true, city: true, state: true, zip: true, phone: true, cuisine: true }).extend({
+      id: z.number().int(), description: z.string().trim().max(400).default(''), ownerEmail: emailSchema, ownerUsername: usernameSchema,
+    }), input);
+    const r = must(await db().from('restaurants').select('owner_id').eq('id', d.id).single());
+    const owner = await updateAccount(r.owner_id, { email: d.ownerEmail, username: d.ownerUsername });
+    const details = await updateRestaurantDetails(d.id, {
+      name: d.name, cuisine: d.cuisine, description: d.description, address: d.address, city: d.city, state: d.state, zip: d.zip, phone: d.phone,
+    });
+    const changed = [...details, ...owner];
+    if (changed.length) await log(me.id, 'restaurant.update', 'restaurant', d.id, changed.join('; '));
+    return { changed: changed.length };
+  });
+}
+
+// The customer congratulations email with the phone app buttons (src/lib/customer-welcome.ts), sent again.
+export async function sendCustomerWelcomeEmail(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const { id } = parse(z.object({ id: z.string().uuid() }), input);
+    const res = await sendCustomerWelcome(id, { resend: true });
+    if (!res.sent) {
+      const why = { not_found: 'Account not found.', not_customer: 'Only customers get this email.', not_confirmed: `${res.to} hasn't confirmed their email yet. The welcome email is sent once they do.`, already_sent: '', failed: `The email to ${res.to} couldn't be sent. Check the email settings (SMTP).` };
+      throw new AppError(409, why[res.reason]);
+    }
+    await log(me.id, 'user.welcome_email', 'user', id, `sent to ${res.to}`);
+    return { to: res.to };
+  });
+}
+
+// ---------------------------------------------------------------- menu import for a restaurant (src/lib/menu-import)
+
+export async function adminPreviewMenuImport(input: unknown) {
+  return action(async () => {
+    await requireActor('admin');
+    const d = parsePreviewInput(input);
+    return d.kind === 'website' ? previewFromWebsite(d.url) : previewFromSpreadsheet(d.text);
+  });
+}
+
+export async function adminImportMenu(input: unknown) {
+  return action(async () => {
+    const me = await requireActor('admin');
+    const { restaurantId } = parse(z.object({ restaurantId: z.number().int() }), { restaurantId: (input as { restaurantId?: unknown })?.restaurantId });
+    const d = parseImportInput(input);
+    const r = must(await db().from('restaurants').select('name').eq('id', restaurantId).neq('status', 'deleted').single());
+    const res = await importMenu(restaurantId, d.items, { updateExisting: d.updateExisting });
+    await log(me.id, 'restaurant.menu_import', 'restaurant', restaurantId, `${r.name}: ${res.added} added, ${res.updated} updated, ${res.skipped} skipped`);
+    return res;
   });
 }

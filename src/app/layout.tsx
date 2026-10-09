@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import { IdleLogout } from '@/components/app/idle-logout';
 import { Providers } from '@/components/app/providers';
 import { SiteFooter } from '@/components/app/site-footer';
 import { SiteHeader } from '@/components/app/site-header';
@@ -39,6 +40,10 @@ const plexMono = localFont({
 export const metadata: Metadata = {
   title: { default: 'Bite Wise: Rescue good food, save money', template: '%s · Bite Wise' },
   description: 'Bite Wise: rescue good restaurant food at a discount near you, across the United States and Canada.',
+  // Lets customers put Bite Wise on their phone's home screen (/app). The kiosk has its own manifest.
+  manifest: '/app.webmanifest',
+  appleWebApp: { capable: true, title: 'Bite Wise', statusBarStyle: 'black-translucent' },
+  icons: { apple: '/assets/apple-touch-icon.png' },
 };
 
 export const viewport: Viewport = { themeColor: '#07110d' };
@@ -52,7 +57,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <SiteHeader viewer={viewer && { username: viewer.username, role: viewer.role, restaurantName: viewer.restaurant?.name ?? null, creditCents: viewer.creditCents }} />
           <div className="flex-1">{children}</div>
           <SiteFooter />
-          {viewer && viewer.role !== 'admin' && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
+          {viewer && <IdleLogout />}
+          {viewer && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
         </Providers>
       </body>
     </html>

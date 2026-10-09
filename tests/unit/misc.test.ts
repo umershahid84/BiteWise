@@ -68,3 +68,13 @@ describe('test-payments Stripe accounts', async () => {
     expect(isTestStripeAccount(null)).toBe(false);
   });
 });
+
+describe('log-in pages', async () => {
+  const { homeFor, loginFor, loginForPath, portalFor } = await import('@/lib/constants');
+  it('send each kind of account to its own log-in page and home', () => {
+    expect([portalFor('customer'), portalFor('restaurant'), portalFor('staff'), portalFor('admin'), portalFor(null)]).toEqual(['customer', 'restaurant', 'restaurant', 'admin', 'customer']);
+    expect([loginFor('staff'), loginFor('admin'), loginFor('customer')]).toEqual(['/restaurant/login', '/admin/login', '/login']);
+    expect([loginForPath('/restaurant/report'), loginForPath('/admin'), loginForPath('/orders/3')]).toEqual(['/restaurant/login', '/admin/login', '/login']);
+    expect(homeFor('staff')).toBe('/restaurant');
+  });
+});

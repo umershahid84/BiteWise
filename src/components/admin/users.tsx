@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { deleteUser, issueCredit, setUserStatus } from '@/app/actions/admin';
+import { deleteUser, issueCredit, sendCustomerWelcomeEmail, setUserStatus, updateUserAccount } from '@/app/actions/admin';
 import { ErrorText } from '@/components/ui/alert';
-import { StatusBadge } from '@/components/ui/badge';
+import { Badge, StatusBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -18,7 +18,7 @@ import { day, run, TableHead, useAdmin } from './shared';
 
 type User = {
   id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number; noShowStreak: number; noShowProbation: boolean;
-  noShows: number; creditCents: number; termsAcceptedAt: string | null;
+  noShows: number; creditCents: number; termsAcceptedAt: string | null; emailConfirmed: boolean; welcomeEmailSentAt: string | null;
 };
 
 export function UsersPanel({ adminId }: { adminId: string }) {
@@ -29,6 +29,7 @@ export function UsersPanel({ adminId }: { adminId: string }) {
   const [suspendFor, setSuspendFor] = useState<User | null>(null);
   const [deleteFor, setDeleteFor] = useState<User | null>(null);
   const [banFor, setBanFor] = useState<User | null>(null);
+  const [editFor, setEditFor] = useState<User | null>(null);
   const { data, isLoading } = useAdmin<User[]>(['users', role, q], 'users', { role, q });
   const pager = usePager(data ?? [], `${role}|${q}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -41,11 +42,11 @@ export function UsersPanel({ adminId }: { adminId: string }) {
       <div className="mb-4 flex flex-wrap gap-3">
         <Input className="max-w-sm" placeholder="Search email or user name" value={q} onChange={(e) => setQ(e.target.value)} />
         <Select className="max-w-52" value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="customer">Customers</option><option value="restaurant">Restaurant owners</option><option value="admin">Admins</option>
+          <option value="customer">Customers</option><option value="restaurant">Restaurant owners</option><option value="staff">Restaurant staff</option><option value="admin">Admins</option>
         </Select>
       </div>
       <Card className="p-2">
-        <TableHead title={role === 'restaurant' ? 'Restaurant owners' : role === 'admin' ? 'Admins' : 'Customers'} kind="users" params={{ role, q }} what="these accounts" />
+        <TableHead title={role === 'restaurant' ? 'Restaurant owners' : role === 'staff' ? 'Restaurant staff' : role === 'admin' ? 'Admins' : 'Customers'} kind="users" params={{ role, q }} what="these accounts" />
         {isLoading ? <div className="grid place-items-center py-10"><Spinner /></div> : (
           <>
             <PagerBar pager={pager} label="accounts" />
@@ -54,7 +55,11 @@ export function UsersPanel({ adminId }: { adminId: string }) {
               <tbody>
                 {pager.rows.map((u) => (
                   <tr key={u.id}>
-                    <td><b>{u.username}</b><div className="text-xs text-muted">{u.email} · joined {day(u.createdAt)}</div></td>
+                    <td>
+                      <b>{u.username}</b><div className="text-xs text-muted">{u.role === 'staff' ? 'staff account (no email)' : u.email} · joined {day(u.createdAt)}</div>
+                      {u.role !== 'staff' && !u.emailConfirmed && <Badge tone="amber">Email not confirmed</Badge>}
+                      {u.role === 'customer' && u.emailConfirmed && <div className="text-xs text-muted">{u.welcomeEmailSentAt ? `Welcome email sent ${day(u.welcomeEmailSentAt)}` : 'Welcome email not sent'}</div>}
+                    </td>
                     <td>{u.orders}</td><td>{money(u.spentCents)}</td>
                     <td>
                       {u.noShows}
@@ -69,6 +74,7 @@ export function UsersPanel({ adminId }: { adminId: string }) {
                     </td>
                     <td className="whitespace-nowrap">
                       <div className="flex gap-1.5">
+                        {u.role !== 'staff' && <Button size="sm" variant="ghost" onClick={() => setEditFor(u)}>Edit</Button>}
                         {u.role === 'customer' && u.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
                         {u.id !== adminId && (u.status === 'active'
                           ? <Button size="sm" variant="danger" onClick={() => setSuspendFor(u)}>Suspend</Button>
@@ -85,6 +91,9 @@ export function UsersPanel({ adminId }: { adminId: string }) {
           </>
         )}
       </Card>
+      <Dialog open={!!editFor} onOpenChange={(o) => !o && setEditFor(null)}>
+        {editFor && <EditForm user={editFor} onDone={() => { setEditFor(null); refresh(); }} />}
+      </Dialog>
       <Dialog open={!!creditFor} onOpenChange={(o) => !o && setCreditFor(null)}>
         {creditFor && <CreditForm user={creditFor} onDone={() => { setCreditFor(null); refresh(); }} />}
       </Dialog>
@@ -98,6 +107,44 @@ export function UsersPanel({ adminId }: { adminId: string }) {
         {deleteFor && <DeleteForm user={deleteFor} onDone={() => { setDeleteFor(null); refresh(); }} />}
       </Dialog>
     </>
+  );
+}
+
+// Corrects an account's email address or user name, and sends a customer's welcome email again.
+function EditForm({ user, onDone }: { user: User; onDone: () => void }) {
+  const [email, setEmail] = useState(user.email);
+  const [username, setUsername] = useState(user.username);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    const res = await updateUserAccount({ id: user.id, email, username });
+    setBusy(false);
+    if (!res.ok) return setError(res.error);
+    toast.success(res.data.changed ? `${username} is updated.` : 'Nothing changed.');
+    onDone();
+  };
+  const welcome = async () => {
+    setBusy(true);
+    const res = await sendCustomerWelcomeEmail({ id: user.id });
+    setBusy(false);
+    if (!res.ok) return setError(res.error);
+    toast.success(`Welcome email sent to ${res.data.to}.`);
+    onDone();
+  };
+  return (
+    <DialogContent title={`Edit ${user.username}`} description="A new email address counts as confirmed: you're vouching for it. The user logs in with the new email or user name from now on.">
+      <Field label="Email address" htmlFor="e-email"><Input id="e-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+      <Field label="User name" htmlFor="e-username" hint="3–24 characters: letters, numbers, dots or underscores."><Input id="e-username" value={username} onChange={(e) => setUsername(e.target.value)} /></Field>
+      <ErrorText error={error} />
+      <Button block disabled={busy} onClick={save}>Save changes</Button>
+      {user.role === 'customer' && (
+        <Button block variant="ghost" className="mt-2" disabled={busy || email !== user.email} onClick={welcome}
+          title={email !== user.email ? 'Save the new email address first' : undefined}>
+          {user.welcomeEmailSentAt ? 'Resend welcome email' : 'Send welcome email'}
+        </Button>
+      )}
+    </DialogContent>
   );
 }
 

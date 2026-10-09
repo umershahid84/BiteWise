@@ -1,6 +1,7 @@
 // Populates Supabase with demo accounts, menus, live offers and two weeks of order history around
 // greater Seattle. Usage: npm run seed   (run `npm run db:reset` first for a clean database).
 // Existing demo accounts are reused; each run posts a fresh set of live offers.
+import { randomBytes } from 'node:crypto';
 import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/lib/database.types';
@@ -236,6 +237,17 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
     }).eq('id', ids[u]).select('id'), 'approve');
   }
 
+  // A staff account (a manager) for Harbor Pho House: logs in at /restaurant/login as harborpho.manager.
+  if (!(await db.from('profiles').select('id').eq('username', 'harborpho.manager').maybeSingle()).data) {
+    const token = randomBytes(32).toString('hex');
+    must(await db.from('staff_invites').insert({ token, restaurant_id: ids.harborpho, full_name: 'Linh Tran', title: 'Manager' }).select('token'), 'staff invite');
+    const res = await db.auth.admin.createUser({
+      email: `harborpho.manager.${randomBytes(4).toString('hex')}@staff.bitewise.invalid`, password: DEMO_PASSWORD, email_confirm: true,
+      user_metadata: { username: 'harborpho.manager', staff_invite: token },
+    });
+    if (res.error) throw new Error(`staff: ${res.error.message}`);
+  }
+
   // Plans: the Seattle demo restaurants are on the annual plan and the others on the monthly plan (mock payments),
   // each with a test card on file.
   // Demo restaurants never take one of the free Pioneer Member spots, which are kept for real restaurants.
@@ -355,6 +367,7 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
   console.log('Seeded demo data.');
   console.log(`  Customer login:    demo / ${DEMO_PASSWORD}`);
   console.log(`  Owner/admin login: admin / ${DEMO_PASSWORD}  (demo only: create your real one with npm run create-admin)`);
+  console.log(`  Restaurant staff login (password ${DEMO_PASSWORD}, at /restaurant/login): harborpho.manager`);
   console.log(`  Restaurant logins (password ${DEMO_PASSWORD}):`);
   console.log(`    Seattle/Eastside (Stripe connected): ${RESTAURANTS.map((r) => r.user).join(', ')}`);
   console.log(`    Around the region: ${REGIONAL.map((r) => `${r[0]} (${r[4]})`).join(', ')}`);

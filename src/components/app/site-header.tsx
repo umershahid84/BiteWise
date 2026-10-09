@@ -52,12 +52,13 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         <span className="px-2 text-sm text-muted">Owner · {viewer.username}</span>
       </>
     );
-  } else if (viewer.role === 'restaurant') {
+  } else if (viewer.role === 'restaurant' || viewer.role === 'staff') {
+    // Staff (managers, supervisors) don't see sales reports.
     links = (
       <>
         <NavLink href="/restaurant" onClick={close} exact>Dashboard</NavLink>
-        <NavLink href="/restaurant/report" onClick={close}>Daily report</NavLink>
-        <span className="px-2 text-sm text-muted">{viewer.restaurantName ?? viewer.username}</span>
+        {viewer.role === 'restaurant' && <NavLink href="/restaurant/report" onClick={close}>Daily report</NavLink>}
+        <span className="px-2 text-sm text-muted">{viewer.restaurantName ?? viewer.username}{viewer.role === 'staff' && ` · ${viewer.username}`}</span>
       </>
     );
   } else {
@@ -66,7 +67,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         <NavLink href="/offers" onClick={close}>Browse deals</NavLink>
         <NavLink href="/orders" onClick={close}>My orders</NavLink>
         <NavLink href="/account" onClick={close}>Account</NavLink>
-        <NavLink href="/about" onClick={close}>About us</NavLink>
+        <NavLink href="/app" onClick={close}>Get the app</NavLink>
         {viewer.creditCents > 0 && (
           <Link
             href="/account#credit"

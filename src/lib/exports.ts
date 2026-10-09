@@ -80,7 +80,7 @@ async function restaurantsReport(p: URLSearchParams): Promise<Report> {
 async function usersReport(p: URLSearchParams): Promise<Report> {
   const rows = await admin.users(p);
   const role = p.get('role') || 'customer';
-  const who = role === 'restaurant' ? 'Restaurant owners' : role === 'admin' ? 'Admins' : 'Customers';
+  const who = role === 'restaurant' ? 'Restaurant owners' : role === 'staff' ? 'Restaurant staff' : role === 'admin' ? 'Admins' : 'Customers';
   return {
     file: who.toLowerCase().replace(/ /g, '-'),
     title: who,

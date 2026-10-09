@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { LOGIN_PATH, loginForPath } from '@/lib/constants';
 import { publicEnv } from '@/lib/env';
 
-// Refreshes the Supabase session cookie on every page request and sends signed-out visitors
-// to /login for pages that need an account. Role checks happen in the pages themselves.
+// Refreshes the Supabase session cookie on every page request and sends signed-out visitors to the log-in page
+// for pages that need an account (/login, /restaurant/login or /admin/login). Role checks happen in the pages.
 const PROTECTED = ['/offers', '/orders', '/account', '/restaurant', '/admin'];
+const PUBLIC = new Set([LOGIN_PATH.restaurant, LOGIN_PATH.admin, '/restaurant/signup']);
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -21,9 +23,9 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const path = request.nextUrl.pathname;
-  if (!data?.claims && PROTECTED.some((p) => path === p || path.startsWith(`${p}/`))) {
+  if (!data?.claims && !PUBLIC.has(path) && PROTECTED.some((p) => path === p || path.startsWith(`${p}/`))) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = loginForPath(path);
     url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
     return NextResponse.redirect(url);
   }

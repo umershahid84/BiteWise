@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, X } from 'lucide-react';
+import { Download, Plus, X } from 'lucide-react';
+import { MenuImportDialog } from './menu-import';
 import { toast } from 'sonner';
 import { saveMenuItem } from '@/app/actions/restaurant';
 import { ErrorText } from '@/components/ui/alert';
@@ -21,6 +22,7 @@ export function MenuPanel({ onDiscount }: { onDiscount: (menuItemId: number) => 
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<MenuItem | 'new' | null>(null);
+  const [importing, setImporting] = useState(false);
   const { data, isLoading } = useQuery({
     queryKey: ['menu'],
     queryFn: async () => (await supabase.from('menu_items').select('*').eq('active', true).order('name')).data ?? [],
@@ -35,7 +37,10 @@ export function MenuPanel({ onDiscount }: { onDiscount: (menuItemId: number) => 
   if (isLoading) return <div className="grid place-items-center py-16"><Spinner /></div>;
   return (
     <>
-      <p className="-mt-2 mb-4 text-muted">Your menu, with photos. When you post surplus food, you pick the dish from here.</p>
+      <div className="-mt-2 mb-4 flex flex-wrap items-center gap-3">
+        <p className="m-0 flex-1 text-muted">Your menu, with photos. When you post surplus food, you pick the dish from here.</p>
+        <Button variant="ghost" size="sm" onClick={() => setImporting(true)}><Download /> Import menu</Button>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <button type="button" onClick={() => setEditing('new')} className="grid min-h-64 place-items-center rounded-card border-2 border-dashed border-line text-muted transition hover:border-primary hover:text-primary-ink">
           <div className="text-center"><Plus className="mx-auto mb-2 size-8" />Add menu item</div>
@@ -61,6 +66,9 @@ export function MenuPanel({ onDiscount }: { onDiscount: (menuItemId: number) => 
           </div>
         ))}
       </div>
+      <Dialog open={importing} onOpenChange={setImporting}>
+        {importing && <MenuImportDialog onDone={() => { setImporting(false); queryClient.invalidateQueries({ queryKey: ['menu'] }); }} />}
+      </Dialog>
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         {editing && (
           <MenuItemForm

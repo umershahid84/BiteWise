@@ -38,7 +38,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Link href="/signup" className={buttonVariants({ size: 'lg' })}>Find deals near me →</Link>
-              <Link href="/signup?role=restaurant" className={buttonVariants({ size: 'lg', variant: 'ghost' })}>I&apos;m a restaurant</Link>
+              <Link href="/restaurant/signup" className={buttonVariants({ size: 'lg', variant: 'ghost' })}>I&apos;m a restaurant</Link>
             </div>
             <a href="#video" className="mt-4 inline-flex items-center gap-1.5 text-[0.95rem] font-bold text-primary-ink hover:underline">▶ Watch the 90-second video</a>
             <div className="mt-7 flex flex-wrap gap-5 text-[0.9rem] font-semibold text-muted">
@@ -136,7 +136,7 @@ export default function LandingPage() {
           <div className="relative overflow-hidden rounded-[28px] p-9 text-white" style={{ background: 'linear-gradient(135deg, #0b1b14, #134e3a)' }}>
             <h2 className="text-2xl font-extrabold">Restaurants: turn waste into revenue.</h2>
             <p className="max-w-[42ch] opacity-90">Post surplus food in under a minute, set your own discount, confirm pickups with the customer&apos;s PIN, and get paid through Stripe.</p>
-            <Link href="/signup?role=restaurant" className={cn(buttonVariants(), 'relative z-10 bg-white text-[#0b1b14] shadow-none')}>Open restaurant portal</Link>
+            <Link href="/restaurant/signup" className={cn(buttonVariants(), 'relative z-10 bg-white text-[#0b1b14] shadow-none')}>Open restaurant portal</Link>
             <span aria-hidden className="absolute -right-20 -bottom-28 size-[260px] rounded-full bg-white/10" />
           </div>
         </div>

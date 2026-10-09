@@ -31,7 +31,20 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 export const MIN_CARD_CHARGE_CENTS = 50;
 
 export const homeFor = (role: Role | null | undefined) =>
-  role === 'admin' ? '/admin' : role === 'restaurant' ? '/restaurant' : '/offers';
+  role === 'admin' ? '/admin' : role === 'restaurant' || role === 'staff' ? '/restaurant' : '/offers';
+
+// Each kind of account has its own log-in and sign-up pages. Restaurant owners and their staff share one.
+export type Portal = 'customer' | 'restaurant' | 'admin';
+export const portalFor = (role: Role | null | undefined): Portal =>
+  role === 'admin' ? 'admin' : role === 'restaurant' || role === 'staff' ? 'restaurant' : 'customer';
+export const LOGIN_PATH: Record<Portal, string> = { customer: '/login', restaurant: '/restaurant/login', admin: '/admin/login' };
+export const SIGNUP_PATH = { customer: '/signup', restaurant: '/restaurant/signup' } as const;
+export const loginFor = (role: Role | null | undefined) => LOGIN_PATH[portalFor(role)];
+// The log-in page for a path that needs an account (/restaurant/... and /admin/... have their own).
+export const loginForPath = (path: string) =>
+  path === '/admin' || path.startsWith('/admin/') ? LOGIN_PATH.admin
+    : path === '/restaurant' || path.startsWith('/restaurant/') ? LOGIN_PATH.restaurant : LOGIN_PATH.customer;
+export const PORTAL_NAMES: Record<Portal, string> = { customer: 'customer', restaurant: 'restaurant partner', admin: 'owner console' };
 
 const CUISINE_EMOJI: Record<string, string> = {
   seafood: '🦐', salvadoran: '🫓', bbq: '🍖', vietnamese: '🍜', bakery: '🥐', mexican: '🌮', pizza: '🍕', indian: '🍛',

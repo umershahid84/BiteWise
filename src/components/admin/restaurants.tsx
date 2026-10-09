@@ -3,16 +3,19 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { deleteRestaurant, recheckRestaurantTax, sendWelcomeEmail, setRestaurantStatus, setRestaurantTaxRate } from '@/app/actions/admin';
+import { deleteRestaurant, recheckRestaurantTax, sendWelcomeEmail, setRestaurantStatus, setRestaurantTaxRate, updateRestaurant } from '@/app/actions/admin';
 import { resendConfirmation } from '@/app/actions/auth';
 import { ErrorText } from '@/components/ui/alert';
 import { Badge, StatusBadge } from '@/components/ui/badge';
+import { MenuImportDialog } from '@/components/restaurant/menu-import';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { StateSelect } from '@/components/ui/state-select';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money, pct } from '@/lib/format';
 import { day, run, TableHead, useAdmin } from './shared';
@@ -21,7 +24,7 @@ import { DaysPicker } from './users';
 type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_due' | 'expired'; foundingNumber: number | null; autoRenew: boolean; periodEnd: string | null };
 type Tax = { source: 'auto' | 'manual'; accuracy: '' | 'address' | 'zip' | 'state' | 'manual'; jurisdiction: string; checkedAt: string | null; problem: string };
 type Row = {
-  id: number; name: string; cuisine: string; address: string; city: string; state: string; zip: string; tax: Tax; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
+  id: number; name: string; cuisine: string; description: string; address: string; city: string; state: string; zip: string; tax: Tax; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
   adminNote: string; taxRateBps: number; createdAt: string; suspendedUntil: string | null; ownerEmail: string; ownerUsername: string; activeOffers: number; orders: number;
   foodCents: number; stripeReady: boolean; stripeAccount: string | null; plan: Plan | null; ownerConfirmed: boolean; welcomeEmailSentAt: string | null;
 };
@@ -55,6 +58,8 @@ export function RestaurantsPanel() {
   const [banFor, setBanFor] = useState<Row | null>(null);
   const [deleteFor, setDeleteFor] = useState<Row | null>(null);
   const [taxFor, setTaxFor] = useState<Row | null>(null);
+  const [editFor, setEditFor] = useState<Row | null>(null);
+  const [menuFor, setMenuFor] = useState<Row | null>(null);
   const { data, isLoading } = useAdmin<Row[]>(['restaurants', status, q], 'restaurants', { status, q });
   const pager = usePager(data ?? [], `${status}|${q}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -123,6 +128,8 @@ export function RestaurantsPanel() {
                         {(r.status === 'approved' || r.status === 'pending') && <Button size="sm" variant="danger" onClick={() => setSuspendFor(r)}>Suspend</Button>}
                         {r.status !== 'banned' && r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(r)}>Ban</Button>}
                         {r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(r)}>Delete</Button>}
+                        {r.status !== 'deleted' && <Button size="sm" variant="ghost" onClick={() => setEditFor(r)}>Edit details</Button>}
+                        {r.status !== 'deleted' && r.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setMenuFor(r)}>Import menu</Button>}
                         {!r.ownerConfirmed && r.status !== 'deleted' && r.status !== 'banned' && (
                           <Button size="sm" variant="ghost" className="col-span-2" onClick={() => reconfirm(r)}>Resend confirmation</Button>
                         )}
@@ -148,10 +155,65 @@ export function RestaurantsPanel() {
       <Dialog open={!!banFor} onOpenChange={(o) => !o && setBanFor(null)}>
         {banFor && <BanRestaurant restaurant={banFor} onDone={() => { setBanFor(null); refresh(); }} />}
       </Dialog>
+      <Dialog open={!!menuFor} onOpenChange={(o) => !o && setMenuFor(null)}>
+        {menuFor && <MenuImportDialog restaurantId={menuFor.id} restaurantName={menuFor.name} onDone={() => { setMenuFor(null); refresh(); }} />}
+      </Dialog>
+      <Dialog open={!!editFor} onOpenChange={(o) => !o && setEditFor(null)}>
+        {editFor && <EditRestaurant restaurant={editFor} onDone={() => { setEditFor(null); refresh(); }} onWelcome={welcome} />}
+      </Dialog>
       <Dialog open={!!taxFor} onOpenChange={(o) => !o && setTaxFor(null)}>
         {taxFor && <SalesTax restaurant={taxFor} onDone={() => { setTaxFor(null); refresh(); }} />}
       </Dialog>
     </>
+  );
+}
+
+// Corrects a restaurant's details and its owner's email and user name; then the welcome email can be sent again.
+function EditRestaurant({ restaurant: r, onDone, onWelcome }: { restaurant: Row; onDone: () => void; onWelcome: (r: Row) => Promise<unknown> }) {
+  const [f, setF] = useState({
+    name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone,
+    ownerEmail: r.ownerEmail, ownerUsername: r.ownerUsername,
+  });
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => { setF({ ...f, [k]: e.target.value }); setSaved(false); };
+  const save = async () => {
+    setBusy(true);
+    const res = await updateRestaurant({ id: r.id, ...f });
+    setBusy(false);
+    if (!res.ok) return setError(res.error);
+    setError(null);
+    setSaved(true);
+    toast.success(res.data.changed ? `${f.name} is updated.` : 'Nothing changed.');
+  };
+  return (
+    <DialogContent title={`Edit ${r.name}`} description="A new address moves the map pin and looks the sales tax rate up again. A new owner email counts as confirmed." className="w-[min(640px,calc(100%-24px))]">
+      <div className="grid gap-x-3 sm:grid-cols-2">
+        <Field label="Restaurant name" htmlFor="er-name"><Input id="er-name" value={f.name} onChange={set('name')} /></Field>
+        <Field label="Cuisine" htmlFor="er-cuisine"><Input id="er-cuisine" value={f.cuisine} onChange={set('cuisine')} /></Field>
+      </div>
+      <Field label="About" htmlFor="er-desc"><Input id="er-desc" value={f.description} onChange={set('description')} /></Field>
+      <Field label="Street address" htmlFor="er-address"><Input id="er-address" value={f.address} onChange={set('address')} /></Field>
+      <div className="grid gap-x-3 sm:grid-cols-3">
+        <Field label="City" htmlFor="er-city"><Input id="er-city" value={f.city} onChange={set('city')} /></Field>
+        <Field label="State" htmlFor="er-state"><StateSelect id="er-state" value={f.state} onChange={set('state')} /></Field>
+        <Field label="ZIP" htmlFor="er-zip"><Input id="er-zip" value={f.zip} onChange={set('zip')} /></Field>
+      </div>
+      <Field label="Phone" htmlFor="er-phone"><PhoneInput id="er-phone" value={f.phone} onValueChange={(phone) => { setF({ ...f, phone }); setSaved(false); }} /></Field>
+      <div className="grid gap-x-3 sm:grid-cols-2">
+        <Field label="Owner email" htmlFor="er-email"><Input id="er-email" type="email" value={f.ownerEmail} onChange={set('ownerEmail')} /></Field>
+        <Field label="Owner user name" htmlFor="er-user"><Input id="er-user" value={f.ownerUsername} onChange={set('ownerUsername')} /></Field>
+      </div>
+      <ErrorText error={error} />
+      <Button block disabled={busy} onClick={save}>Save changes</Button>
+      {r.status === 'approved' && (
+        <Button block variant="ghost" className="mt-2" disabled={busy || (f.ownerEmail !== r.ownerEmail && !saved)} onClick={async () => { await onWelcome({ ...r, ownerEmail: f.ownerEmail }); onDone(); }}>
+          {r.welcomeEmailSentAt ? 'Resend welcome email' : 'Send welcome email'}{saved || f.ownerEmail === r.ownerEmail ? ` to ${f.ownerEmail}` : ''}
+        </Button>
+      )}
+      {saved && <Button block variant="ghost" className="mt-2" onClick={onDone}>Close</Button>}
+    </DialogContent>
   );
 }
 

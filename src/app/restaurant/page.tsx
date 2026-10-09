@@ -9,10 +9,10 @@ import { supabaseServer } from '@/lib/supabase/server';
 export const metadata: Metadata = { title: 'Restaurant dashboard' };
 
 export default async function RestaurantPage({ searchParams }: PageProps<'/restaurant'>) {
-  const viewer = await requirePageViewer('restaurant');
+  const viewer = await requirePageViewer(['restaurant', 'staff']);
   const { tab, stripe } = await searchParams;
   const supabase = await supabaseServer();
-  const restaurant = must(await supabase.from('restaurants').select('*').eq('owner_id', viewer.id).single());
+  const restaurant = must(await supabase.from('restaurants').select('*').eq('id', viewer.restaurant!.id).single());
   const [{ data: fee }, { data: planOk }, { data: sub }] = await Promise.all([
     supabase.from('settings').select('value').eq('key', 'service_fee_bps').single(),
     supabase.rpc('restaurant_plan_ok', { p_restaurant_id: restaurant.id }),
@@ -23,6 +23,7 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
   return (
     <RestaurantDashboard
       restaurant={restaurant}
+      staff={viewer.staff}
       serviceFeeBps={Number(fee?.value ?? 500)}
       map={publicEnv.map}
       paymentMode={paymentMode()}

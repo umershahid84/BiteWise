@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Banknote, Bell, BellOff, ClipboardList, Crown, FileText, KeyRound, Plus, Store, Tablet, Tag, UtensilsCrossed } from 'lucide-react';
+import { Banknote, Bell, BellOff, ClipboardList, Crown, FileText, KeyRound, Plus, Store, Tablet, Tag, Users, UtensilsCrossed } from 'lucide-react';
 import { DemoVideoButton } from '@/components/app/demo-video';
 import type { MapConfig } from '@/components/offers/types';
 import { Alert } from '@/components/ui/alert';
@@ -23,12 +23,18 @@ import { PayoutsPanel } from './payouts-panel';
 import { PickupPanel } from './pickup-panel';
 import { PlanPanel } from './plan-panel';
 import { ProfilePanel } from './profile-panel';
+import { StaffPanel } from './staff-panel';
 import type { Ctx, Restaurant } from './types';
 
 type NewOrder = { id: number; quantity: number; item_title: string; customer_username: string; total_cents: number; pickup_end: string; image_url: string | null };
 
-export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMode, stripePublishableKey, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
+const OWNER_TABS = ['payouts', 'kiosk', 'plan', 'profile', 'staff'];
+
+// The restaurant portal, for the owner and their staff. Staff (`staff` set) get Verify pickup, Offers, Menu and
+// Orders, without sales amounts; payouts, kiosk, plan, profile and staff accounts are the owner's.
+export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, paymentMode, stripePublishableKey, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
   restaurant: Restaurant;
+  staff: { fullName: string; title: string } | null;
   serviceFeeBps: number;
   map: MapConfig;
   paymentMode: 'stripe' | 'mock';
@@ -42,7 +48,8 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const [tab, setTab] = useState(initialTab);
+  const owner = !staff;
+  const [tab, setTab] = useState(!owner && OWNER_TABS.includes(initialTab) ? 'pickup' : initialTab);
   const [offerForm, setOfferForm] = useState<{ open: boolean; offerId?: number; menuItemId?: number }>({ open: false });
   const [alertOrder, setAlertOrder] = useState<NewOrder | null>(null);
   const [soundOn, setSoundOn] = useState(true);
@@ -137,7 +144,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
           your account (usually within 1 business day).
         </Alert>
       )}
-      {restaurant.status === 'pending' && !hasPlan && pioneerSpotsLeft > 0 && tab !== 'plan' && (
+      {owner && restaurant.status === 'pending' && !hasPlan && pioneerSpotsLeft > 0 && tab !== 'plan' && (
         <div className="mb-5 flex flex-wrap items-center gap-4 rounded-card border-2 border-primary/60 bg-primary-soft/50 px-5 py-4">
           <span aria-hidden className="text-3xl">🎉</span>
           <div className="min-w-60 flex-1">
@@ -155,13 +162,16 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
           new ones. You can still verify pickups for existing orders. Contact Bite Wise support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
         </Alert>
       )}
-      {restaurant.status === 'approved' && planNotice === 'delinquent' && tab !== 'plan' && (
+      {!owner && restaurant.status === 'approved' && planNotice && (
+        <Alert tone="warn" className="mb-5">⭐ <b>New offers can&apos;t be posted right now:</b> the restaurant&apos;s Bite Wise plan needs attention. Please let the owner know.</Alert>
+      )}
+      {owner && restaurant.status === 'approved' && planNotice === 'delinquent' && tab !== 'plan' && (
         <Alert tone="error" className="mb-5">
           💳 <b>Your plan is delinquent: a payment was declined.</b> Your offers are paused and you can&apos;t post until it&apos;s paid.{' '}
           <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>Pay now</button>
         </Alert>
       )}
-      {restaurant.status === 'approved' && planNotice === 'choose' && tab !== 'plan' && (
+      {owner && restaurant.status === 'approved' && planNotice === 'choose' && tab !== 'plan' && (
         <Alert tone="warn" className="mb-5">
           ⭐ <b>Choose your Bite Wise plan to post offers{pioneerSpotsLeft > 0 ? `: it's FREE for the next ${pioneerSpotsLeft} Pioneer Members` : ''}.</b>{' '}
           <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>See plans</button>
@@ -170,14 +180,17 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <div>
           <h1 className="m-0 text-3xl font-extrabold">{restaurant.name}</h1>
-          <p className="m-0 text-sm text-muted">{restaurant.address}, {restaurant.city}, {restaurant.state} {restaurant.zip} · Sales tax {pct(restaurant.tax_rate_bps)}</p>
+          <p className="m-0 text-sm text-muted">
+            {restaurant.address}, {restaurant.city}, {restaurant.state} {restaurant.zip}
+            {owner ? ` · Sales tax ${pct(restaurant.tax_rate_bps)}` : ` · Signed in as ${staff.fullName} (${staff.title})`}
+          </p>
         </div>
         <span className="flex-1" />
         <DemoVideoButton tour="restaurant" label="Watch the tour" />
         <Button variant="ghost" size="sm" onClick={toggleSound} className={soundOn ? '' : 'opacity-70'}>
           {soundOn ? <Bell /> : <BellOff />} Order sound: {soundOn ? 'on' : 'off'}
         </Button>
-        <Link href="/restaurant/report" className={buttonVariants({ variant: 'ghost', size: 'sm' })}><FileText /> Daily report</Link>
+        {owner && <Link href="/restaurant/report" className={buttonVariants({ variant: 'ghost', size: 'sm' })}><FileText /> Daily report</Link>}
         <Button size="sm" onClick={() => setOfferForm({ open: true })}><Plus /> Post surplus food</Button>
       </div>
       {soundOn && !unlocked && (
@@ -187,8 +200,8 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Kpi value={s?.awaitingPickup ?? '–'} label="Orders awaiting pickup" />
         <Kpi value={s?.activeOffers ?? '–'} label="Active offers" />
-        <Kpi value={s?.today.meals ?? '–'} label={`Meals rescued today · ${money(s?.today.salesCents ?? 0)}`} />
-        <Kpi value={s?.allTime.meals ?? '–'} label={`Meals rescued all-time · ${money(s?.allTime.salesCents ?? 0)}`} />
+        <Kpi value={s?.today.meals ?? '–'} label={owner ? `Meals rescued today · ${money(s?.today.salesCents ?? 0)}` : 'Meals rescued today'} />
+        <Kpi value={s?.allTime.meals ?? '–'} label={owner ? `Meals rescued all-time · ${money(s?.allTime.salesCents ?? 0)}` : 'Meals rescued all-time'} />
       </div>
 
       <Tabs value={tab} onValueChange={changeTab}>
@@ -197,19 +210,29 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
           <TabsTrigger value="offers"><Tag /> Offers</TabsTrigger>
           <TabsTrigger value="menu"><UtensilsCrossed /> Menu</TabsTrigger>
           <TabsTrigger value="orders"><ClipboardList /> Orders</TabsTrigger>
-          <TabsTrigger value="payouts"><Banknote /> Payouts</TabsTrigger>
-          <TabsTrigger value="kiosk"><Tablet /> Kiosk</TabsTrigger>
-          <TabsTrigger value="plan"><Crown /> Plan</TabsTrigger>
-          <TabsTrigger value="profile"><Store /> Profile</TabsTrigger>
+          {owner && (
+            <>
+              <TabsTrigger value="payouts"><Banknote /> Payouts</TabsTrigger>
+              <TabsTrigger value="kiosk"><Tablet /> Kiosk</TabsTrigger>
+              <TabsTrigger value="plan"><Crown /> Plan</TabsTrigger>
+              <TabsTrigger value="staff"><Users /> Staff</TabsTrigger>
+              <TabsTrigger value="profile"><Store /> Profile</TabsTrigger>
+            </>
+          )}
         </TabsList>
         <TabsContent value="pickup"><PickupPanel /></TabsContent>
         <TabsContent value="offers"><OffersPanel ctx={ctx} onEdit={(id) => setOfferForm({ open: true, offerId: id })} onNew={() => setOfferForm({ open: true })} /></TabsContent>
         <TabsContent value="menu"><MenuPanel onDiscount={(menuItemId) => setOfferForm({ open: true, menuItemId })} /></TabsContent>
-        <TabsContent value="orders"><OrdersPanel restaurantId={restaurant.id} /></TabsContent>
-        <TabsContent value="payouts"><PayoutsPanel ctx={ctx} stripeReturn={stripeReturn} /></TabsContent>
-        <TabsContent value="kiosk"><KioskPanel approved={restaurant.status === 'approved'} /></TabsContent>
-        <TabsContent value="plan"><PlanPanel payment={{ mode: paymentMode, publishableKey: stripePublishableKey }} approved={restaurant.status === 'approved'} /></TabsContent>
-        <TabsContent value="profile"><ProfilePanel ctx={ctx} /></TabsContent>
+        <TabsContent value="orders"><OrdersPanel restaurantId={restaurant.id} showMoney={owner} /></TabsContent>
+        {owner && (
+          <>
+            <TabsContent value="payouts"><PayoutsPanel ctx={ctx} stripeReturn={stripeReturn} /></TabsContent>
+            <TabsContent value="kiosk"><KioskPanel approved={restaurant.status === 'approved'} /></TabsContent>
+            <TabsContent value="plan"><PlanPanel payment={{ mode: paymentMode, publishableKey: stripePublishableKey }} approved={restaurant.status === 'approved'} /></TabsContent>
+            <TabsContent value="staff"><StaffPanel /></TabsContent>
+            <TabsContent value="profile"><ProfilePanel ctx={ctx} /></TabsContent>
+          </>
+        )}
       </Tabs>
 
       <OfferFormDialog
@@ -233,7 +256,7 @@ export function RestaurantDashboard({ restaurant, serviceFeeBps, map, paymentMod
             <div className="flex-1">
               <b>New order!</b>
               <div className="text-sm">{alertOrder.quantity} × {alertOrder.item_title}</div>
-              <div className="text-xs text-muted">{alertOrder.customer_username} · {money(alertOrder.total_cents)} · pick up by {fmtTime(alertOrder.pickup_end)}</div>
+              <div className="text-xs text-muted">{alertOrder.customer_username}{owner && ` · ${money(alertOrder.total_cents)}`} · pick up by {fmtTime(alertOrder.pickup_end)}</div>
             </div>
             <span aria-hidden className="animate-bounce text-2xl">🔔</span>
           </div>

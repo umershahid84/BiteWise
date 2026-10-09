@@ -319,13 +319,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string
+                    "created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
                   }
                   Insert: {
-                    "created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string
+                    "created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string
+                    "created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
                   }
                   Relationships: [
                     
@@ -430,6 +430,43 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"restaurant_staff": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"full_name": string,"restaurant_id": number,"title": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"full_name"?: string,"restaurant_id": number,"title"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"full_name"?: string,"restaurant_id"?: number,"title"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "restaurant_staff_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "restaurant_staff_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: false
+      referencedRelation: "restaurant_balances"
+      referencedColumns: ["restaurant_id"]
+    },{
+      foreignKeyName: "restaurant_staff_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: false
+      referencedRelation: "restaurants"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "restaurant_staff_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"restaurant_subscriptions": {
                   Row: {
                     "auto_renew": boolean,"card_label": string,"card_ref": string | null,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"customer_ref": string | null,"founding_number": number | null,"last_payment_error": string,"locked_annual_cents": number | null,"locked_monthly_cents": number | null,"plan": Database["public"]['Enums']["subscription_plan"],"price_cents": number,"reminder_sent_for": string | null,"renew_plan": Database["public"]['Enums']["subscription_plan"] | null,"renewing_at": string | null,"restaurant_id": number,"retry_at": string | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at": string
@@ -486,6 +523,37 @@ isOneToOne: true
                   }
                   Relationships: [
                     
+                  ]
+                },"staff_invites": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"full_name": string,"restaurant_id": number,"title": string,"token": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"full_name"?: string,"restaurant_id": number,"title"?: string,"token": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"full_name"?: string,"restaurant_id"?: number,"title"?: string,"token"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "staff_invites_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "staff_invites_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: false
+      referencedRelation: "restaurant_balances"
+      referencedColumns: ["restaurant_id"]
+    },{
+      foreignKeyName: "staff_invites_restaurant_id_fkey"
+      columns: ["restaurant_id"]
+isOneToOne: false
+      referencedRelation: "restaurants"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"subscription_payments": {
                   Row: {
@@ -739,6 +807,9 @@ isOneToOne: false
 "my_credit_balance":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"my_owned_restaurant_id":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "my_restaurant_id":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -947,7 +1018,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_status": "active"|"suspended"|"deleted"|"banned","admin_alert_kind": "no_show"|"no_show_suspension"|"no_show_ban","credit_kind": "refund"|"goodwill"|"redeem"|"restore"|"adjustment","offer_reason": "wrong_order"|"delayed_order"|"unclaimed_order"|"overproduction"|"end_of_day"|"other","offer_status": "active"|"paused"|"ended","order_status": "pending_payment"|"reserved"|"picked_up"|"cancelled"|"expired"|"failed","payout_kind": "transfer"|"reversal"|"manual","refund_method": "original"|"credit","restaurant_status": "pending"|"approved"|"suspended"|"banned"|"deleted","subscription_plan": "founding"|"monthly"|"annual","subscription_status": "active"|"past_due"|"expired","user_role": "customer"|"restaurant"|"admin"
+            "account_status": "active"|"suspended"|"deleted"|"banned","admin_alert_kind": "no_show"|"no_show_suspension"|"no_show_ban","credit_kind": "refund"|"goodwill"|"redeem"|"restore"|"adjustment","offer_reason": "wrong_order"|"delayed_order"|"unclaimed_order"|"overproduction"|"end_of_day"|"other","offer_status": "active"|"paused"|"ended","order_status": "pending_payment"|"reserved"|"picked_up"|"cancelled"|"expired"|"failed","payout_kind": "transfer"|"reversal"|"manual","refund_method": "original"|"credit","restaurant_status": "pending"|"approved"|"suspended"|"banned"|"deleted","subscription_plan": "founding"|"monthly"|"annual","subscription_status": "active"|"past_due"|"expired","user_role": "customer"|"restaurant"|"admin"|"staff"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1063,7 +1134,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "account_status": ["active", "suspended", "deleted", "banned"],"admin_alert_kind": ["no_show", "no_show_suspension", "no_show_ban"],"credit_kind": ["refund", "goodwill", "redeem", "restore", "adjustment"],"offer_reason": ["wrong_order", "delayed_order", "unclaimed_order", "overproduction", "end_of_day", "other"],"offer_status": ["active", "paused", "ended"],"order_status": ["pending_payment", "reserved", "picked_up", "cancelled", "expired", "failed"],"payout_kind": ["transfer", "reversal", "manual"],"refund_method": ["original", "credit"],"restaurant_status": ["pending", "approved", "suspended", "banned", "deleted"],"subscription_plan": ["founding", "monthly", "annual"],"subscription_status": ["active", "past_due", "expired"],"user_role": ["customer", "restaurant", "admin"]
+            "account_status": ["active", "suspended", "deleted", "banned"],"admin_alert_kind": ["no_show", "no_show_suspension", "no_show_ban"],"credit_kind": ["refund", "goodwill", "redeem", "restore", "adjustment"],"offer_reason": ["wrong_order", "delayed_order", "unclaimed_order", "overproduction", "end_of_day", "other"],"offer_status": ["active", "paused", "ended"],"order_status": ["pending_payment", "reserved", "picked_up", "cancelled", "expired", "failed"],"payout_kind": ["transfer", "reversal", "manual"],"refund_method": ["original", "credit"],"restaurant_status": ["pending", "approved", "suspended", "banned", "deleted"],"subscription_plan": ["founding", "monthly", "annual"],"subscription_status": ["active", "past_due", "expired"],"user_role": ["customer", "restaurant", "admin", "staff"]
           }
         }
 } as const
