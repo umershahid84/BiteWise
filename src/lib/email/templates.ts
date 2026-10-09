@@ -461,3 +461,25 @@ Windows: ${o.windowsUrl}
 Find deals near you: ${o.dealsUrl}`,
   };
 }
+
+// A new admin or admin employee: where to log in, and what they can do. The password is never emailed.
+export function teamWelcomeEmail(o: { username: string; role: 'admin' | 'support'; canRefund: boolean; loginUrl: string }) {
+  const what = o.role === 'admin'
+    ? 'You have <b>full admin access</b> to the Bite Wise owner console.'
+    : `You can look after customer and restaurant accounts in the Bite Wise owner console: Alerts, Restaurants, Customers, Orders and Live offers${o.canRefund ? ', including refunds and credit' : ''}.`;
+  return {
+    subject: `You've been added to the Bite Wise ${o.role === 'admin' ? 'admin' : 'support'} team`,
+    html: layout({
+      preview: 'Your Bite Wise owner console account is ready.',
+      emoji: '🛡️',
+      title: `Welcome to the team, ${esc(o.username)}!`,
+      subtitle: o.role === 'admin' ? 'Admin' : 'Support team',
+      body: `<p style="margin:0 0 14px;">${what}</p>
+        <p style="margin:0 0 20px;">Log in with your user name <b>${esc(o.username)}</b> or this email address. The admin who added you will give you your
+          password; you can also choose your own with <b>Forgot password</b> on the log-in page.</p>
+        <div style="padding:6px 0 0;">${button(o.loginUrl, 'Open the owner console', '#14284B')}</div>`,
+    }),
+    text: `You've been added to the Bite Wise ${o.role === 'admin' ? 'admin' : 'support'} team, ${o.username}.
+Log in at ${o.loginUrl} with your user name or this email. Your admin will give you your password, or use "Forgot password" to choose your own.`,
+  };
+}

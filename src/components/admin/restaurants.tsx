@@ -18,7 +18,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { StateSelect } from '@/components/ui/state-select';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money, pct } from '@/lib/format';
-import { day, run, TableHead, useAdmin } from './shared';
+import { day, run, TableHead, useAccess, useAdmin } from './shared';
 import { DaysPicker } from './users';
 
 type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_due' | 'expired'; foundingNumber: number | null; autoRenew: boolean; periodEnd: string | null };
@@ -60,6 +60,7 @@ export function RestaurantsPanel() {
   const [taxFor, setTaxFor] = useState<Row | null>(null);
   const [editFor, setEditFor] = useState<Row | null>(null);
   const [menuFor, setMenuFor] = useState<Row | null>(null);
+  const isAdmin = useAccess().role === 'admin';
   const { data, isLoading } = useAdmin<Row[]>(['restaurants', status, q], 'restaurants', { status, q });
   const pager = usePager(data ?? [], `${status}|${q}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -127,7 +128,7 @@ export function RestaurantsPanel() {
                         {r.status !== 'approved' && r.status !== 'deleted' && <Button size="sm" variant="green" onClick={() => approve(r)}>{r.status === 'pending' ? 'Approve' : r.status === 'banned' ? 'Lift ban' : 'Reinstate'}</Button>}
                         {(r.status === 'approved' || r.status === 'pending') && <Button size="sm" variant="danger" onClick={() => setSuspendFor(r)}>Suspend</Button>}
                         {r.status !== 'banned' && r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(r)}>Ban</Button>}
-                        {r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(r)}>Delete</Button>}
+                        {isAdmin && r.status !== 'deleted' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(r)}>Delete</Button>}
                         {r.status !== 'deleted' && <Button size="sm" variant="ghost" onClick={() => setEditFor(r)}>Edit details</Button>}
                         {r.status !== 'deleted' && r.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setMenuFor(r)}>Import menu</Button>}
                         {!r.ownerConfirmed && r.status !== 'deleted' && r.status !== 'banned' && (
@@ -235,6 +236,7 @@ const ACCURACY: Record<Tax['accuracy'], string> = {
 
 // Sales tax for one restaurant: where the rate came from, look it up again, or set it by hand.
 function SalesTax({ restaurant: r, onDone }: { restaurant: Row; onDone: () => void }) {
+  const isAdmin = useAccess().role === 'admin';
   const [rate, setRate] = useState((r.taxRateBps / 100).toFixed(2));
   const [place, setPlace] = useState(r.tax.source === 'manual' ? r.tax.jurisdiction : '');
   const [error, setError] = useState<string | null>(null);
@@ -265,6 +267,8 @@ function SalesTax({ restaurant: r, onDone }: { restaurant: Row; onDone: () => vo
         <p className="m-0 mt-1 text-muted">{ACCURACY[r.tax.accuracy]}{r.tax.checkedAt && ` Checked ${day(r.tax.checkedAt)}.`}</p>
         {r.tax.problem && <p className="m-0 mt-1 text-accent-ink">{r.tax.problem}</p>}
       </div>
+      {!isAdmin ? <p className="m-0 text-sm text-muted">Only an admin can change sales tax rates.</p> : (
+        <>
       <Button block variant="ghost" disabled={busy} onClick={recheck}>{r.tax.source === 'manual' ? 'Switch back to automatic (look the rate up)' : 'Look the rate up again'}</Button>
       <p className="mt-5 mb-2 text-sm font-bold">Or set the rate by hand</p>
       <div className="grid gap-3 sm:grid-cols-[8rem_1fr]">
@@ -274,6 +278,8 @@ function SalesTax({ restaurant: r, onDone }: { restaurant: Row; onDone: () => vo
       <p className="mt-0 mb-3 text-xs text-muted">A rate set by hand isn&apos;t looked up again, until you switch it back to automatic. New orders use the new rate straight away.</p>
       <ErrorText error={error} />
       <Button block disabled={busy} onClick={save}>Save rate</Button>
+        </>
+      )}
     </DialogContent>
   );
 }

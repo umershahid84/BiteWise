@@ -14,7 +14,7 @@ import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money } from '@/lib/format';
-import { day, run, TableHead, useAdmin } from './shared';
+import { day, run, TableHead, useAccess, useAdmin } from './shared';
 
 type User = {
   id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number; noShowStreak: number; noShowProbation: boolean;
@@ -30,6 +30,8 @@ export function UsersPanel({ adminId }: { adminId: string }) {
   const [deleteFor, setDeleteFor] = useState<User | null>(null);
   const [banFor, setBanFor] = useState<User | null>(null);
   const [editFor, setEditFor] = useState<User | null>(null);
+  const access = useAccess();
+  const isAdmin = access.role === 'admin';
   const { data, isLoading } = useAdmin<User[]>(['users', role, q], 'users', { role, q });
   const pager = usePager(data ?? [], `${role}|${q}`);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
@@ -42,7 +44,7 @@ export function UsersPanel({ adminId }: { adminId: string }) {
       <div className="mb-4 flex flex-wrap gap-3">
         <Input className="max-w-sm" placeholder="Search email or user name" value={q} onChange={(e) => setQ(e.target.value)} />
         <Select className="max-w-52" value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="customer">Customers</option><option value="restaurant">Restaurant owners</option><option value="staff">Restaurant staff</option><option value="admin">Admins</option>
+          <option value="customer">Customers</option><option value="restaurant">Restaurant owners</option><option value="staff">Restaurant staff</option>{isAdmin && <option value="admin">Admins</option>}
         </Select>
       </div>
       <Card className="p-2">
@@ -75,12 +77,12 @@ export function UsersPanel({ adminId }: { adminId: string }) {
                     <td className="whitespace-nowrap">
                       <div className="flex gap-1.5">
                         {u.role !== 'staff' && <Button size="sm" variant="ghost" onClick={() => setEditFor(u)}>Edit</Button>}
-                        {u.role === 'customer' && u.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
+                        {access.canRefund && u.role === 'customer' && u.status !== 'banned' && <Button size="sm" variant="ghost" onClick={() => setCreditFor(u)}>+ Credit</Button>}
                         {u.id !== adminId && (u.status === 'active'
                           ? <Button size="sm" variant="danger" onClick={() => setSuspendFor(u)}>Suspend</Button>
                           : <Button size="sm" variant="green" onClick={() => reactivate(u)}>{u.status === 'banned' ? 'Lift ban' : 'Reactivate'}</Button>)}
                         {u.id !== adminId && u.role !== 'admin' && u.status !== 'banned' && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setBanFor(u)}>Ban</Button>}
-                        {u.id !== adminId && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(u)}>Delete</Button>}
+                        {isAdmin && u.id !== adminId && <Button size="sm" variant="ghost" className="text-danger" onClick={() => setDeleteFor(u)}>Delete</Button>}
                       </div>
                     </td>
                   </tr>

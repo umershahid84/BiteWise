@@ -16,13 +16,14 @@ import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/constants';
 import { fmtDateTime, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AdminOrder } from '@/lib/admin';
-import { adminGet, RangePicker, run, TableHead, useAdmin, type Range } from './shared';
+import { adminGet, RangePicker, run, TableHead, useAccess, useAdmin, type Range } from './shared';
 
 export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: Range) => void }) {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [refunding, setRefunding] = useState<AdminOrder | null>(null);
+  const { canRefund } = useAccess();
   const { data, isLoading } = useAdmin<{ orders: AdminOrder[] }>(['orders', range, status, q], 'orders', { ...range, status, q });
   const pager = usePager(data?.orders ?? [], `${range.from}|${range.to}|${status}|${q}`);
   const cancel = async (o: AdminOrder) => {
@@ -62,7 +63,7 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
                     <td><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} /></td>
                     <td className="whitespace-nowrap">
                       <div className="flex gap-1.5">
-                        {o.status === 'picked_up' && o.refundableCents > 0 && <Button size="sm" variant="warm" onClick={() => setRefunding(o)}>Refund</Button>}
+                        {canRefund && o.status === 'picked_up' && o.refundableCents > 0 && <Button size="sm" variant="warm" onClick={() => setRefunding(o)}>Refund</Button>}
                         {(o.status === 'reserved' || o.status === 'pending_payment') && <Button size="sm" variant="danger" onClick={() => cancel(o)}>Cancel</Button>}
                         <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/orders/${o.id}/receipt`} aria-label={`Receipt PDF for order ${o.id}`}><Download /></a>
                       </div>

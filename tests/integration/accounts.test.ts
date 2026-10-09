@@ -59,8 +59,8 @@ describe.skipIf(!available)('accounts', () => {
     expect(sent.at(-1)?.html).toContain('/app?device=iphone');
     expect(await sendCustomerWelcome(user.id)).toMatchObject({ sent: false, reason: 'already_sent' });
 
-    const email = `new_${uid()}@example.com`;
-    const username = `n_${uid()}`;
+    const email = `t_${uid()}@example.com`;
+    const username = `t_${uid()}`;
     expect(await updateAccount(user.id, { email, username })).toHaveLength(2);
     expect((await admin().from('profiles').select('email, username').eq('id', user.id).single()).data).toEqual({ email, username });
     expect(await login(email, PASSWORD)).not.toBeNull();

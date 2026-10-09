@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { log } from '@/lib/admin';
-import { requireActor } from '@/lib/auth';
+import { requireAdmin, type Viewer } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
 import { updateAccount, updateRestaurantDetails } from '@/lib/admin-edit';
 import { importMenu, parseImportInput, parsePreviewInput, previewFromSpreadsheet, previewFromWebsite } from '@/lib/menu-import';
@@ -16,9 +16,10 @@ import { onboardingMessage, sendOnboardingEmails } from '@/lib/restaurant-onboar
 import { refreshRestaurantTax, setManualTaxRate } from '@/lib/restaurant-tax';
 import { parseStates } from '@/lib/subscriptions';
 import { stateByCode } from '@/lib/tax/states';
+import { addTeamMember, checkTeamRemoval, updateTeamMember } from '@/lib/team';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { dollars, emailSchema, int, parse, restaurantFieldsSchema, taxRateSchema, usernameSchema } from '@/lib/validate';
+import { dollars, emailSchema, int, parse, passwordSchema, restaurantFieldsSchema, taxRateSchema, usernameSchema } from '@/lib/validate';
 
 // Owner console actions. Every action checks for an admin session and is written to the audit log.
 const db = () => supabaseAdmin();
@@ -29,7 +30,7 @@ const days = z.number().int().refine((n) => (SUSPENSION_DAYS as readonly number[
 // Approve, reinstate, suspend for a number of days, or ban a restaurant for good (see src/lib/moderation.ts).
 export async function setRestaurantStatus(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int(), status: z.enum(['approved', 'suspended', 'banned', 'pending']), days, note: note('Note').default('') }), input);
     const name = await moderation.setRestaurantStatus(d.id, d);
     await log(me.id, `restaurant.${d.status}`, 'restaurant', d.id, `${name}${d.days ? ` for ${d.days} days` : ''}${d.note ? `: ${d.note}` : ''}`);
@@ -42,7 +43,7 @@ export async function setRestaurantStatus(input: unknown) {
 // Sends an approved restaurant its welcome email (again), e.g. after email settings were fixed.
 export async function sendWelcomeEmail(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int() }), input);
     const r = must(await db().from('restaurants').select('name, status').eq('id', d.id).single());
     if (r.status !== 'approved') throw new AppError(409, 'Only approved restaurants get the welcome email.');
@@ -52,12 +53,20 @@ export async function sendWelcomeEmail(input: unknown) {
   });
 }
 
+// Admin employees manage customers' and restaurants' accounts, not the admin team's.
+async function checkTeamTarget(me: Viewer, userId: string) {
+  if (me.role === 'admin') return;
+  const { data } = await db().from('profiles').select('role').eq('id', userId).maybeSingle();
+  if (data?.role === 'admin' || data?.role === 'support') throw new AppError(403, 'Only an admin can change admin team accounts.');
+}
+
 // Reactivate, suspend for a number of days, or ban an account for good (see src/lib/moderation.ts).
 export async function setUserStatus(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.string().uuid(), status: z.enum(['active', 'suspended', 'banned']), days, note: note('Reason').default('') }), input);
     if (d.id === me.id) throw new AppError(400, 'You cannot suspend or ban your own account.');
+    await checkTeamTarget(me, d.id);
     const res = await moderation.setUserStatus(d.id, d);
     await log(me.id, res.action, 'user', d.id, res.details);
     return null;
@@ -67,7 +76,7 @@ export async function setUserStatus(input: unknown) {
 // Deletes an account (customer, restaurant owner or admin); see src/lib/moderation.ts.
 export async function deleteUser(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = parse(z.object({ id: z.string().uuid() }), input);
     if (d.id === me.id) throw new AppError(400, 'You cannot delete your own account.');
     const res = await moderation.deleteAccount(d.id);
@@ -79,7 +88,7 @@ export async function deleteUser(input: unknown) {
 // Deletes a restaurant and its owner's account.
 export async function deleteRestaurant(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = parse(z.object({ id: z.number().int() }), input);
     const res = await moderation.deleteRestaurant(d.id);
     await log(me.id, 'restaurant.delete', 'restaurant', d.id, res.details);
@@ -90,7 +99,7 @@ export async function deleteRestaurant(input: unknown) {
 // Goodwill platform credit, funded by Bite Wise.
 export async function issueCredit(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('refund');
     const d = parse(z.object({ userId: z.string().uuid(), amount: dollars('Credit amount', 0.01, 1000), reason: note('Reason', 3) }), input);
     const balance = must(await db().rpc('issue_credit', { p_user: d.userId, p_amount_cents: d.amount, p_note: d.reason, p_by: me.id }));
     const u = must(await db().from('profiles').select('username').eq('id', d.userId).single());
@@ -101,7 +110,7 @@ export async function issueCredit(input: unknown) {
 
 export async function adminCancelOrder(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: int('Order', 1, Number.MAX_SAFE_INTEGER), reason: note('Reason').default('') }), input);
     const o = await orders.getOrder(d.id);
     if (o.status !== 'reserved' && o.status !== 'pending_payment') throw new AppError(409, 'Only orders awaiting pickup can be cancelled.');
@@ -114,7 +123,7 @@ export async function adminCancelOrder(input: unknown) {
 // Refund by percentage of what's left or by amount, to the original payment or as platform credit.
 export async function refundOrder(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('refund');
     const d = parse(
       z.object({
         id: int('Order', 1, Number.MAX_SAFE_INTEGER),
@@ -141,7 +150,7 @@ export async function refundOrder(input: unknown) {
 
 export async function endOffer(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int(), reason: note('Reason').default('') }), input);
     const o = must(await db().from('offers').update({ status: 'ended' }).eq('id', d.id).select('id, title, restaurants(name)').maybeSingle());
     await log(me.id, 'offer.remove', 'offer', o.id, `${o.title} (${o.restaurants?.name ?? ''})${d.reason ? `: ${d.reason}` : ''}`);
@@ -153,7 +162,7 @@ export async function endOffer(input: unknown) {
 // Invoice numbers and transaction details are assigned by the system and can't be edited.
 export async function payRestaurant(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = parse(z.object({ restaurantId: z.number().int(), amount: dollars('Amount', 0.01, 1_000_000), note: note('Note').default(''), manual: z.boolean() }), input);
     const r = must(await db().from('restaurants').select('name').eq('id', d.restaurantId).maybeSingle());
     const p = await orders.payRestaurant(d.restaurantId, d.amount, me.id, d.note, d.manual);
@@ -164,7 +173,7 @@ export async function payRestaurant(input: unknown) {
 
 export async function updateSettings(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = parse(
       z.object({
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
@@ -197,7 +206,7 @@ export async function updateSettings(input: unknown) {
 // Pioneer Member spots and when renewal reminders go out. (Prices change through a scheduled fee change.)
 export async function updatePlanSettings(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const days = (what: string) => z.coerce.number().int(`${what} must be a whole number of days.`).min(1, `${what} must be 1 to 60 days.`).max(60, `${what} must be 1 to 60 days.`);
     const d = parse(
       z.object({
@@ -234,7 +243,7 @@ const feeChange = (input: unknown) => {
 // The fee-change email as one restaurant will see it.
 export async function previewFeeChange(input: unknown) {
   return action(async () => {
-    await requireActor('admin');
+    await requireAdmin();
     return feeChanges.preview(feeChange(input));
   });
 }
@@ -242,7 +251,7 @@ export async function previewFeeChange(input: unknown) {
 // Schedules new subscription fees (12:01 AM Pacific Time on the effective date) and emails every restaurant now.
 export async function scheduleFeeChange(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = feeChange(input);
     const res = await feeChanges.scheduleChange(d, me.id);
     await log(me.id, 'plans.fee_change', 'settings', res.id,
@@ -255,7 +264,7 @@ export async function scheduleFeeChange(input: unknown) {
 // Cancels a scheduled fee change before it takes effect (restaurants that were emailed aren't told automatically).
 export async function cancelFeeChange(id: number) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const c = await feeChanges.cancelChange(parse(z.number().int(), id));
     await log(me.id, 'plans.fee_change_cancel', 'settings', c.id, 'scheduled fee change cancelled');
     return null;
@@ -271,7 +280,7 @@ const templateSchema = z.object({
 
 export async function saveFeeTemplate(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const t = await feeChanges.saveTemplate(parse(templateSchema, input));
     await log(me.id, 'plans.template_save', 'settings', t.id, t.name);
     return t;
@@ -280,7 +289,7 @@ export async function saveFeeTemplate(input: unknown) {
 
 export async function deleteFeeTemplate(id: number) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     await feeChanges.deleteTemplate(parse(z.number().int(), id));
     await log(me.id, 'plans.template_delete', 'settings', id, '');
     return null;
@@ -290,7 +299,7 @@ export async function deleteFeeTemplate(id: number) {
 // Charges a delinquent restaurant's plan to its default card on file (for example after it says it fixed its card).
 export async function chargeDelinquentPlan(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = parse(z.object({ restaurantId: z.number().int() }), input);
     const r = must(await db().from('restaurants').select('name').eq('id', d.restaurantId).maybeSingle());
     try {
@@ -307,7 +316,7 @@ export async function chargeDelinquentPlan(input: unknown) {
 // Marks missed-pickup alerts as seen (one, or all of them).
 export async function markAlertsRead(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int().optional() }), input);
     let q = db().from('admin_alerts').update({ read_at: new Date().toISOString(), read_by: me.id }).is('read_at', null);
     if (d.id) q = q.eq('id', d.id);
@@ -321,7 +330,7 @@ export async function markAlertsRead(input: unknown) {
 // Looks a restaurant's sales tax rate up again from its address (also hands a hand-set rate back to the lookup).
 export async function recheckRestaurantTax(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const { restaurantId } = parse(z.object({ restaurantId: z.coerce.number().int().positive() }), input);
     const res = await refreshRestaurantTax(restaurantId, { force: true });
     if (!res) throw new AppError(404, 'Restaurant not found.');
@@ -333,7 +342,7 @@ export async function recheckRestaurantTax(input: unknown) {
 // Sets a restaurant's sales tax rate by hand. The automatic lookup then leaves it alone until "Look up again".
 export async function setRestaurantTaxRate(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin();
     const d = parse(taxRateSchema, input);
     if (d.mode === 'auto') {
       const res = await refreshRestaurantTax(d.restaurantId, { force: true });
@@ -352,8 +361,9 @@ export async function setRestaurantTaxRate(input: unknown) {
 
 export async function updateUserAccount(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.string().uuid(), email: emailSchema, username: usernameSchema }), input);
+    await checkTeamTarget(me, d.id);
     const changed = await updateAccount(d.id, { email: d.email, username: d.username });
     if (changed.length) await log(me.id, 'user.update', 'user', d.id, changed.join('; '));
     return { changed: changed.length };
@@ -363,7 +373,7 @@ export async function updateUserAccount(input: unknown) {
 // A restaurant's details and its owner's email and user name.
 export async function updateRestaurant(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const d = parse(restaurantFieldsSchema.pick({ name: true, address: true, city: true, state: true, zip: true, phone: true, cuisine: true }).extend({
       id: z.number().int(), description: z.string().trim().max(400).default(''), ownerEmail: emailSchema, ownerUsername: usernameSchema,
     }), input);
@@ -381,7 +391,7 @@ export async function updateRestaurant(input: unknown) {
 // The customer congratulations email with the phone app buttons (src/lib/customer-welcome.ts), sent again.
 export async function sendCustomerWelcomeEmail(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const { id } = parse(z.object({ id: z.string().uuid() }), input);
     const res = await sendCustomerWelcome(id, { resend: true });
     if (!res.sent) {
@@ -397,7 +407,7 @@ export async function sendCustomerWelcomeEmail(input: unknown) {
 
 export async function adminPreviewMenuImport(input: unknown) {
   return action(async () => {
-    await requireActor('admin');
+    await requireAdmin('support');
     const d = parsePreviewInput(input);
     return d.kind === 'website' ? previewFromWebsite(d.url) : previewFromSpreadsheet(d.text);
   });
@@ -405,12 +415,45 @@ export async function adminPreviewMenuImport(input: unknown) {
 
 export async function adminImportMenu(input: unknown) {
   return action(async () => {
-    const me = await requireActor('admin');
+    const me = await requireAdmin('support');
     const { restaurantId } = parse(z.object({ restaurantId: z.number().int() }), { restaurantId: (input as { restaurantId?: unknown })?.restaurantId });
     const d = parseImportInput(input);
     const r = must(await db().from('restaurants').select('name').eq('id', restaurantId).neq('status', 'deleted').single());
     const res = await importMenu(restaurantId, d.items, { updateExisting: d.updateExisting });
     await log(me.id, 'restaurant.menu_import', 'restaurant', restaurantId, `${r.name}: ${res.added} added, ${res.updated} updated, ${res.skipped} skipped`);
     return res;
+  });
+}
+
+// ---------------------------------------------------------------- the admin team (admins only; src/lib/team.ts)
+
+export async function addTeamMemberAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({ email: emailSchema, username: usernameSchema, password: passwordSchema, role: z.enum(['admin', 'support']), canRefund: z.boolean().default(false) }), input);
+    const id = await addTeamMember(me.id, d);
+    await log(me.id, 'team.add', 'user', id, `${d.username} (${d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ''}`})`);
+    return null;
+  });
+}
+
+export async function updateTeamMemberAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({ id: z.string().uuid(), role: z.enum(['admin', 'support']), canRefund: z.boolean() }), input);
+    await updateTeamMember(me.id, d.id, d);
+    await log(me.id, 'team.update', 'user', d.id, d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ', no refunds'}`);
+    return null;
+  });
+}
+
+export async function removeTeamMemberAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const { id } = parse(z.object({ id: z.string().uuid() }), input);
+    await checkTeamRemoval(me.id, id);
+    const res = await moderation.deleteAccount(id);
+    await log(me.id, 'team.remove', 'user', id, JSON.stringify(res).slice(0, 200));
+    return null;
   });
 }

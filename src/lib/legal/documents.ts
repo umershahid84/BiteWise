@@ -452,6 +452,8 @@ export const REQUIRED: Record<Exclude<Role, 'admin'>, DocumentId[]> = {
   restaurant: ['restaurant-agreement', 'privacy'],
   // Staff work under their restaurant's agreement, accepted by the owner.
   staff: [],
+  // Admin employees work for Bite Wise.
+  support: [],
 };
 
 export type LegalDocument = { id: DocumentId; title: string; version: string; effective: string; html: string };

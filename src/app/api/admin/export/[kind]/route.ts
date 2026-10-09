@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import * as admin from '@/lib/admin';
-import { requireActor } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { serverEnv } from '@/lib/env';
 import { AppError } from '@/lib/errors';
 import { cellText, hasReport, report, reportCsv } from '@/lib/exports';
@@ -23,9 +23,13 @@ const csvResponse = (csv: string, name: string) =>
 
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/export/[kind]'>) {
   try {
-    await requireActor('admin');
+    const me = await requireAdmin('support');
     const { kind } = await ctx.params;
     const p = req.nextUrl.searchParams;
+    // Admin employees can download the lists in their tabs (not the admin team's accounts).
+    if (me.role !== 'admin' && (!['restaurants', 'users', 'orders'].includes(kind) || p.get('role') === 'admin' || p.get('role') === 'support')) {
+      throw new AppError(403, 'Only an admin can download this.');
+    }
     const generatedAt = formatDateTime(new Date().toISOString(), serverEnv.timeZone);
     if (hasReport(kind)) {
       const { report: r } = await report(kind, p);

@@ -31,12 +31,12 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 export const MIN_CARD_CHARGE_CENTS = 50;
 
 export const homeFor = (role: Role | null | undefined) =>
-  role === 'admin' ? '/admin' : role === 'restaurant' || role === 'staff' ? '/restaurant' : '/offers';
+  role === 'admin' || role === 'support' ? '/admin' : role === 'restaurant' || role === 'staff' ? '/restaurant' : '/offers';
 
 // Each kind of account has its own log-in and sign-up pages. Restaurant owners and their staff share one.
 export type Portal = 'customer' | 'restaurant' | 'admin';
 export const portalFor = (role: Role | null | undefined): Portal =>
-  role === 'admin' ? 'admin' : role === 'restaurant' || role === 'staff' ? 'restaurant' : 'customer';
+  role === 'admin' || role === 'support' ? 'admin' : role === 'restaurant' || role === 'staff' ? 'restaurant' : 'customer';
 export const LOGIN_PATH: Record<Portal, string> = { customer: '/login', restaurant: '/restaurant/login', admin: '/admin/login' };
 export const SIGNUP_PATH = { customer: '/signup', restaurant: '/restaurant/signup' } as const;
 export const loginFor = (role: Role | null | undefined) => LOGIN_PATH[portalFor(role)];
@@ -68,3 +68,6 @@ export const offerStatus = (o: { status: string; quantity_available: number }) =
 // Stripe accounts "connected" while the site ran without Stripe keys (test payments) don't exist at Stripe. Once real
 // keys are set they count as not connected, so the restaurant connects its real Stripe account.
 export const isTestStripeAccount = (id: string | null | undefined) => !!id && id.startsWith('acct_mock_');
+
+// The owner console: full admins see everything; admin employees ('support') only these tabs.
+export const SUPPORT_TABS = ['alerts', 'restaurants', 'users', 'orders', 'offers'] as const;

@@ -319,13 +319,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
+                    "can_refund": boolean,"created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
                   }
                   Insert: {
-                    "created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
                   }
                   Relationships: [
                     
@@ -593,6 +593,25 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "subscription_price_changes_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"team_invites": {
+                  Row: {
+                    "can_refund": boolean,"created_at": string,"created_by": string | null,"role": Database["public"]['Enums']["user_role"],"token": string
+                  }
+                  Insert: {
+                    "can_refund"?: boolean,"created_at"?: string,"created_by"?: string | null,"role": Database["public"]['Enums']["user_role"],"token": string
+                  }
+                  Update: {
+                    "can_refund"?: boolean,"created_at"?: string,"created_by"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"token"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "team_invites_created_by_fkey"
       columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "profiles"
@@ -1018,7 +1037,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_status": "active"|"suspended"|"deleted"|"banned","admin_alert_kind": "no_show"|"no_show_suspension"|"no_show_ban","credit_kind": "refund"|"goodwill"|"redeem"|"restore"|"adjustment","offer_reason": "wrong_order"|"delayed_order"|"unclaimed_order"|"overproduction"|"end_of_day"|"other","offer_status": "active"|"paused"|"ended","order_status": "pending_payment"|"reserved"|"picked_up"|"cancelled"|"expired"|"failed","payout_kind": "transfer"|"reversal"|"manual","refund_method": "original"|"credit","restaurant_status": "pending"|"approved"|"suspended"|"banned"|"deleted","subscription_plan": "founding"|"monthly"|"annual","subscription_status": "active"|"past_due"|"expired","user_role": "customer"|"restaurant"|"admin"|"staff"
+            "account_status": "active"|"suspended"|"deleted"|"banned","admin_alert_kind": "no_show"|"no_show_suspension"|"no_show_ban","credit_kind": "refund"|"goodwill"|"redeem"|"restore"|"adjustment","offer_reason": "wrong_order"|"delayed_order"|"unclaimed_order"|"overproduction"|"end_of_day"|"other","offer_status": "active"|"paused"|"ended","order_status": "pending_payment"|"reserved"|"picked_up"|"cancelled"|"expired"|"failed","payout_kind": "transfer"|"reversal"|"manual","refund_method": "original"|"credit","restaurant_status": "pending"|"approved"|"suspended"|"banned"|"deleted","subscription_plan": "founding"|"monthly"|"annual","subscription_status": "active"|"past_due"|"expired","user_role": "customer"|"restaurant"|"admin"|"staff"|"support"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1134,7 +1153,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "account_status": ["active", "suspended", "deleted", "banned"],"admin_alert_kind": ["no_show", "no_show_suspension", "no_show_ban"],"credit_kind": ["refund", "goodwill", "redeem", "restore", "adjustment"],"offer_reason": ["wrong_order", "delayed_order", "unclaimed_order", "overproduction", "end_of_day", "other"],"offer_status": ["active", "paused", "ended"],"order_status": ["pending_payment", "reserved", "picked_up", "cancelled", "expired", "failed"],"payout_kind": ["transfer", "reversal", "manual"],"refund_method": ["original", "credit"],"restaurant_status": ["pending", "approved", "suspended", "banned", "deleted"],"subscription_plan": ["founding", "monthly", "annual"],"subscription_status": ["active", "past_due", "expired"],"user_role": ["customer", "restaurant", "admin", "staff"]
+            "account_status": ["active", "suspended", "deleted", "banned"],"admin_alert_kind": ["no_show", "no_show_suspension", "no_show_ban"],"credit_kind": ["refund", "goodwill", "redeem", "restore", "adjustment"],"offer_reason": ["wrong_order", "delayed_order", "unclaimed_order", "overproduction", "end_of_day", "other"],"offer_status": ["active", "paused", "ended"],"order_status": ["pending_payment", "reserved", "picked_up", "cancelled", "expired", "failed"],"payout_kind": ["transfer", "reversal", "manual"],"refund_method": ["original", "credit"],"restaurant_status": ["pending", "approved", "suspended", "banned", "deleted"],"subscription_plan": ["founding", "monthly", "annual"],"subscription_status": ["active", "past_due", "expired"],"user_role": ["customer", "restaurant", "admin", "staff", "support"]
           }
         }
 } as const

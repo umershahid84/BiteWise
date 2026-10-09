@@ -44,12 +44,12 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         <Link href="/signup" onClick={close} className={cn(buttonVariants({ size: 'sm' }), 'ml-1')}>Sign up free</Link>
       </>
     );
-  } else if (viewer.role === 'admin') {
+  } else if (viewer.role === 'admin' || viewer.role === 'support') {
     links = (
       <>
         <NavLink href="/admin" onClick={close}>Admin console</NavLink>
         <NavLink href="/" onClick={close}>Public site</NavLink>
-        <span className="px-2 text-sm text-muted">Owner · {viewer.username}</span>
+        <span className="px-2 text-sm text-muted">{viewer.role === 'admin' ? 'Owner' : 'Support'} · {viewer.username}</span>
       </>
     );
   } else if (viewer.role === 'restaurant' || viewer.role === 'staff') {

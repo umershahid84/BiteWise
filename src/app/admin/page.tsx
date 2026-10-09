@@ -5,6 +5,6 @@ import { requirePageViewer } from '@/lib/auth';
 export const metadata: Metadata = { title: 'Owner console' };
 
 export default async function AdminPage() {
-  const viewer = await requirePageViewer('admin');
-  return <AdminConsole adminId={viewer.id} />;
+  const viewer = await requirePageViewer(['admin', 'support']);
+  return <AdminConsole access={{ id: viewer.id, role: viewer.role === 'admin' ? 'admin' : 'support', canRefund: viewer.canRefund }} />;
 }

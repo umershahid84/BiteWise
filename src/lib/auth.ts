@@ -12,6 +12,8 @@ export type Viewer = {
   username: string;
   role: Role;
   restaurant: { id: number; name: string; status: Database['public']['Enums']['restaurant_status'] } | null;
+  // Admin employees ('support') allowed to issue refunds and credit (always true for admins).
+  canRefund: boolean;
   // Restaurant staff (managers, supervisors): their restaurant is in `restaurant`.
   staff: { fullName: string; title: string } | null;
   creditCents: number;
@@ -31,7 +33,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
       ? supabase.from('restaurants').select('id, name, status').eq('owner_id', profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
     profile.role === 'customer' ? supabase.rpc('my_credit_balance') : Promise.resolve({ data: 0 }),
-    profile.role === 'admin' || profile.role === 'staff' ? Promise.resolve({ data: [] }) : supabase.rpc('pending_terms'),
+    profile.role === 'admin' || profile.role === 'support' || profile.role === 'staff' ? Promise.resolve({ data: [] }) : supabase.rpc('pending_terms'),
     profile.role === 'staff'
       ? supabase.from('restaurant_staff').select('full_name, title, restaurants(id, name, status)').eq('user_id', profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -46,6 +48,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     username: profile.username,
     role: profile.role,
     restaurant: restaurant.data ?? staffOf ?? null,
+    canRefund: profile.role === 'admin' || (profile.role === 'support' && profile.can_refund),
     staff: staff.data ? { fullName: staff.data.full_name, title: staff.data.title } : null,
     creditCents: Number(credit.data ?? 0),
     pendingTerms: (pending.data ?? []).map((d) => ({ id: d.id, title: d.title, version: d.version })),
@@ -70,6 +73,24 @@ export async function requireActor(role?: Role): Promise<Viewer> {
   if (role && viewer.role !== role) throw new AppError(403, 'This page is not available for your account type.');
   if (viewer.pendingTerms.length) throw new AppError(403, 'Please review and accept our updated terms to continue.', 'terms_required');
   return viewer;
+}
+
+// The owner console. Full admins may do everything. Admin employees ('support') may do what `allow` names:
+// 'support' (accounts, bans, emails, orders, live offers) or 'refund' (refunds and credit, if an admin allowed
+// them to).
+export async function requireAdmin(allow?: 'support' | 'refund'): Promise<Viewer> {
+  const viewer = await getViewer();
+  if (!viewer) throw new AppError(401, 'Please log in.');
+  if (viewer.role === 'admin') return viewer;
+  if (viewer.role === 'support') {
+    if (allow === 'support') return viewer;
+    if (allow === 'refund') {
+      if (viewer.canRefund) return viewer;
+      throw new AppError(403, 'You don\'t have permission to issue refunds or credit. Ask an admin.');
+    }
+    throw new AppError(403, 'Only an admin can do this.');
+  }
+  throw new AppError(403, 'This page is not available for your account type.');
 }
 
 // The restaurant owner; with `staff: true`, also the restaurant's staff (posting offers, the menu, handing orders

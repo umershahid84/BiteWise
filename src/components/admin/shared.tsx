@@ -1,5 +1,6 @@
 'use client';
 
+import { createContext, useContext } from 'react';
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { FileSpreadsheet, FileText } from 'lucide-react';
@@ -90,3 +91,8 @@ export function TableHead({ title, kind, params = {}, section, what }: {
     </div>
   );
 }
+
+// Who is using the owner console: a full admin, or an admin employee ('support') who may or may not issue refunds.
+export type Access = { id: string; role: 'admin' | 'support'; canRefund: boolean };
+export const AccessContext = createContext<Access>({ id: '', role: 'support', canRefund: false });
+export const useAccess = () => useContext(AccessContext);
