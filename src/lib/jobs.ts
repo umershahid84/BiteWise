@@ -25,11 +25,16 @@ export async function runScheduledJobs() {
 // src/instrumentation.ts, so a database that is missing an update gets one clear message instead of an error every
 // few minutes.
 export async function databaseNotReady() {
-  // restaurants.tax_accuracy is the newest column (20261012000100_automatic_sales_tax.sql).
-  const { error } = await supabaseAdmin().from('restaurants').select('tax_accuracy').limit(1);
+  // The newest table and column (20261014000200_admin_team.sql); staff_invites is from 20261013000300.
+  const checks = await Promise.all([
+    supabaseAdmin().from('team_invites').select('token').limit(1),
+    supabaseAdmin().from('staff_invites').select('token').limit(1),
+    supabaseAdmin().from('profiles').select('can_refund').limit(1),
+  ]);
+  const error = checks.find((c) => c.error)?.error;
   if (!error) return null;
   if (error.code === 'PGRST205' || error.code === '42P01' || error.code === '42703' || error.code === 'PGRST204') {
-    return 'The database is missing the latest updates (for example automatic sales tax rates). Stop the app and run: npx supabase db push   then start it again.';
+    return 'The database is missing the latest updates (for example restaurant staff and admin team accounts). Stop the app and run: npx supabase db push   then start it again.';
   }
   return `Can't check the database: ${error.message}`;
 }

@@ -27,6 +27,11 @@ export function fromDb(err: { code?: string; message: string } | null | undefine
   if (!err) return null;
   const status = err.code ? DB_CODES[err.code] : undefined;
   if (status) return new AppError(status, err.message, err.code);
+  // A table or column the app needs isn't in the database: an update (migration) hasn't been applied.
+  if (err.code && ['PGRST205', 'PGRST204', '42P01', '42703'].includes(err.code)) {
+    console.error(`Database error: ${err.message}\n  The database is missing an update. Stop the app, run: npx supabase db push   then start it again.`);
+    return new AppError(503, 'This feature needs a database update. Please ask the site owner to run "npx supabase db push".', 'db_outdated');
+  }
   console.error('Database error:', err);
   return new AppError(500, 'Something went wrong. Please try again.');
 }
