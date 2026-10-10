@@ -5,6 +5,7 @@ import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { serverEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
 import { money } from '@/lib/format';
+import { refundableTotalCents } from '@/lib/pricing';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { dayRange, formatDateTime, formatTime } from './time';
 
@@ -40,17 +41,20 @@ export async function receiptData(order: Order) {
   const lineOriginal = order.original_unit_price_cents * order.quantity;
   const number = receiptNumber(order);
   const refundedTotal = order.refunded_cents + order.credited_cents;
+  const keptCents = order.kept_fee_cents + order.kept_tax_cents; // non-refundable service fee on an order not picked up
   return {
     receiptNumber: number,
     orderId: order.id,
     status: order.status,
     statusLabel: ORDER_STATUS_LABELS[order.status],
     paymentStatus:
-      refundedTotal >= order.total_cents && order.status === 'picked_up'
-        ? 'Refunded in full'
+      refundedTotal >= refundableTotalCents(order) && order.status === 'picked_up'
+        ? 'Refunded in full, except the non-refundable service fee'
         : refundedTotal
           ? `Paid, partially refunded (${money(refundedTotal)})`
-          : PAYMENT_STATUS[order.status],
+          : keptCents
+            ? `${order.status === 'expired' ? 'Not picked up' : 'Cancelled'}: only the non-refundable service fee (${money(keptCents)}) was charged; the rest of the hold was released`
+            : PAYMENT_STATUS[order.status],
     orderedAtText: formatDateTime(order.created_at, tz),
     pickedUpAtText: formatDateTime(order.picked_up_at, tz),
     pickupByText: formatDateTime(order.pickup_end, tz),
@@ -74,7 +78,7 @@ export async function receiptData(order: Order) {
     taxCents: order.tax_cents,
     totalCents: order.total_cents,
     creditAppliedCents: order.credit_applied_cents,
-    amountChargedCents: order.status === 'picked_up' ? order.total_cents - order.credit_applied_cents : 0,
+    amountChargedCents: order.status === 'picked_up' ? order.total_cents - order.credit_applied_cents : order.kept_card_cents,
     refundedCents: refundedTotal,
     refunds: (refunds.data ?? []).map((f) => ({
       amountCents: f.amount_cents,

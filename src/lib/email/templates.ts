@@ -327,7 +327,9 @@ const box = (html: string, color = '#FEF3C7', border = '#FCD34D') =>
   `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${color};border:1px solid ${border};border-radius:14px;margin:0 0 18px;"><tr><td style="padding:14px 18px;font:15px/1.55 ${FONT};color:#1E293B;">${html}</td></tr></table>`;
 
 // A customer missed a pickup: how many in a row, and what happens next.
-export function noShowWarningEmail(o: { username: string; orderId: number; item: string; restaurant: string; strikes: number; limit: number; probation: boolean; ordersUrl: string }) {
+// feeCents: the non-refundable service fee that was charged for the missed order.
+export function noShowWarningEmail(o: { username: string; orderId: number; item: string; restaurant: string; strikes: number; limit: number; probation: boolean; ordersUrl: string; feeCents: number }) {
+  const charged = o.feeCents > 0 ? `Only the non-refundable service fee (${usd(o.feeCents)}) was charged` : 'You were not charged';
   const left = Math.max(0, o.limit - o.strikes);
   const next = o.probation
     ? '<b>Your account was suspended before for missed pickups, so the next missed pickup will close your account permanently.</b>'
@@ -337,19 +339,19 @@ export function noShowWarningEmail(o: { username: string; orderId: number; item:
   return {
     subject: `You missed your Bite Wise pickup (order #${o.orderId})`,
     html: layout({
-      preview: `Order #${o.orderId} at ${o.restaurant} wasn't picked up. You were not charged.`,
+      preview: `Order #${o.orderId} at ${o.restaurant} wasn't picked up. ${charged}.`,
       emoji: '⏰',
       title: 'You missed your pickup',
       subtitle: `Order #${o.orderId} · ${esc(o.restaurant)}`,
       body: `<p style="margin:0 0 14px;">Hi ${esc(o.username)}, your order of <b>${esc(o.item)}</b> at <b>${esc(o.restaurant)}</b> wasn't picked up before the
-        discard timer ran out. You were not charged, but the food couldn't be sold to anyone else and went to waste.</p>
+        discard timer ran out. ${charged}, but the food couldn't be sold to anyone else and went to waste.</p>
         ${box(`${o.probation ? '' : `Missed pickups in a row: <b>${o.strikes} of ${o.limit}</b>.<br>`}${next}`)}
-        <p style="margin:0 0 18px;font-size:15px;color:#475569;">Can't make it? Cancel the order from My Orders before the timer ends: it's free, and the food goes back on sale. A pickup resets the count.</p>
+        <p style="margin:0 0 18px;font-size:15px;color:#475569;">Can't make it? Cancel the order from My Orders before the timer ends: it doesn't count as a missed pickup, and the food goes back on sale. A pickup resets the count.</p>
         ${button(o.ordersUrl, 'My orders', '#14284B')}`,
     }),
-    text: `Hi ${o.username}, your order #${o.orderId} (${o.item}) at ${o.restaurant} wasn't picked up before the discard timer ran out. You were not charged, but the food went to waste.
+    text: `Hi ${o.username}, your order #${o.orderId} (${o.item}) at ${o.restaurant} wasn't picked up before the discard timer ran out. ${charged}, but the food went to waste.
 ${o.probation ? '' : `Missed pickups in a row: ${o.strikes} of ${o.limit}.\n`}${next.replace(/<[^>]+>/g, '')}
-Can't make it? Cancel from My Orders before the timer ends: it's free. A pickup resets the count.
+Can't make it? Cancel from My Orders before the timer ends: it doesn't count as a missed pickup. A pickup resets the count.
 ${o.ordersUrl}`,
   };
 }

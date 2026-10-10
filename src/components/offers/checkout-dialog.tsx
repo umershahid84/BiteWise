@@ -148,7 +148,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
       <Alert tone="warn" className="mb-4">
         <Countdown until={offer.pickup_end} suffix=" until this food is discarded" />
         <br />
-        Pick up by <b>{fmtTime(offer.pickup_end)}</b>. If you don&apos;t make it, your order is released and you&apos;re not charged.
+        Pick up by <b>{fmtTime(offer.pickup_end)}</b>. If you cancel or don&apos;t make it, the food is released and you&apos;re charged only the service fee, which is not refundable.
       </Alert>
 
       <div className="flex items-center gap-3">
@@ -173,7 +173,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
             <tbody>
               <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{money(q.originalUnitCents)}</span> {money(q.unitPriceCents)}</td><td>{money(q.subtotalCents)}</td></tr>
               <tr><td colSpan={2} className="text-primary-ink">You save {money(q.savingsCents)} ({q.discountPct}% off)</td></tr>
-              <tr><td>Service fee ({pct(q.serviceFeeBps)})</td><td>{money(q.serviceFeeCents)}</td></tr>
+              <tr><td>Service fee ({pct(q.serviceFeeBps)}) <span className="text-xs text-muted">· non-refundable</span></td><td>{money(q.serviceFeeCents)}</td></tr>
               <tr><td>Sales tax ({pct(q.taxRateBps)})</td><td>{money(q.taxCents)}</td></tr>
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{money(q.totalCents)}</td></tr>
               {creditCents > 0 && (

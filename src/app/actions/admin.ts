@@ -121,7 +121,7 @@ export async function adminCancelOrder(input: unknown) {
   });
 }
 
-// Refund by percentage of what's left or by amount, to the original payment or as platform credit.
+// Refund by percentage of what's left (food and its tax; the service fee is not refundable) or by amount, to the original payment or as platform credit.
 export async function refundOrder(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('refund');
@@ -136,7 +136,7 @@ export async function refundOrder(input: unknown) {
       input,
     );
     const o = await orders.getOrder(d.id);
-    const refundable = o.total_cents - o.refunded_cents - o.credited_cents;
+    const refundable = orders.refundableCents(o); // never the service fee
     const amountCents = d.percent !== undefined
       ? Math.max(1, Math.round((refundable * d.percent) / 100))
       : parse(dollars('Refund amount', 0.01, refundable / 100), d.amount ?? '');

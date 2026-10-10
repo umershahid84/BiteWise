@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-12.1';
-export const EFFECTIVE = 'October 12, 2026';
+export const LEGAL_VERSION = '2026-10-15.1';
+export const EFFECTIVE = 'October 15, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -68,8 +68,8 @@ price, a Bite Wise service fee (currently ${c.serviceFeePct}% of the food subtot
 Prices are in U.S. dollars.</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold
 on your debit or credit card for the order total. <b>Your card is charged only when the Restaurant confirms pickup by entering your
-PIN.</b> If an order is cancelled or not picked up, the hold is released and you are not charged. Your card issuer controls how long
-it takes for a released hold to disappear from your statement.</p>
+PIN.</b> If you cancel an order or do not pick it up, the hold is released except for the service fee, which is charged as described
+in Section 4.6. Your card issuer controls how long it takes for a released hold to disappear from your statement.</p>
 <p>4.3 <b>Saved cards.</b> If you choose to save a card, you authorize us and our payment processor to store it securely and to use
 it for future orders you place. Card numbers are handled by our payment processor. Bite Wise stores only the card brand, last four
 digits and expiry date. You can remove a saved card at any time on your Account page.</p>
@@ -78,15 +78,27 @@ order it cannot fulfil (for example, if food is found to be unsuitable), in whic
 <p>4.5 <b>Taxes.</b> Because you pick your order up at the Restaurant, sales tax is charged at the rate that applies at the
 Restaurant's address (state, county, city and any local taxes), which we calculate automatically. Where Bite Wise is required to do so
 as a marketplace facilitator, Bite Wise collects sales tax on your order and remits it to the state tax authority.</p>
+<p>4.6 <b>The service fee is not refundable.</b> The Bite Wise service fee pays for reserving the food for you and processing your
+order, and <b>it is not refunded, whether or not you pick up your order</b>. In particular:</p>
+<ul>
+  <li>if you <b>cancel</b> an order, or <b>do not pick it up</b> before the discard timer ends (a missed pickup, Section 5.4), you are charged
+  the service fee (and any sales tax on it), and the rest of the hold is released; if you paid part of the order with Platform Credit, the
+  service fee is charged to your card first and then taken from that credit;</li>
+  <li>a refund on a completed order (Section 6) covers at most the food and its sales tax, never the service fee.</li>
+</ul>
+<p>The only exception is an order the Restaurant or Bite Wise cancels or declines (for example, because the food became unavailable or
+unsafe, or the Restaurant's account was closed), or an order whose payment failed: those holds are released in full and you are not
+charged at all.</p>
 
 <h2>5. Pickup, PIN and the discard timer</h2>
 <p>5.1 Each Offer has a discard timer set by the Restaurant. You must pick up your order at the Restaurant before the timer ends. If
 you do not, the Restaurant may discard the food, your order will be released ${c.graceMinutes} minutes after the timer ends, and you will
-not be charged.</p>
+be charged only the non-refundable service fee (Section 4.6).</p>
 <p>5.2 Your PIN is how the Restaurant confirms that you are the buyer. <b>Keep it private.</b> Anyone who presents your PIN may
 receive your order, and your card will be charged when the Restaurant enters it. Bite Wise is not responsible for orders collected by
 someone using a PIN you shared.</p>
-<p>5.3 You may cancel an order at no charge from the My Orders page at any time before it is picked up.</p>
+<p>5.3 You may cancel an order from the My Orders page at any time before it is picked up. The food goes back on sale and the hold on
+your card is released, except for the non-refundable service fee (Section 4.6).</p>
 <p>5.4 <b>Missed pickups.</b> An order that you do not pick up and do not cancel before the discard timer ends is a <b>missed pickup</b>: the
 food was held for you, could not be sold to anyone else, and is usually thrown away. To prevent food waste, Bite Wise counts missed pickups
 automatically, and the following steps are taken automatically by the platform, without further notice:</p>
@@ -105,8 +117,8 @@ automatically, and the following steps are taken automatically by the platform, 
 <h2>6. Problems with an order and refunds</h2>
 <p>6.1 If your food was not provided, was materially different from its description, or appeared unsafe, contact us at
 <a href="mailto:${c.email}">${c.email}</a> within 24 hours of pickup with your receipt number and a description (and photos if possible).
-We will review your request with the Restaurant and, where appropriate, issue a full or partial refund. Bite Wise decides the refund
-method, and will tell you which one it used:</p>
+We will review your request with the Restaurant and, where appropriate, refund all or part of the price of the food and its sales tax.
+<b>The service fee is not refundable</b> (Section 4.6). Bite Wise decides the refund method, and will tell you which one it used:</p>
 <ul>
   <li><b>Original form of payment.</b> The refund goes back to how you paid: to the card you used, and if you paid with Platform Credit,
   that portion is returned to your credit balance. Card refunds usually appear within 5 to 10 business days, depending on your card
@@ -125,7 +137,8 @@ to your account.</p>
   and at checkout.</li>
   <li><b>Using it:</b> you choose whether to use it and how much, up to your balance and the order total. Any remainder is charged to
   your card, and the card portion must be at least $0.50.</li>
-  <li><b>Unused orders:</b> credit applied to an order that is cancelled, declined or not picked up is returned to your balance.</li>
+  <li><b>Unused orders:</b> credit applied to an order that is cancelled, declined or not picked up is returned to your balance, less any
+  part of the non-refundable service fee it paid (Section 4.6).</li>
   <li><b>Restrictions:</b> Platform Credit has no cash value, cannot be purchased, reloaded, sold or transferred, and cannot be redeemed
   for cash except where required by law.</li>
   <li><b>Expiry:</b> it does not expire while your account is open and in good standing. If we close your account for fraud or a serious
@@ -244,8 +257,9 @@ Offer's discard timer ends.</p>
 <p>4.2 <b>Verify the PIN before handing over food.</b> You must enter the customer's 4-digit PIN in the Partner Portal and confirm the
 order before giving the customer their food. Confirming pickup is what charges the customer's card. If you hand over food without
 confirming a valid PIN, Bite Wise is not responsible for payment for that food.</p>
-<p>4.3 Orders not picked up within ${c.graceMinutes} minutes after the discard timer ends are automatically released and the customer is
-not charged. You are not paid for released orders.</p>
+<p>4.3 Orders not picked up within ${c.graceMinutes} minutes after the discard timer ends are automatically released. The customer is
+charged only the Bite Wise service fee, which is not refundable and which Bite Wise keeps. You are not paid for released orders or for orders
+the customer cancels.</p>
 <p>4.4 You may refuse or cancel an order only if the food has become unsafe or unavailable, or the customer behaves abusively. You
 will cancel through Bite Wise support so the customer's payment hold is released.</p>
 
@@ -254,7 +268,8 @@ will cancel through Bite Wise support so the customer's payment hold is released
 behalf as your limited payment collection agent. A customer's payment to Bite Wise satisfies the customer's obligation to you.</p>
 <p>5.2 <b>Your proceeds.</b> For each completed order you are entitled to the food subtotal (the discounted price times quantity).
 Bite Wise charges Partners <b>no commission</b> on orders. Customers pay a separate Bite Wise service fee (currently ${c.serviceFeePct}% of
-the food subtotal), which Bite Wise keeps. Partners pay the subscription fee in Section 5.6. We will give you at least 30 days'
+the food subtotal), which Bite Wise keeps and which is <b>not refundable</b> to the customer, whether or not the order is picked up.
+Partners pay the subscription fee in Section 5.6. We will give you at least 30 days'
 written notice before introducing or changing any fee charged to Partners.</p>
 <p>5.3 <b>Payouts through Stripe Connect.</b> Payouts are made through Stripe Connect. To be paid, you must create and verify a
 Stripe Express account from the Partner Portal (Payouts tab) and keep it in good standing. By doing so you also agree to the
@@ -280,7 +295,7 @@ before deciding on a refund. Bite Wise may resolve a complaint in one of two way
 <ul>
   <li><b>(a) Refund to the customer's original form of payment.</b> The refunded share of the food subtotal is taken back from you,
   by reversing the transfer for that order or deducting it from future payouts, and you receive nothing for the refunded portion.
-  Bite Wise likewise gives up its service fee on that portion.</li>
+  Refunds cover only the food and its sales tax; the customer's service fee is not refundable and is never part of a refund.</li>
   <li><b>(b) Bite Wise Platform Credit.</b> Bite Wise may instead issue the customer Platform Credit. Platform Credit, including goodwill
   credit, is funded solely by Bite Wise. You keep your full proceeds for the order, and nothing is deducted from your payouts.</li>
 </ul>
@@ -310,8 +325,10 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   you cannot post or turn on Offers until a payment for your plan succeeds. We will tell you by email and retry your card on file
   automatically for up to 7 days; you can also pay at any time from the Plan tab with any card. Your new plan period starts when the
   payment succeeds.</li>
-  <li><b>No partial refunds.</b> Fees already paid are not refunded for unused parts of a period, except where the law requires or
-  where Bite Wise ends this Agreement for convenience, in which case we refund the unused part of a prepaid period.</li>
+  <li><b>Subscription fees are not refundable.</b> Plan fees already paid, including the sales tax on them, are not refunded, in whole or in
+  part, for any reason: this includes unused parts of a monthly or annual period, turning off automatic renewal, a paused, suspended or
+  delinquent plan, and the end of this Agreement by either party. If you turn off automatic renewal or this Agreement ends, your plan
+  simply runs to the end of the period you have paid for and is not renewed. This applies except where the law requires a refund.</li>
 </ul>
 
 <h2>6. Content and licence</h2>
@@ -346,7 +363,7 @@ the claim arose.</p>
 written notice. Bite Wise may suspend your restaurant (for a set number of days) or terminate immediately and permanently remove it
 from Bite Wise (a ban) if you breach Sections 2, 3, 7 or 8, if food safety is at risk, or if required by law. A banned Partner may not
 open a new Partner or customer account. On termination, your Offers are removed, open orders are cancelled and released, and Bite Wise will pay out amounts
-owed for completed orders, less adjustments under Section 5.5.</p>
+owed for completed orders, less adjustments under Section 5.5. Subscription fees already paid are not refunded (Section 5.6).</p>
 
 <h2>12. Changes</h2>
 <p>We may update this Agreement. We will give you at least 30 days' notice of material changes by email or in the Partner Portal, and

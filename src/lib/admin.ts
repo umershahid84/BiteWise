@@ -6,22 +6,28 @@ import { AppError, must } from '@/lib/errors';
 import { dollars, toCsv } from '@/lib/receipts/data';
 import { dayKey, dayRange, todayIn } from '@/lib/receipts/time';
 import * as feeChanges from '@/lib/fee-changes';
+import { nonRefundableCents, refundableTotalCents } from '@/lib/pricing';
 import { prices } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Owner/admin console data. Callers must check that the user is an admin first (see requireActor('admin')).
 //
 // refunded_cents = refunds to the customer's ORIGINAL payment: the restaurant gives up its share of the
-// food subtotal and Bite Wise gives up its fee share. credited_cents = refunds issued as PLATFORM CREDIT,
-// funded by Bite Wise; the restaurant keeps its full food sales.
+// food subtotal (and the food's sales tax goes back). The service fee is never refunded. credited_cents = refunds
+// issued as PLATFORM CREDIT, funded by Bite Wise; the restaurant keeps its full food sales.
+// Orders that weren't picked up (missed or cancelled by the customer) still bring in the service fee: kept_fee_cents
+// (and kept_tax_cents, the sales tax on the fee when the fee is taxed).
 
 type Order = Database['public']['Tables']['orders']['Row'];
 const db = () => supabaseAdmin();
 const tz = () => serverEnv.timeZone;
 
-const foodRefund = (o: Order) => (o.refunded_cents && o.total_cents ? Math.round((o.refunded_cents * o.subtotal_cents) / o.total_cents) : 0);
-const feeRefund = (o: Order) => (o.refunded_cents && o.total_cents ? Math.round((o.refunded_cents * o.service_fee_cents) / o.total_cents) : 0);
-const taxRefund = (o: Order) => (o.refunded_cents && o.total_cents ? o.refunded_cents - foodRefund(o) - feeRefund(o) : 0);
+const foodRefund = (o: Order) => {
+  const base = refundableTotalCents(o);
+  return o.refunded_cents && base ? Math.min(o.subtotal_cents, Math.round((o.refunded_cents * o.subtotal_cents) / base)) : 0;
+};
+const feeRefund = (o: Order) => Math.max(0, o.refunded_cents - refundableTotalCents(o)); // only on refunds made before the fee was non-refundable
+const taxRefund = (o: Order) => (o.refunded_cents ? o.refunded_cents - foodRefund(o) - feeRefund(o) : 0);
 
 // A restaurant can be paid through Stripe: its account is ready, and (with live keys) isn't a test-payments account.
 const liveStripe = (a: { charges_enabled: boolean; stripe_account_id: string | null } | undefined) =>
@@ -48,6 +54,12 @@ export function range(params: URLSearchParams, days = 30) {
   return { from, to, start: dayRange(from, tz()).start, end: dayRange(to, tz()).end };
 }
 
+// Orders not picked up (missed, or cancelled by the customer) whose service fee was kept, by the day they closed.
+type Kept = Pick<Order, 'restaurant_id' | 'closed_at' | 'kept_fee_cents' | 'kept_tax_cents' | 'tax_rate_bps'>;
+const keptBetween = (start: string, end: string) =>
+  all<Kept>((a, b) => db().from('orders').select('restaurant_id, closed_at, kept_fee_cents, kept_tax_cents, tax_rate_bps')
+    .in('status', ['cancelled', 'expired']).gt('kept_fee_cents', 0).gte('closed_at', start).lt('closed_at', end).range(a, b));
+
 const pickedUpBetween = (start: string, end: string) =>
   all<Order>((a, b) => db().from('orders').select('*').eq('status', 'picked_up').gte('picked_up_at', start).lt('picked_up_at', end).range(a, b));
 
@@ -55,7 +67,7 @@ const pickedUpBetween = (start: string, end: string) =>
 
 export async function overview(params: URLSearchParams) {
   const r = range(params);
-  const [sold, placed, restaurants, customers, liveOffers, awaiting, balances, credit] = await Promise.all([
+  const [sold, placed, restaurants, customers, liveOffers, awaiting, balances, credit, kept] = await Promise.all([
     pickedUpBetween(r.start, r.end),
     all<{ status: Order['status'] }>((a, b) => db().from('orders').select('status').gte('created_at', r.start).lt('created_at', r.end).neq('status', 'failed').range(a, b)),
     all<{ id: number; name: string; city: string; status: string }>((a, b) => db().from('restaurants').select('id, name, city, status').range(a, b)),
@@ -64,7 +76,10 @@ export async function overview(params: URLSearchParams) {
     db().from('orders').select('id', { count: 'exact', head: true }).eq('status', 'reserved'),
     db().from('restaurant_balances').select('balance_cents'),
     all<{ amount_cents: number }>((a, b) => db().from('credit_ledger').select('amount_cents').range(a, b)),
+    keptBetween(r.start, r.end),
   ]);
+  const keptFees = kept.reduce((n, o) => n + o.kept_fee_cents, 0);
+  const keptTax = kept.reduce((n, o) => n + o.kept_tax_cents, 0);
   const sum = (f: (o: Order) => number) => sold.reduce((n, o) => n + f(o), 0);
   const byStatus: Record<string, number> = {};
   for (const p of placed) byStatus[p.status] = (byStatus[p.status] ?? 0) + 1;
@@ -72,6 +87,13 @@ export async function overview(params: URLSearchParams) {
   const days: string[] = [];
   for (let t = Date.parse(`${r.from}T12:00:00Z`); t <= Date.parse(`${r.to}T12:00:00Z`); t += 86400000) days.push(new Date(t).toISOString().slice(0, 10));
   const daily = Object.fromEntries(days.map((d) => [d, { date: d, orders: 0, meals: 0, gmvCents: 0, feesCents: 0, foodCents: 0 }]));
+  for (const o of kept) {
+    const d = daily[dayKey(o.closed_at!, tz())];
+    if (d) {
+      d.gmvCents += o.kept_fee_cents + o.kept_tax_cents;
+      d.feesCents += o.kept_fee_cents;
+    }
+  }
   const top = new Map<number, { orders: number; meals: number; foodCents: number }>();
   for (const o of sold) {
     const d = daily[dayKey(o.picked_up_at!, tz())];
@@ -95,10 +117,11 @@ export async function overview(params: URLSearchParams) {
   return {
     range: { from: r.from, to: r.to },
     totals: {
-      gmvCents: sum((o) => o.total_cents - o.refunded_cents),
-      serviceFeesCents: sum((o) => o.service_fee_cents - feeRefund(o)),
+      gmvCents: sum((o) => o.total_cents - o.refunded_cents) + keptFees + keptTax,
+      serviceFeesCents: sum((o) => o.service_fee_cents - feeRefund(o)) + keptFees,
+      keptFeesCents: keptFees,
       foodSalesCents: sum((o) => o.subtotal_cents - foodRefund(o)),
-      salesTaxCents: sum((o) => o.tax_cents - taxRefund(o)),
+      salesTaxCents: sum((o) => o.tax_cents - taxRefund(o)) + keptTax,
       refundsCents: sum((o) => o.refunded_cents),
       creditRefundsCents: sum((o) => o.credited_cents),
       cardChargedCents: sum((o) => o.total_cents - o.credit_applied_cents - o.card_refunded_cents),
@@ -237,7 +260,8 @@ export function presentOrder(o: Order & { restaurants?: { name: string } | null;
     originalUnitPriceCents: o.original_unit_price_cents, discountPct: o.discount_pct, subtotalCents: o.subtotal_cents,
     serviceFeeCents: o.service_fee_cents, taxCents: o.tax_cents, totalCents: o.total_cents, refundedCents: o.refunded_cents,
     creditedCents: o.credited_cents, creditAppliedCents: o.credit_applied_cents, cardRefundedCents: o.card_refunded_cents,
-    refundableCents: o.total_cents - o.refunded_cents - o.credited_cents,
+    refundableCents: o.status === 'picked_up' ? Math.max(0, o.total_cents - nonRefundableCents(o) - o.refunded_cents - o.credited_cents) : 0,
+    nonRefundableCents: nonRefundableCents(o), keptFeeCents: o.kept_fee_cents + o.kept_tax_cents,
     cardRefundableCents: o.payment_ref ? o.total_cents - o.credit_applied_cents - o.card_refunded_cents : 0,
     refundReason: o.refund_reason, card: o.card_label, paymentRef: o.payment_ref, createdAt: o.created_at, pickedUpAt: o.picked_up_at,
     pickupEnd: o.pickup_end,
@@ -317,10 +341,11 @@ export async function payouts() {
 // excise tax return).
 export async function tax(params: URLSearchParams) {
   const r = range(params, 30);
-  const [sold, rest, plans] = await Promise.all([
+  const [sold, rest, plans, kept] = await Promise.all([
     pickedUpBetween(r.start, r.end),
     all<{ id: number; city: string; zip: string }>((a, b) => db().from('restaurants').select('id, city, zip').range(a, b)),
     paidPlansBetween(r.start, r.end),
+    keptBetween(r.start, r.end),
   ]);
   const loc = new Map(rest.map((x) => [x.id, x]));
   const groups = new Map<string, { city: string; zip: string; rateBps: number; orders: number; taxableCents: number; taxCents: number }>();
@@ -331,6 +356,16 @@ export async function tax(params: URLSearchParams) {
     g.orders += 1;
     g.taxableCents += o.subtotal_cents - foodRefund(o);
     g.taxCents += o.tax_cents - taxRefund(o);
+    groups.set(key, g);
+  }
+  // Kept service fees are taxable sales only where the fee is taxed.
+  for (const o of kept) {
+    if (!o.kept_tax_cents) continue;
+    const l = loc.get(o.restaurant_id)!;
+    const key = `${l.city}|${l.zip}|${o.tax_rate_bps}`;
+    const g = groups.get(key) ?? { city: l.city, zip: l.zip, rateBps: o.tax_rate_bps, orders: 0, taxableCents: 0, taxCents: 0 };
+    g.taxableCents += o.kept_fee_cents;
+    g.taxCents += o.kept_tax_cents;
     groups.set(key, g);
   }
   const sort = <T extends { city: string; zip: string }>(xs: T[]) => xs.sort((a, b) => a.city.localeCompare(b.city) || a.zip.localeCompare(b.zip));
@@ -443,7 +478,8 @@ export async function log(adminId: string, action: string, targetType: string, t
 // ---------------------------------------------------------------- platform income
 
 // What Bite Wise itself earns, by day, month or year, for a date range (Pacific Time):
-//   + service fees on completed orders (by pickup date; less the fee share of refunds to the original payment)
+//   + service fees on completed orders (by pickup date; the fee is never refunded)
+//   + service fees kept on orders that weren't picked up (missed, or cancelled by the customer; by the day they closed)
 //   + restaurant plan fees (by payment date; without sales tax; Pioneer Members pay $0.00)
 //   - platform credit Bite Wise funds: refunds issued as credit and goodwill credit (by the date it was issued)
 //   = net income (before payment processing fees).
@@ -467,12 +503,13 @@ export async function income(params: URLSearchParams) {
   const yearStart = dayRange(`${today.slice(0, 4)}-01-01`, tz()).start;
   const start = r.start < yearStart ? r.start : yearStart;
   const end = r.end > dayRange(today, tz()).end ? r.end : dayRange(today, tz()).end;
-  const [sold, plans, creditRefunds, goodwill, rest] = await Promise.all([
+  const [sold, plans, creditRefunds, goodwill, rest, kept] = await Promise.all([
     pickedUpBetween(start, end),
     paidPlansBetween(start, end),
     all<{ amount_cents: number; created_at: string; order_id: number }>((a, b) => db().from('refunds').select('amount_cents, created_at, order_id').eq('method', 'credit').gte('created_at', start).lt('created_at', end).range(a, b)),
     all<{ amount_cents: number; created_at: string }>((a, b) => db().from('credit_ledger').select('amount_cents, created_at').in('kind', ['goodwill', 'adjustment']).gte('created_at', start).lt('created_at', end).range(a, b)),
     all<{ id: number; name: string; city: string }>((a, b) => db().from('restaurants').select('id, name, city').range(a, b)),
+    keptBetween(start, end),
   ]);
 
   // Every event with its Pacific day and what it adds.
@@ -486,6 +523,14 @@ export async function income(params: URLSearchParams) {
         l.gmvCents += o.total_cents - o.refunded_cents;
         l.serviceFeesCents += o.service_fee_cents - feeRefund(o);
         l.orderTaxCents += o.tax_cents - taxRefund(o);
+      },
+    })),
+    ...kept.map((o) => ({
+      day: dayKey(o.closed_at!, tz()), restaurantId: o.restaurant_id,
+      add: (l: IncomeLine) => {
+        l.gmvCents += o.kept_fee_cents + o.kept_tax_cents;
+        l.serviceFeesCents += o.kept_fee_cents;
+        l.orderTaxCents += o.kept_tax_cents;
       },
     })),
     ...plans.map((x) => ({
@@ -550,7 +595,7 @@ const incomeHead = ['Orders', 'Meals', 'Total charged to customers', 'Service fe
   'Platform credit cost', 'Net income', 'Sales tax on orders', 'Sales tax on plans'];
 const incomeVals = (l: IncomeLine) => [l.orders, l.meals, dollars(l.gmvCents), dollars(l.serviceFeesCents), dollars(l.planFeesCents), l.planInvoices,
   dollars(l.pioneerDiscountsCents), dollars(l.creditCostCents), dollars(l.netCents), dollars(l.orderTaxCents), dollars(l.planTaxCents)];
-export const INCOME_NOTE = 'Net income = service fees + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is collected for Washington State and is not income.';
+export const INCOME_NOTE = 'Net income = service fees (including fees kept on missed and customer-cancelled orders; service fees are not refundable) + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is collected for Washington State and is not income.';
 
 // ?section=periods (income per day/month/year), restaurants (income by restaurant) or all (both).
 export async function incomeCsv(params: URLSearchParams) {

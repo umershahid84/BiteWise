@@ -59,9 +59,10 @@ export async function cancelOrder(orderId: number) {
   return action(async () => {
     await requireActor('customer');
     const supabase = await supabaseServer();
-    const res = must(await supabase.rpc('my_cancel_order', { p_order_id: orderId })) as { changed: boolean };
+    // The service fee is not refundable: it's charged from the hold, and the rest of the hold is released.
+    const res = must(await supabase.rpc('my_cancel_order', { p_order_id: orderId })) as { changed: boolean; keptCents?: number };
     if (res.changed) await orders.voidIfNeeded(orderId);
-    return null;
+    return { keptCents: res.changed ? (res.keptCents ?? 0) : 0 };
   });
 }
 

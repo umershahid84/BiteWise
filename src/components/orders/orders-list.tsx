@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState, Spinner } from '@/components/ui/misc';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { fmtDateTime, fmtTime, money } from '@/lib/format';
+import { feeTaxCents } from '@/lib/pricing';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 export function OrdersList({ userId }: { userId: string }) {
@@ -52,9 +53,10 @@ export function OrdersList({ userId }: { userId: string }) {
     mutationFn: async (id: number) => {
       const res = await cancelOrder(id);
       if (!res.ok) throw new Error(res.error);
+      return res.data;
     },
-    onSuccess: () => {
-      toast.success('Order cancelled. You were not charged.');
+    onSuccess: (d) => {
+      toast.success(d?.keptCents ? `Order cancelled. Only the non-refundable service fee (${money(d.keptCents)}) was charged.` : 'Order cancelled. You were not charged.');
       queryClient.invalidateQueries({ queryKey: ['my-orders'] });
       router.refresh();
     },
@@ -84,7 +86,9 @@ export function OrdersList({ userId }: { userId: string }) {
                 : `Hold of ${money(card)} on ${o.card_label}${o.credit_applied_cents ? ` + ${money(o.credit_applied_cents)} credit` : ''}. Charged at pickup.`
               : o.status === 'pending_payment'
                 ? 'Waiting for your card to be authorized.'
-                : 'Hold released. You were not charged.';
+                : o.kept_fee_cents + o.kept_tax_cents > 0
+                  ? `Only the non-refundable service fee (${money(o.kept_fee_cents + o.kept_tax_cents)}) was charged; the rest of the hold was released.`
+                  : 'Hold released. You were not charged.';
         return (
           <Card key={o.id} className="flex flex-col gap-5 md:flex-row md:items-start">
             <div className="flex flex-1 gap-4">
@@ -119,7 +123,7 @@ export function OrdersList({ userId }: { userId: string }) {
                   size="sm"
                   className="mt-3 bg-white/90"
                   disabled={cancel.isPending}
-                  onClick={() => confirm('Cancel this order? The hold on your card will be released.') && cancel.mutate(o.id)}
+                  onClick={() => confirm(`Cancel this order? The food goes back on sale and the hold on your card is released, except the ${money(o.service_fee_cents + feeTaxCents(o))} service fee, which is not refundable.`) && cancel.mutate(o.id)}
                 >
                   Cancel order
                 </Button>

@@ -48,7 +48,17 @@ export function quote(q: {
   };
 }
 
-// The restaurant's share of an order is the food subtotal. A refund to the original payment takes
-// the same proportion of the food subtotal back from the restaurant (the rest is fee and tax).
-export const restaurantShareOfRefund = (refundCents: number, subtotalCents: number, totalCents: number) =>
-  totalCents ? Math.round((refundCents * subtotalCents) / totalCents) : 0;
+// The Bite Wise service fee is never refunded, whether or not the order is picked up. When the fee is taxed, the
+// sales tax on it isn't refunded either. Same math as public.order_non_refundable().
+type Charged = { subtotal_cents: number; service_fee_cents: number; tax_cents: number; tax_rate_bps: number; total_cents: number };
+export const feeTaxCents = (o: Charged) => Math.max(0, o.tax_cents - roundHalfUp((o.subtotal_cents * o.tax_rate_bps) / 10000));
+export const nonRefundableCents = (o: Charged) => o.service_fee_cents + feeTaxCents(o);
+// What a refund can return in all: the food and its sales tax.
+export const refundableTotalCents = (o: Charged) => Math.max(0, o.total_cents - nonRefundableCents(o));
+
+// The restaurant's share of an order is the food subtotal. A refund (which never includes the service fee) takes the
+// same proportion of the food subtotal back from the restaurant; the rest of the refund is the food's sales tax.
+export const restaurantShareOfRefund = (refundCents: number, o: Charged) => {
+  const base = refundableTotalCents(o);
+  return base ? Math.round((refundCents * o.subtotal_cents) / base) : 0;
+};

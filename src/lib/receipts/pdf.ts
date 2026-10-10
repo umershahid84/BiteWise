@@ -180,7 +180,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
 
   center('THANK YOU FOR RESCUING FOOD!', 'monoBold', 8, { after: 4 });
   small('Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. '
-    + 'Orders not picked up are released without charge. Times in Pacific Time.', { align: 'center', size: 6.2, after: 3 });
+    + 'The service fee is not refundable: if an order is cancelled by you or not picked up, only the service fee is charged. Times in Pacific Time.', { align: 'center', size: 6.2, after: 3 });
   center('support@bitewise.app', 'mono', 6.6, { after: 0 });
   return y;
 }

@@ -45,9 +45,9 @@ export interface PaymentProvider {
     idempotencyKey: string;
   }): Promise<AuthorizeResult>;
   authorizationStatus(ref: string): Promise<'authorized' | 'requires_action' | 'failed'>;
-  // Captures the hold. applicationFeeCents applies to destination charges only.
-  // Returns the charge and (for destination charges) the automatic transfer to the restaurant.
-  capture(ref: string, p: { applicationFeeCents: number | null; idempotencyKey: string }): Promise<{ chargeId: string | null; transferId: string | null }>;
+  // Captures the hold, or only amountCents of it (the rest of the hold is released). applicationFeeCents applies to
+  // destination charges only. Returns the charge and (for destination charges) the automatic transfer to the restaurant.
+  capture(ref: string, p: { amountCents?: number; applicationFeeCents: number | null; idempotencyKey: string }): Promise<{ chargeId: string | null; transferId: string | null }>;
   refund(ref: string, amountCents: number, idempotencyKey: string): Promise<{ id: string }>;
   // Charges a saved card straight away, without the customer present (restaurant subscription fees).
   charge(p: {

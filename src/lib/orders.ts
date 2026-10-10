@@ -9,7 +9,7 @@ import { publicEnv } from '@/lib/env';
 import { payments, PaymentError } from '@/lib/payments';
 import { receiptData } from '@/lib/receipts/data';
 import { receiptPdf } from '@/lib/receipts/pdf';
-import { restaurantShareOfRefund, type Quote } from '@/lib/pricing';
+import { refundableTotalCents, restaurantShareOfRefund, type Quote } from '@/lib/pricing';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Order lifecycle and money movement. Database functions do the atomic bookkeeping (see
@@ -191,33 +191,48 @@ export async function confirmAuthorization(userId: string, orderId: number) {
 
 // ---------------------------------------------------------------- releasing orders
 
-// Voids the card hold of an order that was released in the database.
-async function voidHold(orderId: number, paymentRef: string | null | undefined) {
-  if (paymentRef) await payments().void(paymentRef);
-  await db().rpc('clear_void', { p_order_id: orderId });
+// Settles the card hold of an order that was released in the database: voids it, or, for missed pickups and orders
+// the customer cancelled, charges the non-refundable service fee from it (the rest of the hold is let go).
+async function settleHold(o: Pick<Order, 'id' | 'payment_ref' | 'needs_void' | 'needs_fee_charge' | 'kept_card_cents' | 'destination_account'>) {
+  if (o.needs_fee_charge && o.payment_ref && o.kept_card_cents > 0) {
+    try {
+      // On a destination charge all of it is Bite Wise's application fee: the restaurant gets nothing for a missed order.
+      const charge = await payments().capture(o.payment_ref, {
+        amountCents: o.kept_card_cents, applicationFeeCents: o.destination_account ? o.kept_card_cents : null, idempotencyKey: `fee-${o.id}`,
+      });
+      check(await db().rpc('finish_fee_charge', { p_order_id: o.id, p_ref: charge.chargeId ?? o.payment_ref }));
+    } catch (err) {
+      if (!(err instanceof PaymentError)) throw err; // try again on the next sweep
+      console.error(`Service fee for order ${o.id} could not be charged; the hold is released.`, err.message);
+      await payments().void(o.payment_ref);
+      check(await db().rpc('finish_fee_charge', { p_order_id: o.id, p_ref: null as unknown as string }));
+    }
+    return;
+  }
+  if (o.needs_void) {
+    if (o.payment_ref) await payments().void(o.payment_ref);
+    await db().rpc('clear_void', { p_order_id: o.id });
+  }
 }
 
 // After an order was released by a database function called as the user (e.g. my_cancel_order).
 export async function voidIfNeeded(orderId: number) {
-  const o = await getOrder(orderId);
-  if (o.needs_void) await voidHold(o.id, o.payment_ref);
+  await settleHold(await getOrder(orderId));
 }
 
 export async function release(orderId: number, from: Order['status'], to: 'cancelled' | 'expired' | 'failed', restock: boolean) {
-  const res = must(await db().rpc('release_order', { p_order_id: orderId, p_from: from, p_to: to, p_restock: restock })) as {
-    changed: boolean;
-    paymentRef?: string | null;
-  };
-  if (res.changed) await voidHold(orderId, res.paymentRef);
+  const res = must(await db().rpc('release_order', { p_order_id: orderId, p_from: from, p_to: to, p_restock: restock })) as { changed: boolean };
+  if (res.changed) await settleHold(await getOrder(orderId));
   return res.changed;
 }
 
-// Every minute: the database sweep releases stale orders; then card holds are voided here.
+// Every minute: the database sweep releases stale orders; then card holds are voided (or charged the service fee) here.
 export async function sweep() {
   const counts = must(await db().rpc('sweep'));
-  const pending = must(await db().from('orders').select('id, payment_ref').eq('needs_void', true).limit(200));
-  for (const o of pending) await voidHold(o.id, o.payment_ref);
-  return { ...(counts as object), voided: pending.length };
+  const cols = 'id, payment_ref, needs_void, needs_fee_charge, kept_card_cents, destination_account';
+  const pending = must(await db().from('orders').select(cols).or('needs_void.eq.true,needs_fee_charge.eq.true').limit(200));
+  for (const o of pending) await settleHold(o);
+  return { ...(counts as object), voided: pending.filter((o) => !o.needs_fee_charge).length, feesCharged: pending.filter((o) => o.needs_fee_charge).length };
 }
 
 // ---------------------------------------------------------------- pickup
@@ -319,14 +334,16 @@ export async function payRestaurant(restaurantId: number, amountCents: number, a
 // ---------------------------------------------------------------- refunds
 
 // Refunds a completed order, either to the ORIGINAL payment (card first, then any platform credit
-// the customer used; the restaurant and Bite Wise give up their shares) or as PLATFORM CREDIT
-// (funded by Bite Wise; the restaurant keeps its money).
+// the customer used; the restaurant gives up its share of the food) or as PLATFORM CREDIT
+// (funded by Bite Wise; the restaurant keeps its money). The service fee is never refunded.
+export const refundableCents = (o: Order) => Math.max(0, refundableTotalCents(o) - o.refunded_cents - o.credited_cents);
+
 export async function refundOrder(orderId: number, p: { amountCents: number; method: 'original' | 'credit'; reason: string; adminId: string }) {
   const o = await getOrder(orderId);
   if (o.status !== 'picked_up') throw new AppError(409, 'Only completed (charged) orders can be refunded. Cancel open orders instead.');
-  const refundable = o.total_cents - o.refunded_cents - o.credited_cents;
-  if (refundable <= 0) throw new AppError(409, 'This order has already been fully refunded.');
-  if (p.amountCents < 1 || p.amountCents > refundable) throw new AppError(400, `The refund can be at most $${(refundable / 100).toFixed(2)}.`);
+  const refundable = refundableCents(o);
+  if (refundable <= 0) throw new AppError(409, 'This order has already been fully refunded (the service fee is not refundable).');
+  if (p.amountCents < 1 || p.amountCents > refundable) throw new AppError(400, `The refund can be at most $${(refundable / 100).toFixed(2)}. The service fee is not refundable.`);
 
   let cardCents = 0;
   let creditCents = 0;
@@ -340,7 +357,7 @@ export async function refundOrder(orderId: number, p: { amountCents: number; met
     const cardRefundable = o.payment_ref ? o.total_cents - o.credit_applied_cents - o.card_refunded_cents : 0;
     cardCents = Math.min(p.amountCents, cardRefundable);
     creditCents = p.amountCents - cardCents; // back to the credit balance they paid with
-    restaurantShare = restaurantShareOfRefund(p.amountCents, o.subtotal_cents, o.total_cents);
+    restaurantShare = restaurantShareOfRefund(p.amountCents, o);
     if (cardCents > 0) providerRef = (await payments().refund(o.payment_ref!, cardCents, `refund-${o.id}-${refundNo}`)).id;
   }
 

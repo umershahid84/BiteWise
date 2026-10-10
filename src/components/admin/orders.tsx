@@ -54,7 +54,10 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
                     <td>{o.id}</td>
                     <td><b>{o.quantity} × {o.itemTitle}</b><div className="text-xs text-muted">{o.restaurant} · {fmtDateTime(o.createdAt)}</div></td>
                     <td className="text-sm">{o.customer}<div className="text-xs text-muted">{o.customerEmail}</div></td>
-                    <td>{money(o.totalCents)}{o.creditAppliedCents > 0 && <div className="text-xs text-accent-ink">{money(o.creditAppliedCents)} credit</div>}</td>
+                    <td>
+                      {money(o.totalCents)}{o.creditAppliedCents > 0 && <div className="text-xs text-accent-ink">{money(o.creditAppliedCents)} credit</div>}
+                      {o.keptFeeCents > 0 && <div className="text-xs text-muted">{money(o.keptFeeCents)} service fee kept</div>}
+                    </td>
                     <td className="text-sm">
                       {o.refundedCents > 0 && <div>{money(o.refundedCents)} original</div>}
                       {o.creditedCents > 0 && <div className="text-accent-ink">{money(o.creditedCents)} as credit</div>}
@@ -105,7 +108,7 @@ function RefundForm({ order: o, onDone }: { order: AdminOrder; onDone: () => voi
     onDone();
   };
   return (
-    <DialogContent title={`Refund order #${o.id}`} description={`${o.quantity} × ${o.itemTitle} · ${o.restaurant} · ${o.customer}. Paid ${money(o.totalCents)}, ${money(o.refundableCents)} left to refund.`}>
+    <DialogContent title={`Refund order #${o.id}`} description={`${o.quantity} × ${o.itemTitle} · ${o.restaurant} · ${o.customer}. Paid ${money(o.totalCents)}, ${money(o.refundableCents)} left to refund. The ${money(o.nonRefundableCents)} service fee is not refundable.`}>
       <SectionLabel className="mt-0">Amount</SectionLabel>
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((p) => (
@@ -121,7 +124,7 @@ function RefundForm({ order: o, onDone }: { order: AdminOrder; onDone: () => voi
         <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
           <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'original'} onChange={() => setMethod('original')} />
           <span><b>Original form of payment</b> · {originalLabel}
-            <span className="block text-xs text-muted">{card > 0 && `${money(card)} back to ${o.card}`}{card > 0 && creditBack > 0 && ' + '}{creditBack > 0 && `${money(creditBack)} back to their credit balance`}. The restaurant and Bite Wise both give up their share.</span></span>
+            <span className="block text-xs text-muted">{card > 0 && `${money(card)} back to ${o.card}`}{card > 0 && creditBack > 0 && ' + '}{creditBack > 0 && `${money(creditBack)} back to their credit balance`}. The restaurant gives up its share of the food; Bite Wise keeps the service fee.</span></span>
         </label>
         <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
           <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'credit'} onChange={() => setMethod('credit')} />

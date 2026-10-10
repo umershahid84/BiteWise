@@ -37,10 +37,11 @@ export async function processAlerts() {
         sendEmail({ to: p.email, ...email }).catch((err) => console.error(`no-show email to ${p.email}:`, err));
 
       if (alert.kind === 'no_show') {
-        const order = alert.order_id ? (await db().from('orders').select('id, item_title, restaurants(name)').eq('id', alert.order_id).maybeSingle()).data : null;
+        const order = alert.order_id ? (await db().from('orders').select('id, item_title, kept_fee_cents, kept_tax_cents, restaurants(name)').eq('id', alert.order_id).maybeSingle()).data : null;
         await send(noShowWarningEmail({
           username: p.username, orderId: alert.order_id ?? 0, item: order?.item_title ?? 'your order', restaurant: order?.restaurants?.name ?? 'the restaurant',
           strikes: alert.strikes, limit: rules.limit, probation: p.no_show_probation, ordersUrl: `${publicEnv.siteUrl}/orders`,
+          feeCents: (order?.kept_fee_cents ?? 0) + (order?.kept_tax_cents ?? 0),
         }));
       } else {
         const banned = alert.kind === 'no_show_ban';

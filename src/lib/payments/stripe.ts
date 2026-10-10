@@ -86,11 +86,11 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
       return 'failed';
     },
 
-    async capture(ref, { applicationFeeCents, idempotencyKey }) {
+    async capture(ref, { amountCents, applicationFeeCents, idempotencyKey }) {
       const intent = await wrap(() =>
         stripe.paymentIntents.capture(
           ref,
-          { application_fee_amount: applicationFeeCents ?? undefined, expand: ['latest_charge'] },
+          { amount_to_capture: amountCents, application_fee_amount: applicationFeeCents ?? undefined, expand: ['latest_charge'] },
           { idempotencyKey },
         ),
       );
