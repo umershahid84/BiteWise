@@ -121,7 +121,7 @@ export function PickupPanel() {
       )}
       {done && (
         <div className="py-4 text-center">
-          <div className="mx-auto mb-2 grid size-14 place-items-center rounded-full bg-primary text-3xl font-bold text-[#04130d]">✓</div>
+          <div className="mx-auto mb-2 grid size-14 place-items-center rounded-full bg-primary text-3xl font-bold text-on-primary">✓</div>
           <h3 className="text-xl font-bold">Pickup confirmed</h3>
           <p className="text-muted">
             {done.quantity} × {done.itemTitle} for {done.customerUsername}.<br />

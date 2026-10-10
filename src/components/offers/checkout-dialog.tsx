@@ -131,7 +131,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
     <DialogContent title={offer.title}>
       {offer.image_url && (
         <OfferImage offer={offer} className="-mt-1 mb-4 h-48 rounded-xl">
-          <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-[#111]">-{offer.discount_pct}%</span>
+          <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-on-accent">-{offer.discount_pct}%</span>
         </OfferImage>
       )}
       <p className="mb-1"><b>{offer.restaurant_name}</b>{offer.cuisine ? ` · ${offer.cuisine}` : ''}</p>
@@ -248,7 +248,7 @@ function Confirmation({ order, onClose }: { order: OrderConfirmation; onClose: (
           Your food is secured. You just rescued {order.quantity === 1 ? 'a meal' : `${order.quantity} meals`} from going to waste.
         </p>
         {order.pin && (
-          <div className="my-5 rounded-card bg-grad p-5 text-[#04130d]">
+          <div className="my-5 rounded-card bg-grad p-5 text-on-primary">
             <small className="mb-2 block text-xs font-bold tracking-widest uppercase opacity-70">Your pickup PIN</small>
             <PinTiles pin={order.pin} />
             <div className="mt-2 text-sm opacity-90">Show this PIN at the counter</div>

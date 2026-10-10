@@ -111,7 +111,7 @@ export function OrdersList({ userId }: { userId: string }) {
               </div>
             </div>
             {o.status === 'reserved' && o.order_pins?.pin && (
-              <div className="rounded-card bg-grad p-4 text-center text-[#04130d] md:min-w-[230px]">
+              <div className="rounded-card bg-grad p-4 text-center text-on-primary md:min-w-[230px]">
                 <div className="mb-2 text-xs font-bold tracking-widest uppercase opacity-70">Pickup PIN</div>
                 <PinTiles pin={o.order_pins.pin} />
                 <Button

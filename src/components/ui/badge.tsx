@@ -5,10 +5,10 @@ const badge = cva('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 tex
   variants: {
     tone: {
       neutral: 'bg-surface-2 text-ink-2',
-      green: 'bg-primary-soft text-primary-ink',
+      green: 'bg-ok-soft text-ok-ink',
       amber: 'bg-accent-soft text-accent-ink',
       red: 'bg-danger-soft text-danger',
-      diet: 'border border-primary/30 text-primary-ink',
+      diet: 'border border-ok/40 text-ok-ink',
     },
   },
   defaultVariants: { tone: 'neutral' },

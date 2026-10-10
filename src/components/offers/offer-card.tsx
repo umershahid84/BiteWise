@@ -15,7 +15,7 @@ export function OfferImage({ offer, className, children }: { offer: Pick<OfferRo
   return (
     <div
       className={cn('relative grid place-items-center overflow-hidden', className)}
-      style={offer.image_url ? undefined : { background: `linear-gradient(135deg, hsl(${hue} 35% 18%), hsl(${hue + 40} 40% 14%))` }}
+      style={offer.image_url ? undefined : { background: `linear-gradient(135deg, hsl(${hue} var(--tile-s) var(--tile-l1)), hsl(${hue + 40} var(--tile-s) var(--tile-l2)))` }}
     >
       {offer.image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -33,8 +33,8 @@ export function OfferCard({ offer, onOrder }: { offer: OfferRow; onOrder: () => 
   return (
     <article className={cn('flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition hover:-translate-y-0.5', expired && 'opacity-50 grayscale')}>
       <OfferImage offer={offer} className={offer.image_url ? 'h-[180px]' : 'h-32'}>
-        <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-[#111]">-{offer.discount_pct}%</span>
-        <span className={cn('absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-bold backdrop-blur', offer.quantity_available <= 2 ? 'bg-accent text-[#1c1203]' : 'bg-bg/70 text-ink')}>
+        <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-on-accent">-{offer.discount_pct}%</span>
+        <span className={cn('absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-bold backdrop-blur', offer.quantity_available <= 2 ? 'bg-accent text-on-accent' : 'bg-bg/70 text-ink')}>
           {offer.quantity_available} left
         </span>
         <span className="absolute bottom-3 left-3 rounded-full bg-bg/75 px-2.5 py-1 text-xs backdrop-blur">

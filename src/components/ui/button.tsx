@@ -7,8 +7,8 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-grad text-[#04130d] shadow-[0_8px_24px_-8px_rgba(16,185,129,.6)] hover:brightness-110',
-        green: 'bg-primary-600 text-white hover:bg-primary',
+        primary: 'bg-grad text-on-primary shadow-[0_8px_24px_-8px_var(--grad-glow)] hover:brightness-110',
+        green: 'bg-ok text-white hover:brightness-110',
         ghost: 'border border-line bg-surface text-ink hover:bg-surface-2',
         danger: 'border border-danger/40 bg-danger-soft text-danger hover:bg-danger/20',
         warm: 'bg-grad-warm text-[#1c1300] hover:brightness-105',

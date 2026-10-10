@@ -16,10 +16,10 @@ export default function LandingPage() {
       <section className="relative overflow-hidden pt-16 pb-14 md:pt-[72px]">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-[-10%] top-[-20%] h-[700px]"
+          className="pointer-events-none absolute inset-x-[-10%] top-[-20%] h-[700px] [mask-image:linear-gradient(to_bottom,black_55%,transparent)]"
           style={{
             background:
-              'radial-gradient(520px 360px at 12% 30%, rgba(52,211,153,.22), transparent 70%), radial-gradient(460px 320px at 85% 20%, rgba(253,224,71,.22), transparent 70%), radial-gradient(400px 300px at 60% 90%, rgba(5,150,105,.14), transparent 70%)',
+              'radial-gradient(520px 360px at 12% 30%, rgba(251,146,60,.18), transparent 70%), radial-gradient(460px 320px at 85% 20%, rgba(253,224,71,.24), transparent 70%), radial-gradient(400px 300px at 60% 90%, rgba(78,159,61,.12), transparent 70%)',
           }}
         />
         <div className="container-page relative grid items-center gap-12 md:grid-cols-[1.15fr_.85fr]">
@@ -50,10 +50,10 @@ export default function LandingPage() {
 
           <div className="relative mx-auto w-full max-w-[380px]" aria-hidden>
             <div className="group -rotate-2 overflow-hidden rounded-[28px] border border-line bg-surface shadow-pop transition duration-300 hover:-translate-y-1 hover:rotate-0">
-              <div className="relative grid h-[150px] place-items-center text-[72px]" style={{ background: 'linear-gradient(135deg, hsl(28 35% 18%), hsl(68 40% 14%))' }}>
+              <div className="relative grid h-[150px] place-items-center text-[72px]" style={{ background: 'linear-gradient(135deg, hsl(28 var(--tile-s) var(--tile-l1)), hsl(68 var(--tile-s) var(--tile-l2)))' }}>
                 <span className="drop-shadow-lg transition duration-300 group-hover:scale-110 group-hover:-rotate-6">🍜</span>
-                <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-[#111]">-50%</span>
-                <span className="absolute top-3 right-3 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-[#1c1203]">2 left</span>
+                <span className="absolute top-3 left-3 rounded-full bg-accent px-3 py-1 font-heading text-sm font-extrabold text-on-accent">-50%</span>
+                <span className="absolute top-3 right-3 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-on-accent">2 left</span>
               </div>
               <div className="p-5">
                 <h3 className="m-0 text-lg font-bold">Large Beef Pho</h3>
@@ -71,7 +71,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="absolute -right-3 -bottom-14 rotate-3 rounded-[22px] bg-grad px-5 py-4 text-center text-[#04130d] shadow-pop">
+            <div className="absolute -right-3 -bottom-14 rotate-3 rounded-[22px] bg-grad px-5 py-4 text-center text-on-primary shadow-pop">
               <small className="block text-[0.72rem] font-semibold tracking-[0.08em] uppercase opacity-70">Your pickup PIN</small>
               <b className="ml-[0.25em] font-heading text-[1.9rem] leading-tight font-extrabold tracking-[0.25em]">4827</b>
             </div>
@@ -133,7 +133,7 @@ export default function LandingPage() {
             <Link href="/signup" className={cn(buttonVariants(), 'relative z-10 bg-white text-[#0b1b14] shadow-none')}>Create free account</Link>
             <span aria-hidden className="absolute -right-20 -bottom-28 size-[260px] rounded-full bg-white/10" />
           </div>
-          <div className="relative overflow-hidden rounded-[28px] p-9 text-white" style={{ background: 'linear-gradient(135deg, #0b1b14, #134e3a)' }}>
+          <div className="relative overflow-hidden rounded-[28px] p-9 text-white" style={{ background: 'linear-gradient(135deg, #1e1e1e, #3b2a0a)' }}>
             <h2 className="text-2xl font-extrabold">Restaurants: turn waste into revenue.</h2>
             <p className="max-w-[42ch] opacity-90">Post surplus food in under a minute, set your own discount, confirm pickups with the customer&apos;s PIN, and get paid through Stripe.</p>
             <Link href="/restaurant/signup" className={cn(buttonVariants(), 'relative z-10 bg-white text-[#0b1b14] shadow-none')}>Open restaurant portal</Link>

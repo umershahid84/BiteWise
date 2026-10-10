@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 const TONES = {
-  error: 'border-danger/40 bg-danger-soft text-[#fecaca]',
+  error: 'border-danger/40 bg-danger-soft text-danger',
   warn: 'border-accent/40 bg-accent-soft text-accent-ink',
   info: 'border-primary/30 bg-primary-soft text-primary-ink',
 };

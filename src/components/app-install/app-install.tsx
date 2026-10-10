@@ -87,7 +87,7 @@ export function AppInstall({ initial }: { initial: Device | null }) {
         ) : device === 'android' ? (
           promptEvent ? (
             <div className="mt-6 text-center">
-              <button type="button" onClick={install} className="rounded-full bg-grad px-8 py-4 text-lg font-extrabold text-[#04130d]">
+              <button type="button" onClick={install} className="rounded-full bg-grad px-8 py-4 text-lg font-extrabold text-on-primary">
                 <SquarePlus className="mr-2 inline size-6" />Add Bite Wise to my home screen
               </button>
               <p className="mt-3 text-muted">Then tap <b>Install</b> in the box that appears.</p>
@@ -110,7 +110,7 @@ export function AppInstall({ initial }: { initial: Device | null }) {
           <>
             {promptEvent && (
               <div className="mt-6 text-center">
-                <button type="button" onClick={install} className="rounded-full bg-grad px-8 py-4 text-lg font-extrabold text-[#04130d]">
+                <button type="button" onClick={install} className="rounded-full bg-grad px-8 py-4 text-lg font-extrabold text-on-primary">
                   <MonitorDown className="mr-2 inline size-6" />Install Bite Wise
                 </button>
                 <p className="mt-3 text-muted">Then click <b>Install</b> in the box that appears.</p>

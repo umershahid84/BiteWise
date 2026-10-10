@@ -5,7 +5,10 @@ import { Providers } from '@/components/app/providers';
 import { SiteFooter } from '@/components/app/site-footer';
 import { SiteHeader } from '@/components/app/site-header';
 import { TermsGate } from '@/components/app/terms-gate';
+import { ThemeSync } from '@/components/app/theme-sync';
+import { headers } from 'next/headers';
 import { getViewer } from '@/lib/auth';
+import type { Theme } from '@/lib/theme';
 import './globals.css';
 
 const inter = localFont({
@@ -50,13 +53,15 @@ export const viewport: Viewport = { themeColor: '#07110d' };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getViewer();
+  const theme = ((await headers()).get('x-bw-theme') ?? 'customer') as Theme;
   return (
-    <html lang="en" className={`${inter.variable} ${jakarta.variable} ${plexMono.variable}`}>
+    <html lang="en" data-theme={theme} className={`${inter.variable} ${jakarta.variable} ${plexMono.variable}`}>
       <body className="flex min-h-dvh flex-col font-sans">
         <Providers>
           <SiteHeader viewer={viewer && { username: viewer.username, role: viewer.role, restaurantName: viewer.restaurant?.name ?? null, creditCents: viewer.creditCents }} />
           <div className="flex-1">{children}</div>
           <SiteFooter />
+          <ThemeSync />
           {viewer && <IdleLogout />}
           {viewer && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
         </Providers>

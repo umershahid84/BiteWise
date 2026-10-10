@@ -204,19 +204,20 @@ export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, pay
         <Kpi value={s?.allTime.meals ?? '–'} label={owner ? `Meals rescued all-time · ${money(s?.allTime.salesCents ?? 0)}` : 'Meals rescued all-time'} />
       </div>
 
-      <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList>
-          <TabsTrigger value="pickup"><KeyRound /> Verify pickup</TabsTrigger>
-          <TabsTrigger value="offers"><Tag /> Offers</TabsTrigger>
-          <TabsTrigger value="menu"><UtensilsCrossed /> Menu</TabsTrigger>
-          <TabsTrigger value="orders"><ClipboardList /> Orders</TabsTrigger>
+      {/* A menu down the left on wide screens (big, easy to tap on a counter tablet), a scrolling row on phones. */}
+      <Tabs value={tab} onValueChange={changeTab} orientation="vertical" className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <TabsList variant="sidebar">
+          <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="pickup"><KeyRound /> Verify pickup</TabsTrigger>
+          <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="offers"><Tag /> Offers</TabsTrigger>
+          <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="menu"><UtensilsCrossed /> Menu</TabsTrigger>
+          <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="orders"><ClipboardList /> Orders</TabsTrigger>
           {owner && (
             <>
-              <TabsTrigger value="payouts"><Banknote /> Payouts</TabsTrigger>
-              <TabsTrigger value="kiosk"><Tablet /> Kiosk</TabsTrigger>
-              <TabsTrigger value="plan"><Crown /> Plan</TabsTrigger>
-              <TabsTrigger value="staff"><Users /> Staff</TabsTrigger>
-              <TabsTrigger value="profile"><Store /> Profile</TabsTrigger>
+              <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="payouts"><Banknote /> Payouts</TabsTrigger>
+              <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="kiosk"><Tablet /> Kiosk</TabsTrigger>
+              <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="plan"><Crown /> Plan</TabsTrigger>
+              <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="staff"><Users /> Staff</TabsTrigger>
+              <TabsTrigger variant="sidebar" className="lg:py-3 lg:text-base" value="profile"><Store /> Profile</TabsTrigger>
             </>
           )}
         </TabsList>

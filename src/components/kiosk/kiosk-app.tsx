@@ -136,7 +136,7 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
       </header>
 
       {toast && (
-        <div className="absolute top-20 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-full bg-accent px-6 py-3 text-lg font-extrabold text-[#1c1203] shadow-pop">
+        <div className="absolute top-20 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-full bg-accent px-6 py-3 text-lg font-extrabold text-on-accent shadow-pop">
           <BellRing className="size-6" /> {toast}
         </div>
       )}
@@ -154,7 +154,7 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
                 <div key={o.id} className={cn('flex items-center gap-4 rounded-2xl border px-4 py-3', isNew ? 'border-accent bg-accent-soft' : 'border-line bg-surface-2')}>
                   <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-bg font-heading text-2xl font-extrabold">{o.quantity}×</div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-lg font-bold">{o.itemTitle}{isNew && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 align-middle text-xs font-extrabold text-[#1c1203]">NEW</span>}</div>
+                    <div className="truncate text-lg font-bold">{o.itemTitle}{isNew && <span className="ml-2 rounded-full bg-accent px-2 py-0.5 align-middle text-xs font-extrabold text-on-accent">NEW</span>}</div>
                     <div className="text-sm text-ink-2">for <b>{o.customerUsername}</b> · ordered {ago(o.createdAt, now)}</div>
                   </div>
                   <div className="text-right text-sm text-muted">pick up by<br /><b className="text-base text-ink">{time(o.pickupEnd)}</b></div>
@@ -180,7 +180,7 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/assets/logo-dark.svg" alt="Bite Wise" className="mx-auto mb-8 h-24" />
             <span className="block font-heading text-4xl font-extrabold">{name}</span>
-            <span className="mt-6 inline-flex items-center gap-3 rounded-full bg-grad px-10 py-5 text-2xl font-extrabold text-[#04130d] shadow-pop">
+            <span className="mt-6 inline-flex items-center gap-3 rounded-full bg-grad px-10 py-5 text-2xl font-extrabold text-on-primary shadow-pop">
               <Store className="size-7" /> Tap to start the kiosk
             </span>
             <span className="mt-5 block text-muted">This turns on the order bell and keeps the screen awake.</span>
@@ -262,13 +262,13 @@ function PinPad({ token, onDone }: { token: string; onDone: () => void }) {
     <section className="flex min-h-0 flex-col rounded-card border border-line bg-surface p-5">
       {done ? (
         <div className="m-auto text-center">
-          <div className="mx-auto grid size-28 place-items-center rounded-full bg-primary text-[#04130d]"><Check className="size-16" strokeWidth={3} /></div>
+          <div className="mx-auto grid size-28 place-items-center rounded-full bg-primary text-on-primary"><Check className="size-16" strokeWidth={3} /></div>
           <h2 className="mt-6 mb-2 font-heading text-4xl font-extrabold">Picked up!</h2>
           <p className="m-0 text-xl text-ink-2">{done.quantity} × {done.itemTitle} for <b>{done.customerUsername}</b></p>
           <p className="mt-2 text-lg text-primary-ink">
             {done.totalCents - done.creditAppliedCents > 0 ? `Card charged ${money(done.totalCents - done.creditAppliedCents)}` : 'Paid with Bite Wise credit'}
           </p>
-          <button type="button" onClick={reset} className="mt-8 rounded-full bg-grad px-10 py-4 text-xl font-extrabold text-[#04130d]">Next pickup</button>
+          <button type="button" onClick={reset} className="mt-8 rounded-full bg-grad px-10 py-4 text-xl font-extrabold text-on-primary">Next pickup</button>
         </div>
       ) : order ? (
         <div className="flex flex-1 flex-col">
@@ -287,7 +287,7 @@ function PinPad({ token, onDone }: { token: string; onDone: () => void }) {
           <p className="text-ink-2">Check the order, then hand over the food. The customer&apos;s card is charged when you tap the button.</p>
           {error && <p className="rounded-xl bg-danger-soft px-4 py-3 font-bold text-danger">{error}</p>}
           <div className="mt-auto grid gap-3">
-            <button type="button" disabled={busy} onClick={handOver} className="rounded-2xl bg-grad py-6 font-heading text-2xl font-extrabold text-[#04130d] disabled:opacity-60">
+            <button type="button" disabled={busy} onClick={handOver} className="rounded-2xl bg-grad py-6 font-heading text-2xl font-extrabold text-on-primary disabled:opacity-60">
               {busy ? 'Charging…' : 'Hand over food & charge card'}
             </button>
             <button type="button" disabled={busy} onClick={reset} className="rounded-2xl border border-line py-4 text-lg font-bold text-ink-2">Cancel</button>
@@ -370,7 +370,7 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
             <button
               type="button"
               onClick={async () => { await promptEvent.prompt(); if ((await promptEvent.userChoice).outcome === 'accepted') setAccepted(true); }}
-              className="rounded-full bg-grad px-10 py-5 text-xl font-extrabold text-[#04130d]"
+              className="rounded-full bg-grad px-10 py-5 text-xl font-extrabold text-on-primary"
             >
               <SquarePlus className="mr-2 inline size-6" />Add to home screen
             </button>
@@ -402,7 +402,7 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
                 <button
                   type="button"
                   onClick={async () => { await promptEvent.prompt(); if ((await promptEvent.userChoice).outcome === 'accepted') setAccepted(true); }}
-                  className="rounded-full bg-grad px-10 py-5 text-xl font-extrabold text-[#04130d]"
+                  className="rounded-full bg-grad px-10 py-5 text-xl font-extrabold text-on-primary"
                 >
                   <MonitorDown className="mr-2 inline size-6" />Install on this computer
                 </button>
