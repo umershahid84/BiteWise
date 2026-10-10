@@ -4,7 +4,7 @@ import { AppError, check, must } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Restaurant staff accounts (supabase/migrations/20261013000300_restaurant_staff.sql). The owner gives each manager
-// or supervisor a user name and password; staff log in on the partner log-in page with their user name. Supabase
+// or supervisor a user name and password; staff log in on the main log-in page (/login) with their user name. Supabase
 // Auth needs an email address, so each staff account gets an internal one that never receives email
 // (….staff.bitewise.invalid); for the same reason staff can't use "Forgot password": the owner sets a new one.
 

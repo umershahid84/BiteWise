@@ -247,7 +247,7 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
     if (res.error) throw new Error(`support: ${res.error.message}`);
   }
 
-  // A staff account (a manager) for Harbor Pho House: logs in at /restaurant/login as harborpho.manager.
+  // A staff account (a manager) for Harbor Pho House: logs in at /login as harborpho.manager.
   if (!(await db.from('profiles').select('id').eq('username', 'harborpho.manager').maybeSingle()).data) {
     const token = randomBytes(32).toString('hex');
     must(await db.from('staff_invites').insert({ token, restaurant_id: ids.harborpho, full_name: 'Linh Tran', title: 'Manager' }).select('token'), 'staff invite');
@@ -378,7 +378,7 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
   console.log(`  Customer login:    demo / ${DEMO_PASSWORD}`);
   console.log(`  Owner/admin login: admin / ${DEMO_PASSWORD}  (demo only: create your real one with npm run create-admin)`);
   console.log(`  Admin employee login (password ${DEMO_PASSWORD}, at /admin/login, no refunds): support.demo`);
-  console.log(`  Restaurant staff login (password ${DEMO_PASSWORD}, at /restaurant/login): harborpho.manager`);
+  console.log(`  Restaurant staff login (password ${DEMO_PASSWORD}, at /login): harborpho.manager`);
   console.log(`  Restaurant logins (password ${DEMO_PASSWORD}):`);
   console.log(`    Seattle/Eastside (Stripe connected): ${RESTAURANTS.map((r) => r.user).join(', ')}`);
   console.log(`    Around the region: ${REGIONAL.map((r) => `${r[0]} (${r[4]})`).join(', ')}`);

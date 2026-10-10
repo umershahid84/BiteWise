@@ -3,7 +3,7 @@ import { LoginPage } from '@/components/auth/login-page';
 
 export const metadata: Metadata = { title: 'Log in' };
 
-// Customers. Restaurant partners use /restaurant/login and admins /admin/login.
+// Customers and restaurants (owners and staff). The admin team logs in at /admin/login.
 export default function CustomerLoginPage({ searchParams }: PageProps<'/login'>) {
-  return <LoginPage portal="customer" searchParams={searchParams} />;
+  return <LoginPage portal="main" searchParams={searchParams} />;
 }

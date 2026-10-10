@@ -6,6 +6,9 @@ import { must } from '@/lib/errors';
 import { prices } from '@/lib/subscriptions';
 import { supabaseServer } from '@/lib/supabase/server';
 
+// Menu imports from a website can take a while (several pages, or reading a PDF with the AI menu reader).
+export const maxDuration = 60;
+
 export const metadata: Metadata = { title: 'Restaurant dashboard' };
 
 export default async function RestaurantPage({ searchParams }: PageProps<'/restaurant'>) {

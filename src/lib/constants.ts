@@ -33,18 +33,15 @@ export const MIN_CARD_CHARGE_CENTS = 50;
 export const homeFor = (role: Role | null | undefined) =>
   role === 'admin' || role === 'support' ? '/admin' : role === 'restaurant' || role === 'staff' ? '/restaurant' : '/offers';
 
-// Each kind of account has its own log-in and sign-up pages. Restaurant owners and their staff share one.
-export type Portal = 'customer' | 'restaurant' | 'admin';
-export const portalFor = (role: Role | null | undefined): Portal =>
-  role === 'admin' || role === 'support' ? 'admin' : role === 'restaurant' || role === 'staff' ? 'restaurant' : 'customer';
-export const LOGIN_PATH: Record<Portal, string> = { customer: '/login', restaurant: '/restaurant/login', admin: '/admin/login' };
+// Customers, restaurant owners and restaurant staff share one log-in page; the admin team has its own.
+export type Portal = 'main' | 'admin';
+export const portalFor = (role: Role | null | undefined): Portal => (role === 'admin' || role === 'support' ? 'admin' : 'main');
+export const LOGIN_PATH: Record<Portal, string> = { main: '/login', admin: '/admin/login' };
 export const SIGNUP_PATH = { customer: '/signup', restaurant: '/restaurant/signup' } as const;
 export const loginFor = (role: Role | null | undefined) => LOGIN_PATH[portalFor(role)];
-// The log-in page for a path that needs an account (/restaurant/... and /admin/... have their own).
-export const loginForPath = (path: string) =>
-  path === '/admin' || path.startsWith('/admin/') ? LOGIN_PATH.admin
-    : path === '/restaurant' || path.startsWith('/restaurant/') ? LOGIN_PATH.restaurant : LOGIN_PATH.customer;
-export const PORTAL_NAMES: Record<Portal, string> = { customer: 'customer', restaurant: 'restaurant partner', admin: 'owner console' };
+// The log-in page for a path that needs an account (/admin/... has its own).
+export const loginForPath = (path: string) => (path === '/admin' || path.startsWith('/admin/') ? LOGIN_PATH.admin : LOGIN_PATH.main);
+export const PORTAL_NAMES: Record<Portal, string> = { main: 'customer and restaurant', admin: 'admin' };
 
 const CUISINE_EMOJI: Record<string, string> = {
   seafood: '🦐', salvadoran: '🫓', bbq: '🍖', vietnamese: '🍜', bakery: '🥐', mexican: '🌮', pizza: '🍕', indian: '🍛',

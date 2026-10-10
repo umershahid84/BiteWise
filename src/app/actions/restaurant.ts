@@ -10,7 +10,8 @@ import { action, AppError, check, maybe, must } from '@/lib/errors';
 import { payments } from '@/lib/payments';
 import * as orders from '@/lib/orders';
 import { locateRestaurant } from '@/lib/restaurant-location';
-import { importMenu, parseImportInput, parsePreviewInput, previewFromSpreadsheet, previewFromWebsite } from '@/lib/menu-import';
+import { aiAvailable } from '@/lib/menu-import/ai';
+import { importMenu, parseImportInput, parsePreviewInput, previewFor } from '@/lib/menu-import';
 import { storePhoto } from '@/lib/photos';
 import { refreshRestaurantTax } from '@/lib/restaurant-tax';
 import { createStaff, listStaff, removeStaff, updateStaff } from '@/lib/staff';
@@ -324,11 +325,19 @@ export async function deleteStaff(userId: string) {
 
 // ---------------------------------------------------------------- menu import (src/lib/menu-import)
 
+// Whether photo and PDF menus can be read (the AI menu reader is switched on).
+export async function menuImportOptions() {
+  return action(async () => {
+    await requireRestaurant({ staff: true });
+    return { ai: aiAvailable() };
+  });
+}
+
 export async function previewMenuImport(input: unknown) {
   return action(async () => {
     await requireRestaurant({ staff: true });
     const d = parsePreviewInput(input);
-    return d.kind === 'website' ? previewFromWebsite(d.url) : previewFromSpreadsheet(d.text);
+    return previewFor(d);
   });
 }
 

@@ -8,7 +8,7 @@ import { markActive } from '@/components/app/idle-logout';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox, Field, Input } from '@/components/ui/field';
-import { LOGIN_PATH, PORTAL_NAMES, type Portal } from '@/lib/constants';
+import { LOGIN_PATH, type Portal } from '@/lib/constants';
 import { AuthTitle } from './auth-card';
 import { PasswordReset } from './password-reset';
 
@@ -92,7 +92,7 @@ export function LoginForm({ portal, title, next, notice, footer }: {
       )}
       <ErrorText error={error?.text ?? null} />
       {error?.portal && (
-        <Link href={LOGIN_PATH[error.portal]} className="mb-4 block text-center text-sm font-semibold">Go to the {PORTAL_NAMES[error.portal]} log-in →</Link>
+        <Link href={LOGIN_PATH[error.portal]} className="mb-4 block text-center text-sm font-semibold">Go to the {error.portal === 'admin' ? 'admin' : 'main'} log-in →</Link>
       )}
       {unconfirmed && !error && resent && <Alert tone="info" className="my-3">We sent a new confirmation link. Check your email.</Alert>}
       {unconfirmed && !resent && (

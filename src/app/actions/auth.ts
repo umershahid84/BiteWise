@@ -8,7 +8,7 @@ import { confirmationEmail, sendsOwnConfirmation } from '@/lib/email/confirmatio
 import { sendEmail } from '@/lib/email/send';
 import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
-import { homeFor, loginFor, PORTAL_NAMES, portalFor } from '@/lib/constants';
+import { homeFor, loginFor, portalFor } from '@/lib/constants';
 import { action, AppError, fromDb } from '@/lib/errors';
 import { sendCustomerWelcome } from '@/lib/customer-welcome';
 import { requestPasswordReset, resetPassword } from '@/lib/password-reset';
@@ -154,8 +154,8 @@ const untilText = (until: string | null | undefined) =>
 const loginSchema = z.object({
   login: z.string().trim().min(1, 'Enter your email or user name.'),
   password: z.string().min(1, 'Enter your password.'),
-  // The log-in page used: customers, restaurant partners (owners and staff) and admins each have their own.
-  portal: z.enum(['customer', 'restaurant', 'admin']).optional(),
+  // The log-in page used: customers and restaurants (owners and staff) share one; the admin team has its own.
+  portal: z.enum(['main', 'admin', 'customer', 'restaurant']).optional().transform((v) => (v === 'customer' || v === 'restaurant' ? 'main' : v)),
 });
 
 // Log in with an email address or a user name.
@@ -205,7 +205,9 @@ export async function signIn(input: unknown) {
     const own = portalFor(profile.role);
     if (portal && own !== portal) {
       await supabase.auth.signOut();
-      throw new AppError(403, `This log-in page is for ${PORTAL_NAMES[portal]} accounts. Please use the ${PORTAL_NAMES[own]} log-in page.`, `portal:${own}`);
+      throw new AppError(403, own === 'admin'
+        ? 'Admin team accounts log in on the admin log-in page.'
+        : 'This log-in page is for the admin team. Customers and restaurants log in on the main log-in page.', `portal:${own}`);
     }
     return { next: homeFor(profile.role) };
   });

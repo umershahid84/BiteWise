@@ -5,36 +5,121 @@ import { AppError, check, must } from '@/lib/errors';
 import { storePhoto } from '@/lib/photos';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { parse } from '@/lib/validate';
-import { aiAvailable, itemsWithAi } from './ai';
+import { parse as parseHtml } from 'node-html-parser';
+import { aiAvailable, itemsFromFiles, itemsWithAi, type MenuFile } from './ai';
 import { safeFetch } from './fetch';
-import { itemsFromHtml, itemsFromSpreadsheet, pageForAi, type ImportItem } from './parse';
+import { dedupe, itemsFromHtml, itemsFromSpreadsheet, pageForAi, type ImportItem } from './parse';
 
-// Menu import, for restaurants (owners and staff) and admins: 1) find the items on the restaurant's website or in
-// a spreadsheet and show them for review, 2) save the ones chosen, with their photos copied into Bite Wise.
+// Menu import, for restaurants (owners and staff) and admins: 1) find the items on the restaurant's website (its menu
+// page, an embedded menu, or a PDF or picture of the menu it links to), in a photo or PDF, or in a spreadsheet, and
+// show them for review, 2) save the ones chosen, with their photos copied into Bite Wise.
 
-export type Preview = { items: ImportItem[]; source: 'ai' | 'page' | 'spreadsheet'; problems: string[] };
+export type Preview = { items: ImportItem[]; source: 'ai' | 'page' | 'spreadsheet' | 'file'; problems: string[] };
 const MAX_PAGE = 5 * 1024 * 1024;
+const MAX_FILE = 15 * 1024 * 1024;
 const MAX_ITEMS = 300;
+const valid = (x: ImportItem) => x.name.length >= 2 && x.priceCents >= 50 && x.priceCents <= 100000;
 
-const NOTHING = 'We couldn\'t find menu items with prices on that page. Some online-ordering sites (like Toast, Square or DoorDash) only build '
-  + 'their menu inside the browser. Try the page that lists your full menu, or use "From a spreadsheet" instead.';
+const NO_AI = 'To read a menu that is a picture or a PDF, Bite Wise needs its AI menu reader, which isn\'t switched on yet (the site owner adds '
+  + 'ANTHROPIC_API_KEY). For now, type the items into a spreadsheet and use "From a spreadsheet".';
+const BROWSER_ONLY = 'This website builds its menu inside the browser (common with Wix, Squarespace, Toast, Square and DoorDash pages), so the '
+  + 'menu isn\'t in the page we receive. If the site has a PDF of the menu, paste that link instead, or use "From a photo or PDF" or "From a spreadsheet".';
+const NOTHING = 'We couldn\'t find menu items with prices on that page. Check that it is the page that lists your dishes and prices, or use '
+  + '"From a photo or PDF" or "From a spreadsheet" instead.';
+
+const isPdf = (type: string, body: Buffer) => /pdf/i.test(type) || body.subarray(0, 5).toString('latin1') === '%PDF-';
+const isImage = (type: string) => /^image\/(jpeg|png|gif|webp)/i.test(type);
+
+// Pictures, PDFs and other pages a menu page points to: embedded menus (iframes), links to a PDF or to a page
+// called "menu", and pictures that look like the menu itself.
+function menuLinks(html: string, base: string) {
+  const root = parseHtml(html);
+  const abs = (href: string | undefined) => {
+    try {
+      const u = href ? new URL(href, base) : null;
+      return u && /^https?:$/.test(u.protocol) ? u.toString().split('#')[0] : null;
+    } catch {
+      return null;
+    }
+  };
+  const frames = root.querySelectorAll('iframe[src], embed[src], object[data]')
+    .map((el) => abs(el.getAttribute('src') ?? el.getAttribute('data'))).filter((u): u is string => !!u && !/youtube|vimeo|google\.com\/maps|facebook|instagram|recaptcha/i.test(u));
+  const links = root.querySelectorAll('a[href]')
+    .filter((a) => /\.pdf(\?|$)/i.test(a.getAttribute('href') ?? '') || /menu/i.test(`${a.text} ${a.getAttribute('href')}`))
+    .map((a) => abs(a.getAttribute('href'))).filter((u): u is string => !!u && u !== base.split('#')[0]);
+  const pictures = root.querySelectorAll('img')
+    .filter((img) => /menu/i.test(`${img.getAttribute('src')} ${img.getAttribute('alt')} ${img.getAttribute('title')}`))
+    .map((img) => abs(img.getAttribute('src') ?? img.getAttribute('data-src'))).filter((u): u is string => !!u);
+  const visibleText = root.querySelector('body')?.text.replace(/\s+/g, ' ').trim().length ?? 0;
+  return { frames: [...new Set(frames)].slice(0, 3), links: [...new Set(links)].slice(0, 4), pictures: [...new Set(pictures)].slice(0, 4), scripts: root.querySelectorAll('script').length, visibleText };
+}
+
+async function fetchFile(url: string): Promise<MenuFile | { html: string; url: string } | null> {
+  try {
+    const f = await safeFetch(url, { maxBytes: MAX_FILE, accept: 'text/html,application/pdf,image/*' });
+    if (isPdf(f.type, f.body)) return { kind: 'pdf', mime: 'application/pdf', data: f.body, name: new URL(f.url).pathname.split('/').pop() || 'menu.pdf' };
+    if (isImage(f.type)) return { kind: 'image', mime: f.type.split(';')[0], data: f.body, name: 'menu' };
+    if (/html/i.test(f.type)) return { html: f.body.toString('utf8'), url: f.url };
+  } catch {
+    // a link that doesn't open is skipped
+  }
+  return null;
+}
+
+async function readFiles(files: MenuFile[]): Promise<Preview> {
+  if (!aiAvailable()) throw new AppError(400, NO_AI);
+  const items = (await itemsFromFiles(files)).filter(valid);
+  if (!items.length) throw new AppError(404, 'We couldn\'t read any dishes with prices from that menu. Try a clearer photo, or use "From a spreadsheet".');
+  return { items: dedupe(items).slice(0, MAX_ITEMS), source: 'file', problems: [] };
+}
 
 export async function previewFromWebsite(url: string): Promise<Preview> {
-  const page = await safeFetch(url.trim(), { maxBytes: MAX_PAGE, accept: 'text/html,application/xhtml+xml' });
-  if (!/html|xml|text\/plain/i.test(page.type)) throw new AppError(400, 'That address isn\'t a web page. For a PDF or picture of your menu, type the items into a spreadsheet instead.');
+  const page = await safeFetch(url.trim(), { maxBytes: MAX_FILE, accept: 'text/html,application/xhtml+xml,application/pdf,image/*' });
+  // A link straight to a PDF or a picture of the menu.
+  if (isPdf(page.type, page.body)) return readFiles([{ kind: 'pdf', mime: 'application/pdf', data: page.body, name: 'menu.pdf' }]);
+  if (isImage(page.type)) return readFiles([{ kind: 'image', mime: page.type.split(';')[0], data: page.body, name: 'menu' }]);
+  if (!/html|xml|text\/plain/i.test(page.type)) throw new AppError(400, 'That address isn\'t a web page, a PDF or a picture.');
+  if (page.body.length > MAX_PAGE) throw new AppError(413, 'That page is too large to import.');
   const html = page.body.toString('utf8');
-  const found = itemsFromHtml(html, page.url);
+
+  // 1. The page itself (with Claude when it's switched on, which copes with any layout).
+  let found = itemsFromHtml(html, page.url);
   if (aiAvailable()) {
     try {
-      const ai = await itemsWithAi({ url: page.url, ...pageForAi(html, page.url) });
-      const good = ai.filter((x) => x.name.length >= 2 && x.priceCents >= 50 && x.priceCents <= 100000);
-      if (good.length >= found.length) return { items: good.slice(0, MAX_ITEMS), source: 'ai', problems: [] };
+      const ai = (await itemsWithAi({ url: page.url, ...pageForAi(html, page.url) })).filter(valid);
+      if (ai.length >= found.length) found = ai;
     } catch (err) {
       console.warn('menu import (AI):', err instanceof Error ? err.message : err);
     }
   }
-  if (!found.length) throw new AppError(404, NOTHING);
-  return { items: found, source: 'page', problems: [] };
+  if (found.length >= 3) return { items: found.slice(0, MAX_ITEMS), source: aiAvailable() ? 'ai' : 'page', problems: [] };
+
+  // 2. Menus the page embeds or links to: another page, a PDF or a picture of the menu.
+  const more = menuLinks(html, page.url);
+  const files: MenuFile[] = [];
+  for (const link of [...more.frames, ...more.links, ...more.pictures]) {
+    const got = await fetchFile(link);
+    if (!got) continue;
+    if ('html' in got) {
+      const items = itemsFromHtml(got.html, got.url);
+      if (items.length > found.length) found = items;
+    } else if (files.length < 3) files.push(got);
+  }
+  if (found.length >= 3) return { items: found.slice(0, MAX_ITEMS), source: 'page', problems: [] };
+  if (files.length) return readFiles(files);
+  if (found.length) return { items: found, source: 'page', problems: [] };
+  throw new AppError(404, more.visibleText < 400 && more.scripts > 3 ? BROWSER_ONLY : NOTHING);
+}
+
+// A photo or PDF of the menu the owner uploads (a data URL).
+export async function previewFromUpload(dataUrl: string, name: string): Promise<Preview> {
+  const m = /^data:([a-z/+.-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(dataUrl);
+  if (!m) throw new AppError(400, 'Choose a PDF or a photo (JPEG, PNG or WebP) of your menu.');
+  const data = Buffer.from(m[2], 'base64');
+  if (data.length > MAX_FILE) throw new AppError(413, 'That file is too large (max 15 MB).');
+  if (isPdf(m[1], data)) return readFiles([{ kind: 'pdf', mime: 'application/pdf', data, name }]);
+  if (isImage(m[1])) return readFiles([{ kind: 'image', mime: m[1], data, name }]);
+  throw new AppError(400, 'Choose a PDF or a photo (JPEG, PNG or WebP) of your menu.');
 }
 
 export function previewFromSpreadsheet(text: string): Preview {
@@ -54,7 +139,10 @@ export const importItemSchema = z.object({
 const previewInput = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('website'), url: z.string().trim().min(4, 'Enter your menu\'s web address.').max(2000) }),
   z.object({ kind: z.literal('spreadsheet'), text: z.string().min(1, 'Choose a file or paste your menu.').max(2_000_000) }),
+  z.object({ kind: z.literal('file'), data: z.string().min(1, 'Choose a PDF or a photo of your menu.').max(21_000_000), name: z.string().max(200).default('menu') }),
 ]);
+export const previewFor = (d: ReturnType<typeof parsePreviewInput>) =>
+  d.kind === 'website' ? previewFromWebsite(d.url) : d.kind === 'file' ? previewFromUpload(d.data, d.name) : Promise.resolve(previewFromSpreadsheet(d.text));
 export const parsePreviewInput = (input: unknown) => parse(previewInput, input);
 export const parseImportInput = (input: unknown) =>
   parse(z.object({ items: z.array(importItemSchema).min(1, 'Choose at least one item to import.').max(MAX_ITEMS), updateExisting: z.boolean().default(false) }), input);

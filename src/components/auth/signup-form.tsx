@@ -83,7 +83,7 @@ export function SignupForm({ role }: { role: Role }) {
     });
   };
 
-  if (sentTo) return <CheckEmail email={sentTo} loginPath={LOGIN_PATH[role]} />;
+  if (sentTo) return <CheckEmail email={sentTo} loginPath={LOGIN_PATH.main} />;
 
   return (
     <>
@@ -122,7 +122,7 @@ export function SignupForm({ role }: { role: Role }) {
         </Button>
       </form>
       <div className="mt-4 grid gap-1 text-center text-sm text-muted">
-        <p className="m-0">Already have an account? <Link href={LOGIN_PATH[role]}>Log in</Link></p>
+        <p className="m-0">Already have an account? <Link href={LOGIN_PATH.main}>Log in</Link></p>
         <p className="m-0">
           {role === 'restaurant'
             ? <>Looking for food? <Link href={SIGNUP_PATH.customer}>Sign up as a customer</Link></>

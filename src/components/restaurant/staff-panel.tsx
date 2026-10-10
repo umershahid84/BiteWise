@@ -56,7 +56,7 @@ export function StaffPanel() {
       </div>
       <p className="mt-0 text-sm text-ink-2">
         Give your managers and supervisors their own log-in, so they can <b>post surplus food</b>, <b>add menu items and change prices</b>, and <b>hand over orders</b> when
-        you&apos;re not there. They log in on the <b>partner log-in page</b> with the user name and password you choose here. They can&apos;t see your sales, payouts, sales
+        you&apos;re not there. They log in on the Bite Wise <b>log-in page</b> with the user name and password you choose here. They can&apos;t see your sales, payouts, sales
         tax, plan and billing, or change your profile.
       </p>
       <ErrorText error={error} />
@@ -110,7 +110,7 @@ function StaffForm({ member, onDone }: { member?: Member; onDone: () => void }) 
     if (!res.ok) return setError(res.error);
     toast.success(member
       ? `${f.fullName} is updated.${f.password ? ' Give them their new password.' : ''}`
-      : `${f.fullName} can now log in as ${f.username} on the partner log-in page.`);
+      : `${f.fullName} can now log in as ${f.username} on the Bite Wise log-in page.`);
     onDone();
   };
   return (

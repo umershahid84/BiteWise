@@ -1,9 +1,8 @@
-import type { Metadata } from 'next';
-import { LoginPage } from '@/components/auth/login-page';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Restaurant partner log-in' };
-
-// Restaurant owners and their staff.
-export default function RestaurantLoginPage({ searchParams }: PageProps<'/restaurant/login'>) {
-  return <LoginPage portal="restaurant" searchParams={searchParams} />;
+// Restaurants now log in on the main log-in page, with customers. Old links and bookmarks are sent there.
+export default async function RestaurantLoginPage({ searchParams }: PageProps<'/restaurant/login'>) {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(await searchParams)) if (typeof v === 'string') q.set(k, v);
+  redirect(`/login${q.size ? `?${q}` : ''}`);
 }

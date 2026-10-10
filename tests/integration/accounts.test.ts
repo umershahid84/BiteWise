@@ -36,7 +36,7 @@ describe.skipIf(!available)('accounts', () => {
 
     const wrong = code === '000000' ? '111111' : '000000';
     await expect(resetPassword(user.email, wrong, 'newpass123')).rejects.toThrow(/4 tries left/);
-    expect(await resetPassword(user.email, code!, 'newpass123')).toBe('customer');
+    expect(await resetPassword(user.email, code!, 'newpass123')).toBe('main');
     expect(await login(user.email, PASSWORD)).toBeNull();
     expect(await login(user.email, 'newpass123')).not.toBeNull();
     await expect(resetPassword(user.email, code!, 'another123')).rejects.toThrow(/wrong or has expired/); // used up

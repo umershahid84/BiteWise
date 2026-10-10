@@ -4,9 +4,10 @@ import { LOGIN_PATH, loginForPath } from '@/lib/constants';
 import { publicEnv } from '@/lib/env';
 
 // Refreshes the Supabase session cookie on every page request and sends signed-out visitors to the log-in page
-// for pages that need an account (/login, /restaurant/login or /admin/login). Role checks happen in the pages.
+// for pages that need an account (/login, or /admin/login for the owner console). Role checks happen in the pages.
 const PROTECTED = ['/offers', '/orders', '/account', '/restaurant', '/admin'];
-const PUBLIC = new Set([LOGIN_PATH.restaurant, LOGIN_PATH.admin, '/restaurant/signup']);
+// /restaurant/login is an old address that forwards to /login.
+const PUBLIC = new Set(['/restaurant/login', LOGIN_PATH.admin, '/restaurant/signup']);
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

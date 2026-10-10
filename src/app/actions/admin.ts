@@ -5,7 +5,8 @@ import { log } from '@/lib/admin';
 import { requireAdmin, type Viewer } from '@/lib/auth';
 import { action, AppError, check, must } from '@/lib/errors';
 import { updateAccount, updateRestaurantDetails } from '@/lib/admin-edit';
-import { importMenu, parseImportInput, parsePreviewInput, previewFromSpreadsheet, previewFromWebsite } from '@/lib/menu-import';
+import { aiAvailable } from '@/lib/menu-import/ai';
+import { importMenu, parseImportInput, parsePreviewInput, previewFor } from '@/lib/menu-import';
 import { sendCustomerWelcome } from '@/lib/customer-welcome';
 import * as feeChanges from '@/lib/fee-changes';
 import * as moderation from '@/lib/moderation';
@@ -409,7 +410,7 @@ export async function adminPreviewMenuImport(input: unknown) {
   return action(async () => {
     await requireAdmin('support');
     const d = parsePreviewInput(input);
-    return d.kind === 'website' ? previewFromWebsite(d.url) : previewFromSpreadsheet(d.text);
+    return previewFor(d);
   });
 }
 
@@ -455,5 +456,12 @@ export async function removeTeamMemberAction(input: unknown) {
     const res = await moderation.deleteAccount(id);
     await log(me.id, 'team.remove', 'user', id, JSON.stringify(res).slice(0, 200));
     return null;
+  });
+}
+
+export async function adminMenuImportOptions() {
+  return action(async () => {
+    await requireAdmin('support');
+    return { ai: aiAvailable() };
   });
 }

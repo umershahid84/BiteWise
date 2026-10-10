@@ -59,3 +59,36 @@ ${page.images.map((i) => `${i.url} | ${i.alt}`).join('\n')}`,
     dietary: x.dietary,
   }));
 }
+
+// A menu that is a picture or a PDF (a link on the restaurant's website, or a file the owner uploads): Claude reads
+// it directly. There are no photo URLs to copy in this case.
+export type MenuFile = { kind: 'pdf' | 'image'; mime: string; data: Buffer; name: string };
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
+
+export async function itemsFromFiles(files: MenuFile[]): Promise<ImportItem[]> {
+  const client = new Anthropic();
+  const blocks: Anthropic.Beta.BetaContentBlockParam[] = files.map((f) => (f.kind === 'pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: f.data.toString('base64') }, title: f.name }
+    : { type: 'image', source: { type: 'base64', media_type: (IMAGE_TYPES as readonly string[]).includes(f.mime) ? f.mime as (typeof IMAGE_TYPES)[number] : 'image/jpeg', data: f.data.toString('base64') } }));
+  const response = await client.beta.messages.parse({
+    model: 'claude-opus-5-5',
+    max_tokens: 16000,
+    output_config: { effort: 'low', format: betaZodOutputFormat(MenuSchema) },
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default',
+    system: SYSTEM,
+    messages: [{
+      role: 'user',
+      content: [...blocks, { type: 'text', text: 'These are pages or photos of a restaurant menu. Return every item with a price. Use null for every imageUrl (there is no image list).' }],
+    }],
+  });
+  if (response.stop_reason === 'refusal' || !response.parsed_output) return [];
+  return response.parsed_output.items.map((x) => ({
+    name: x.name.replace(/\s+/g, ' ').trim().slice(0, 80),
+    description: x.description.replace(/\s+/g, ' ').trim().slice(0, 500),
+    priceCents: Math.round(x.price * 100),
+    imageUrl: null,
+    dietary: x.dietary,
+  }));
+}
+
