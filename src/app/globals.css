@@ -1,8 +1,9 @@
 @import 'tailwindcss';
 
 /* Bite Wise design tokens. Each part of the site has its own look (data-theme on <html>, set from the address by
-   src/proxy.ts): warm and light for customers, a dark kitchen dashboard for restaurants, a light corporate
-   console for the admin team. Components only use these tokens, so they follow the theme. */
+   src/proxy.ts): warm for customers, a kitchen dashboard for restaurants, a corporate console for the admin team.
+   Each look has a light and a dark version (data-mode, see src/lib/theme.ts): by default customers and admins see
+   light and restaurants dark, and anyone can switch in the header. Components only use these tokens, so they follow. */
 @theme {
   --color-bg: #fff8f1;
   --color-bg-2: #fdf0e3;
@@ -102,6 +103,81 @@
   font-size: 106.25%;
 }
 
+/* Customers, dark: the same warm look for the evening. */
+:root[data-theme='customer'][data-mode='dark'] {
+  --color-bg: #17110c;
+  --color-bg-2: #1e1610;
+  --color-surface: #231a13;
+  --color-surface-2: #2d2219;
+  --color-ink: #fbf3ea;
+  --color-ink-2: #e2cfbd;
+  --color-muted: #a8927e;
+  --color-line: #3b2e23;
+  --color-primary: #fb923c;
+  --color-primary-600: #f97316;
+  --color-primary-soft: #3a2212;
+  --color-primary-ink: #fdba74;
+  --color-accent: #6cc35a;
+  --color-accent-soft: #16301a;
+  --color-accent-ink: #a3e08f;
+  --color-danger: #f87171;
+  --color-danger-soft: #3a1414;
+  --color-on-primary: #1f0d02;
+  --color-on-accent: #071a05;
+  --color-ok: #22c55e;
+  --color-ok-soft: #0f2e1a;
+  --color-ok-ink: #86efac;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px -8px rgba(0, 0, 0, 0.55);
+  --shadow-pop: 0 2px 4px rgba(0, 0, 0, 0.4), 0 24px 48px -12px rgba(0, 0, 0, 0.75);
+  --grad-a: #fdba74;
+  --grad-b: #fb923c;
+  --grad-c: #ea580c;
+  --grad-glow: rgba(251, 146, 60, 0.4);
+  --page-glow-1: rgba(251, 146, 60, 0.08);
+  --page-glow-2: rgba(108, 195, 90, 0.05);
+  --map-bg: #1e1610;
+  --tile-s: 35%;
+  --tile-l1: 20%;
+  --tile-l2: 14%;
+  color-scheme: dark;
+}
+
+/* Restaurants, light: a bright kitchen with the same amber, for sunny counters. */
+:root[data-theme='restaurant'][data-mode='light'] {
+  --color-bg: #fafaf9;
+  --color-bg-2: #f5f5f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f5f5f4;
+  --color-ink: #1c1917;
+  --color-ink-2: #44403c;
+  --color-muted: #78716c;
+  --color-line: #e7e5e4;
+  --color-primary: #f59e0b;
+  --color-primary-600: #d97706;
+  --color-primary-soft: #fef3c7;
+  --color-primary-ink: #b45309;
+  --color-accent: #16a34a;
+  --color-accent-soft: #dcfce7;
+  --color-accent-ink: #15803d;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fee2e2;
+  --color-on-primary: #1c1300;
+  --color-on-accent: #ffffff;
+  --color-ok: #16a34a;
+  --color-ok-soft: #dcfce7;
+  --color-ok-ink: #15803d;
+  --shadow-card: 0 1px 2px rgba(28, 25, 23, 0.06), 0 10px 30px -12px rgba(28, 25, 23, 0.16);
+  --shadow-pop: 0 2px 4px rgba(28, 25, 23, 0.08), 0 24px 48px -16px rgba(28, 25, 23, 0.28);
+  --grad-glow: rgba(245, 158, 11, 0.35);
+  --page-glow-1: rgba(245, 158, 11, 0.08);
+  --page-glow-2: rgba(245, 158, 11, 0.03);
+  --map-bg: #f5f5f4;
+  --tile-s: 60%;
+  --tile-l1: 90%;
+  --tile-l2: 82%;
+  color-scheme: light;
+}
+
 /* Admin team: a light, compact corporate console with a navy sidebar. */
 :root[data-theme='admin'] {
   --color-bg: #f1f5f9;
@@ -145,6 +221,40 @@
   --tile-l1: 90%;
   --tile-l2: 84%;
   color-scheme: light;
+}
+
+/* Admin team, dark: a night-shift console in deep navy. */
+:root[data-theme='admin'][data-mode='dark'] {
+  --color-bg: #0b1120;
+  --color-bg-2: #0f172a;
+  --color-surface: #111a2e;
+  --color-surface-2: #16213a;
+  --color-ink: #e2e8f0;
+  --color-ink-2: #cbd5e1;
+  --color-muted: #94a3b8;
+  --color-line: #1f2a44;
+  --color-primary: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-soft: #172554;
+  --color-primary-ink: #93c5fd;
+  --color-accent: #f59e0b;
+  --color-accent-soft: #3b2a0a;
+  --color-accent-ink: #fcd34d;
+  --color-danger: #f87171;
+  --color-danger-soft: #3a1414;
+  --color-on-primary: #ffffff;
+  --color-on-accent: #1c1300;
+  --color-ok: #22c55e;
+  --color-ok-soft: #0f2e1a;
+  --color-ok-ink: #86efac;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+  --grad-glow: rgba(59, 130, 246, 0.4);
+  --map-bg: #0f172a;
+  --tile-s: 35%;
+  --tile-l1: 20%;
+  --tile-l2: 14%;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -198,11 +308,11 @@
 
 /* The logo with dark or light lettering (src/components/app/logo.tsx). */
 .logo-on-dark { display: none !important; }
-:root[data-theme='restaurant'] .logo-on-dark { display: block !important; }
-:root[data-theme='restaurant'] .logo-on-light { display: none !important; }
+:root[data-mode='dark'] .logo-on-dark { display: block !important; }
+:root[data-mode='dark'] .logo-on-light { display: none !important; }
 
-/* Leaflet: darken light map tiles in the dark (restaurant) theme, and style pins/popups. */
-:root[data-theme='restaurant'] .dark-tiles .leaflet-tile-pane {
+/* Leaflet: darken light map tiles in dark mode, and style pins/popups. */
+:root[data-mode='dark'] .dark-tiles .leaflet-tile-pane {
   filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6);
 }
 .leaflet-container {

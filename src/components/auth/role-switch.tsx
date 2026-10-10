@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { applyLook } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 export type Audience = 'customer' | 'restaurant';
@@ -10,7 +11,7 @@ export type Audience = 'customer' | 'restaurant';
 export function RoleSwitch({ value, onChange, labels }: { value: Audience; onChange: (v: Audience) => void; labels: Record<Audience, string> }) {
   useEffect(() => {
     // Leaving the page resets the look from the next page's address (src/components/app/theme-sync.tsx).
-    document.documentElement.dataset.theme = value;
+    applyLook(value);
   }, [value]);
   return (
     <div role="tablist" className="relative mb-5 grid grid-cols-2 rounded-full border border-line bg-bg-2 p-1">

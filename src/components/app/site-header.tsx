@@ -10,6 +10,7 @@ import { homeFor, type Role } from '@/lib/constants';
 import { money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
+import { ModeToggle } from './mode-toggle';
 
 type HeaderViewer = { username: string; role: Role; restaurantName: string | null; creditCents: number } | null;
 
@@ -88,8 +89,9 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
         <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="Bite Wise home" className="shrink-0">
           <Logo className="block h-[46px] md:h-[54px]" />
         </Link>
+        <div className="ml-auto md:order-last md:ml-1"><ModeToggle /></div>
         <button
-          className="ml-auto rounded-xl border border-line bg-surface p-2 md:hidden"
+          className="rounded-xl border border-line bg-surface p-2 md:hidden"
           aria-label="Menu"
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}

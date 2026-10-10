@@ -6,9 +6,9 @@ import { SiteFooter } from '@/components/app/site-footer';
 import { SiteHeader } from '@/components/app/site-header';
 import { TermsGate } from '@/components/app/terms-gate';
 import { ThemeSync } from '@/components/app/theme-sync';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { getViewer } from '@/lib/auth';
-import type { Theme } from '@/lib/theme';
+import { MODE_COOKIE, MODE_SCRIPT, modeFor, parseModePref, type Theme } from '@/lib/theme';
 import './globals.css';
 
 const inter = localFont({
@@ -54,8 +54,13 @@ export const viewport: Viewport = { themeColor: '#07110d' };
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getViewer();
   const theme = ((await headers()).get('x-bw-theme') ?? 'customer') as Theme;
+  const mode = modeFor(theme, parseModePref((await cookies()).get(MODE_COOKIE)?.value));
   return (
-    <html lang="en" data-theme={theme} className={`${inter.variable} ${jakarta.variable} ${plexMono.variable}`}>
+    // suppressHydrationWarning: MODE_SCRIPT may switch data-mode to match the device before React starts.
+    <html lang="en" data-theme={theme} data-mode={mode} suppressHydrationWarning className={`${inter.variable} ${jakarta.variable} ${plexMono.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: MODE_SCRIPT }} />
+      </head>
       <body className="flex min-h-dvh flex-col font-sans">
         <Providers>
           <SiteHeader viewer={viewer && { username: viewer.username, role: viewer.role, restaurantName: viewer.restaurant?.name ?? null, creditCents: viewer.creditCents }} />
