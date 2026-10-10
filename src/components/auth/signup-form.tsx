@@ -14,14 +14,17 @@ import { Field, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { AuthTitle } from './auth-card';
 import { CheckEmail } from './check-email';
-import { LOGIN_PATH, SIGNUP_PATH } from '@/lib/constants';
+import { LOGIN_PATH } from '@/lib/constants';
+import { RoleSwitch, type Audience } from './role-switch';
 
-type Role = 'customer' | 'restaurant';
+type Role = Audience;
 
-// Customers sign up at /signup and restaurants at /restaurant/signup.
-export function SignupForm({ role }: { role: Role }) {
+// One sign-up page with a "I'm a customer / I'm a restaurant" slider (/signup, /signup?role=restaurant or
+// /restaurant/signup start on the matching side).
+export function SignupForm({ initialRole }: { initialRole: Role }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const [role, setRole] = useState<Role>(initialRole);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<React.ReactNode>(null);
   const [agreementOpen, setAgreementOpen] = useState(false);
@@ -88,7 +91,8 @@ export function SignupForm({ role }: { role: Role }) {
   return (
     <>
       <AuthTitle>{role === 'restaurant' ? 'Join Bite Wise' : 'Create your free account'}</AuthTitle>
-      {role === 'restaurant' && <p className="-mt-3 mb-5 text-center text-sm text-muted">Sell your surplus food to customers nearby, instead of throwing it away.</p>}
+      <RoleSwitch value={role} onChange={(r) => { setRole(r); setError(null); }} labels={{ customer: 'I\'m a customer', restaurant: 'I\'m a restaurant' }} />
+      {role === 'restaurant' && <p className="-mt-2 mb-5 text-center text-sm text-muted">Sell your surplus food to customers nearby, instead of throwing it away.</p>}
       {notice}
       <ErrorText error={error} />
       <form ref={formRef} onSubmit={onSubmit} noValidate>
@@ -121,14 +125,7 @@ export function SignupForm({ role }: { role: Role }) {
           {pending ? 'Please wait…' : role === 'restaurant' ? 'Create restaurant account' : 'Create account'}
         </Button>
       </form>
-      <div className="mt-4 grid gap-1 text-center text-sm text-muted">
-        <p className="m-0">Already have an account? <Link href={LOGIN_PATH.main}>Log in</Link></p>
-        <p className="m-0">
-          {role === 'restaurant'
-            ? <>Looking for food? <Link href={SIGNUP_PATH.customer}>Sign up as a customer</Link></>
-            : <>Own a restaurant? <Link href={SIGNUP_PATH.restaurant}>Join as a restaurant partner</Link></>}
-        </p>
-      </div>
+      <p className="mt-4 text-center text-sm text-muted">Already have an account? <Link href={`${LOGIN_PATH.main}${role === 'restaurant' ? '?as=restaurant' : ''}`}>Log in</Link></p>
       <AgreementDialog
         open={agreementOpen}
         role={role}

@@ -156,12 +156,14 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Enter your password.'),
   // The log-in page used: customers and restaurants (owners and staff) share one; the admin team has its own.
   portal: z.enum(['main', 'admin', 'customer', 'restaurant']).optional().transform((v) => (v === 'customer' || v === 'restaurant' ? 'main' : v)),
+  // On the main page: "Log in as a customer" or "Log in as a restaurant" (owners and staff).
+  as: z.enum(['customer', 'restaurant']).optional(),
 });
 
 // Log in with an email address or a user name.
 export async function signIn(input: unknown) {
   return action(async () => {
-    const { login, password, portal } = parse(loginSchema, input);
+    const { login, password, portal, as } = parse(loginSchema, input);
     let email = login.toLowerCase();
     if (!login.includes('@')) {
       const { data } = await supabaseAdmin().from('profiles').select('email').eq('username', login).maybeSingle();
@@ -208,6 +210,16 @@ export async function signIn(input: unknown) {
       throw new AppError(403, own === 'admin'
         ? 'Admin team accounts log in on the admin log-in page.'
         : 'This log-in page is for the admin team. Customers and restaurants log in on the main log-in page.', `portal:${own}`);
+    }
+    // The main page's slider must match the kind of account.
+    if (as && own === 'main') {
+      const side = profile.role === 'customer' ? 'customer' : 'restaurant';
+      if (side !== as) {
+        await supabase.auth.signOut();
+        throw new AppError(403, side === 'restaurant'
+          ? 'This is a restaurant account. Choose "Log in as a restaurant" to log in.'
+          : 'This is a customer account. Choose "Log in as a customer" to log in.', `as:${side}`);
+      }
     }
     return { next: homeFor(profile.role) };
   });

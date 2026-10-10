@@ -12,7 +12,10 @@ const PUBLIC = new Set(['/restaurant/login', LOGIN_PATH.admin, '/restaurant/sign
 
 export async function proxy(request: NextRequest) {
   // The look of the page (customer, restaurant or admin), read by the root layout.
-  request.headers.set('x-bw-theme', themeForPath(request.nextUrl.pathname));
+  // (The log-in and sign-up pages opened on their restaurant side start in the restaurant look.)
+  const q = request.nextUrl.searchParams;
+  const restaurantSide = q.get('as') === 'restaurant' || q.get('role') === 'restaurant';
+  request.headers.set('x-bw-theme', restaurantSide ? 'restaurant' : themeForPath(request.nextUrl.pathname));
   let response = NextResponse.next({ request });
   const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseKey, {
     cookies: {

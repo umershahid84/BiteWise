@@ -13,8 +13,7 @@ const PAGES: Record<Portal, { tag?: string; title: string; footer: React.ReactNo
     title: 'Welcome back',
     footer: (
       <div className="mt-5 grid gap-1 text-center text-sm text-muted">
-        <p className="m-0">For customers, restaurant owners and restaurant staff.</p>
-        <p className="m-0">New to Bite Wise? <Link href={SIGNUP_PATH.customer}>Sign up for deals</Link> · <Link href={SIGNUP_PATH.restaurant}>Join as a restaurant</Link></p>
+        <p className="m-0">New to Bite Wise? <Link href={SIGNUP_PATH.customer}>Create a free account</Link></p>
       </div>
     ),
   },
@@ -23,14 +22,15 @@ const PAGES: Record<Portal, { tag?: string; title: string; footer: React.ReactNo
 
 // The log-in page of one kind of account (src/lib/constants.ts LOGIN_PATH).
 export async function LoginPage({ portal, searchParams }: { portal: Portal; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const { next, confirmed, error, idle } = await searchParams;
+  const { next, confirmed, error, idle, as } = await searchParams;
   const viewer = await getViewer();
   if (viewer) redirect(portalFor(viewer.role) === portal ? (safeNext(next) ?? homeFor(viewer.role)) : homeFor(viewer.role));
   const notice: LoginNotice = confirmed ? 'confirmed' : error === 'confirmation' ? 'confirmation-failed' : idle ? 'idle' : null;
   const page = PAGES[portal];
   return (
     <AuthCard tag={page.tag}>
-      <LoginForm portal={portal} title={page.title} next={safeNext(next)} notice={notice} footer={page.footer} />
+      <LoginForm portal={portal} title={page.title} next={safeNext(next)} notice={notice} footer={page.footer}
+        initialAudience={as === 'restaurant' || safeNext(next)?.startsWith('/restaurant') ? 'restaurant' : 'customer'} />
     </AuthCard>
   );
 }

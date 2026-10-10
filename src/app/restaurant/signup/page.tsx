@@ -11,8 +11,8 @@ export default async function RestaurantSignupPage() {
   const viewer = await getViewer();
   if (viewer) redirect(homeFor(viewer.role));
   return (
-    <AuthCard tag="Restaurant partners">
-      <SignupForm role="restaurant" />
+    <AuthCard>
+      <SignupForm initialRole="restaurant" />
     </AuthCard>
   );
 }
