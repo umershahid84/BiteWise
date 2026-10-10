@@ -14,10 +14,14 @@ const nextConfig: NextConfig = {
   // stray package-lock.json there (e.g. in the Windows user folder).
   outputFileTracingRoot: path.resolve(import.meta.dirname),
   // pdfkit reads its font metrics from disk, so it must not be bundled.
-  serverExternalPackages: ['pdfkit', 'nodemailer'],
+  // The menu import's hidden browser (src/lib/menu-import/render.ts) ships its own Chromium.
+  serverExternalPackages: ['pdfkit', 'nodemailer', '@sparticuz/chromium', 'playwright-core'],
   // Fonts and logos for PDFs (receipts, reports, agreements), emails and the sign-up email template are read at runtime.
   outputFileTracingIncludes: {
     '/**/*': ['./assets/pdf-fonts/**/*', './public/assets/logo.png', './public/assets/email-logo.png', './supabase/templates/confirmation.html'],
+    // Pages whose actions import menus: the browser program (unpacked at run time).
+    '/restaurant': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+    '/admin': ['./node_modules/@sparticuz/chromium/bin/**/*'],
   },
   images: {
     remotePatterns: [new URL(`${supabaseUrl}/storage/v1/object/public/**`)],

@@ -43,6 +43,6 @@ describe('menu import from websites', () => {
     pages['https://wix.example/menu'] = html(`<div id="root"></div>${'<script src="/a.js"></script>'.repeat(6)}`);
     await expect(previewFromWebsite('https://wix.example/menu')).rejects.toThrow(/builds its menu inside the browser/);
     pages['https://empty.example/menu'] = html(`<p>${'We love breakfast. '.repeat(40)}</p>`);
-    await expect(previewFromWebsite('https://empty.example/menu')).rejects.toThrow(/couldn't find menu items/);
+    await expect(previewFromWebsite('https://empty.example/menu')).rejects.toThrow(/couldn't find dishes with prices/);
   });
 });

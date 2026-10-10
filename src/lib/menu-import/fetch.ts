@@ -49,7 +49,8 @@ export async function safeFetch(raw: string, o: { maxBytes: number; accept: stri
       res = await fetch(url, {
         redirect: 'manual',
         signal: AbortSignal.timeout(TIMEOUT_MS),
-        headers: { Accept: o.accept, 'User-Agent': 'Mozilla/5.0 (compatible; BiteWiseMenuImport/1.0)' },
+        // A normal browser's identity: some restaurant sites turn away anything else.
+        headers: { Accept: o.accept, 'Accept-Language': 'en-US,en;q=0.9', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36' },
       });
     } catch {
       throw new AppError(502, `We couldn't open ${url.hostname}. Check the address, or try again in a minute.`);

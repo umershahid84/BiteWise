@@ -54,12 +54,13 @@ export function AdminConsole({ access }: { access: Access }) {
           ? 'Everything about Bite Wise in one place: income, alerts, restaurants, customers, orders, refunds, payouts and taxes.'
           : `Support: alerts, restaurants, customers, orders and live offers${access.canRefund ? ', including refunds and credit' : ''}.`}
       </p>
-      <Tabs value={tab} onValueChange={go} orientation="vertical" className="lg:grid lg:grid-cols-[208px_minmax(0,1fr)] lg:items-start lg:gap-6">
-        <TabsList variant="sidebar">
+      <Tabs value={tab} onValueChange={go}>
+        <TabsList>
           {tabs.map(([k, label, Icon]) => (
-            <TabsTrigger variant="sidebar" key={k} value={k}>
+            // Tighter tabs below 1536px, so all of them fit on one row on laptop screens.
+            <TabsTrigger key={k} value={k} className="px-2 text-[13px] 2xl:px-3 2xl:text-sm">
               <Icon /> {label}
-              {k === 'alerts' && unread > 0 && <span className="ml-auto rounded-full bg-danger px-1.5 text-[11px] leading-[18px] font-extrabold text-white" aria-label={`${unread} new`}>{unread}</span>}
+              {k === 'alerts' && unread > 0 && <span className="ml-1 rounded-full bg-danger px-1.5 text-[11px] leading-[18px] font-extrabold text-white" aria-label={`${unread} new`}>{unread}</span>}
             </TabsTrigger>
           ))}
         </TabsList>

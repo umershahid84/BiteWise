@@ -65,12 +65,28 @@ export function MenuImportDialog({ restaurantId, restaurantName, onDone }: { res
     onDone();
   };
   const edit = (key: number, patch: Partial<Row>) => setRows((rs) => rs?.map((r) => (r.key === key ? { ...r, ...patch } : r)) ?? null);
-  const readUpload = (file: File | undefined) => {
+  // Uploads must stay under Vercel's 4.5 MB request limit: photos are shrunk here (2000 px, JPEG), PDFs up to 3 MB.
+  const readUpload = async (file: File | undefined) => {
+    setError(null);
     if (!file) return setUpload(null);
-    if (file.size > 15_000_000) return setError('That file is too large (max 15 MB).');
-    const reader = new FileReader();
-    reader.onload = () => { setError(null); setUpload({ data: String(reader.result), name: file.name }); };
-    reader.readAsDataURL(file);
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+      if (file.size > 3_000_000) { setUpload(null); return setError('That PDF is too large (max 3 MB). Take photos of the menu pages instead, one at a time.'); }
+      const reader = new FileReader();
+      reader.onload = () => setUpload({ data: String(reader.result), name: file.name });
+      return reader.readAsDataURL(file);
+    }
+    try {
+      const img = await createImageBitmap(file);
+      const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      setUpload({ data: canvas.toDataURL('image/jpeg', 0.85), name: file.name });
+    } catch {
+      setUpload(null);
+      setError('We couldn\'t open that picture. Choose a JPEG, PNG or WebP photo, or a PDF.');
+    }
   };
   const readFile = async (file: File | undefined) => {
     if (!file) return;
@@ -105,7 +121,7 @@ export function MenuImportDialog({ restaurantId, restaurantName, onDone }: { res
               {ai === false && (
                 <Alert tone="warn" className="mb-3">Reading photos and PDFs needs the AI menu reader, which isn&apos;t switched on for Bite Wise yet. Use &ldquo;Spreadsheet&rdquo; for now.</Alert>
               )}
-              <Field label="Menu photo or PDF" htmlFor="mi-upload"><Input id="mi-upload" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(e) => readUpload(e.target.files?.[0])} /></Field>
+              <Field label="Menu photo or PDF" htmlFor="mi-upload"><Input id="mi-upload" type="file" accept="application/pdf,image/*" onChange={(e) => void readUpload(e.target.files?.[0])} /></Field>
             </>
           ) : (
             <>

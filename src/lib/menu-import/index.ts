@@ -8,6 +8,7 @@ import { parse } from '@/lib/validate';
 import { parse as parseHtml } from 'node-html-parser';
 import { aiAvailable, itemsFromFiles, itemsWithAi, type MenuFile } from './ai';
 import { safeFetch } from './fetch';
+import { renderingAvailable, renderPage } from './render';
 import { dedupe, itemsFromHtml, itemsFromSpreadsheet, pageForAi, type ImportItem } from './parse';
 
 // Menu import, for restaurants (owners and staff) and admins: 1) find the items on the restaurant's website (its menu
@@ -24,8 +25,8 @@ const NO_AI = 'To read a menu that is a picture or a PDF, Bite Wise needs its AI
   + 'ANTHROPIC_API_KEY). For now, type the items into a spreadsheet and use "From a spreadsheet".';
 const BROWSER_ONLY = 'This website builds its menu inside the browser (common with Wix, Squarespace, Toast, Square and DoorDash pages), so the '
   + 'menu isn\'t in the page we receive. If the site has a PDF of the menu, paste that link instead, or use "From a photo or PDF" or "From a spreadsheet".';
-const NOTHING = 'We couldn\'t find menu items with prices on that page. Check that it is the page that lists your dishes and prices, or use '
-  + '"From a photo or PDF" or "From a spreadsheet" instead.';
+const NOTHING = 'We opened the page but couldn\'t find dishes with prices on it. Check that it is the page that lists your dishes and prices '
+  + '(open it in your browser and copy the address), or use "Photo or PDF" or "Spreadsheet" instead.';
 
 const isPdf = (type: string, body: Buffer) => /pdf/i.test(type) || body.subarray(0, 5).toString('latin1') === '%PDF-';
 const isImage = (type: string) => /^image\/(jpeg|png|gif|webp)/i.test(type);
@@ -73,42 +74,93 @@ async function readFiles(files: MenuFile[]): Promise<Preview> {
   return { items: dedupe(items).slice(0, MAX_ITEMS), source: 'file', problems: [] };
 }
 
-export async function previewFromWebsite(url: string): Promise<Preview> {
-  const page = await safeFetch(url.trim(), { maxBytes: MAX_FILE, accept: 'text/html,application/xhtml+xml,application/pdf,image/*' });
-  // A link straight to a PDF or a picture of the menu.
-  if (isPdf(page.type, page.body)) return readFiles([{ kind: 'pdf', mime: 'application/pdf', data: page.body, name: 'menu.pdf' }]);
-  if (isImage(page.type)) return readFiles([{ kind: 'image', mime: page.type.split(';')[0], data: page.body, name: 'menu' }]);
-  if (!/html|xml|text\/plain/i.test(page.type)) throw new AppError(400, 'That address isn\'t a web page, a PDF or a picture.');
-  if (page.body.length > MAX_PAGE) throw new AppError(413, 'That page is too large to import.');
-  const html = page.body.toString('utf8');
-
-  // 1. The page itself (with Claude when it's switched on, which copes with any layout).
-  let found = itemsFromHtml(html, page.url);
-  if (aiAvailable()) {
-    try {
-      const ai = (await itemsWithAi({ url: page.url, ...pageForAi(html, page.url) })).filter(valid);
-      if (ai.length >= found.length) found = ai;
-    } catch (err) {
-      console.warn('menu import (AI):', err instanceof Error ? err.message : err);
-    }
-  }
-  if (found.length >= 3) return { items: found.slice(0, MAX_ITEMS), source: aiAvailable() ? 'ai' : 'page', problems: [] };
-
-  // 2. Menus the page embeds or links to: another page, a PDF or a picture of the menu.
-  const more = menuLinks(html, page.url);
+// Menus a page embeds or links to: another page, a PDF or a picture of the menu.
+async function followLinks(html: string, base: string, found: ImportItem[]) {
+  const more = menuLinks(html, base);
   const files: MenuFile[] = [];
+  let best = found;
   for (const link of [...more.frames, ...more.links, ...more.pictures]) {
     const got = await fetchFile(link);
     if (!got) continue;
     if ('html' in got) {
       const items = itemsFromHtml(got.html, got.url);
-      if (items.length > found.length) found = items;
+      if (items.length > best.length) best = items;
     } else if (files.length < 3) files.push(got);
   }
-  if (found.length >= 3) return { items: found.slice(0, MAX_ITEMS), source: 'page', problems: [] };
-  if (files.length) return readFiles(files);
+  return { found: best, files, more };
+}
+
+// The page's items with the AI menu reader when it's switched on (it copes with any layout), else the built-in one.
+async function itemsOfPage(html: string, url: string): Promise<{ items: ImportItem[]; ai: boolean }> {
+  const found = itemsFromHtml(html, url);
+  if (!aiAvailable()) return { items: found, ai: false };
+  try {
+    const ai = (await itemsWithAi({ url, ...pageForAi(html, url) })).filter(valid);
+    if (ai.length >= found.length) return { items: ai, ai: true };
+  } catch (err) {
+    console.warn('menu import (AI):', err instanceof Error ? err.message : err);
+  }
+  return { items: found, ai: false };
+}
+
+export async function previewFromWebsite(raw: string): Promise<Preview> {
+  const url = raw.trim();
+  // 1. The page as the server receives it. A site that turns away servers (403, bot protection) is opened in the
+  // browser below instead.
+  let page: Awaited<ReturnType<typeof safeFetch>> | null = null;
+  let blocked: AppError | null = null;
+  try {
+    page = await safeFetch(url, { maxBytes: MAX_FILE, accept: 'text/html,application/xhtml+xml,application/pdf,image/*' });
+  } catch (err) {
+    if (!(err instanceof AppError) || err.status !== 502) throw err;
+    blocked = err;
+  }
+  let found: ImportItem[] = [];
+  let shape = { visibleText: 0, scripts: 0 };
+  if (page) {
+    // A link straight to a PDF or a picture of the menu.
+    if (isPdf(page.type, page.body)) return readFiles([{ kind: 'pdf', mime: 'application/pdf', data: page.body, name: 'menu.pdf' }]);
+    if (isImage(page.type)) return readFiles([{ kind: 'image', mime: page.type.split(';')[0], data: page.body, name: 'menu' }]);
+    if (!/html|xml|text\/plain/i.test(page.type)) throw new AppError(400, 'That address isn\'t a web page, a PDF or a picture.');
+    if (page.body.length > MAX_PAGE) throw new AppError(413, 'That page is too large to import.');
+    const html = page.body.toString('utf8');
+    const own = await itemsOfPage(html, page.url);
+    if (own.items.length >= 3) return { items: own.items.slice(0, MAX_ITEMS), source: own.ai ? 'ai' : 'page', problems: [] };
+    const linked = await followLinks(html, page.url, own.items);
+    if (linked.found.length >= 3) return { items: linked.found.slice(0, MAX_ITEMS), source: 'page', problems: [] };
+    if (linked.files.length) return readFiles(linked.files);
+    found = linked.found;
+    shape = linked.more;
+  }
+
+  // 2. The page opened in a real (hidden) browser, for menus built with JavaScript.
+  if (renderingAvailable()) {
+    const rendered = await renderPage(url, { screenshot: aiAvailable() }).catch((err) => {
+      console.warn('menu import (browser):', err instanceof Error ? err.message : err);
+      return null;
+    });
+    if (rendered) {
+      const own = await itemsOfPage(rendered.html, rendered.url);
+      let best = own;
+      for (const f of rendered.frames) {
+        const items = itemsFromHtml(f.html, f.url);
+        if (items.length > best.items.length) best = { items, ai: false };
+      }
+      if (best.items.length >= 3) return { items: best.items.slice(0, MAX_ITEMS), source: best.ai ? 'ai' : 'page', problems: [] };
+      const linked = await followLinks(rendered.html, rendered.url, best.items);
+      if (linked.found.length >= 3) return { items: linked.found.slice(0, MAX_ITEMS), source: 'page', problems: [] };
+      if (linked.files.length) return readFiles(linked.files);
+      // The menu may be pictures on the page: the AI menu reader reads the page as the visitor sees it.
+      if (rendered.screenshots.length) {
+        const seen = (await itemsFromFiles(rendered.screenshots.map((data, i) => ({ kind: 'image' as const, mime: 'image/jpeg', data, name: `page-${i + 1}` })))).filter(valid);
+        if (seen.length) return { items: dedupe(seen).slice(0, MAX_ITEMS), source: 'ai', problems: [] };
+      }
+      if (linked.found.length > found.length) found = linked.found;
+    }
+  }
   if (found.length) return { items: found, source: 'page', problems: [] };
-  throw new AppError(404, more.visibleText < 400 && more.scripts > 3 ? BROWSER_ONLY : NOTHING);
+  if (blocked) throw blocked;
+  throw new AppError(404, renderingAvailable() || !(shape.visibleText < 400 && shape.scripts > 3) ? NOTHING : BROWSER_ONLY);
 }
 
 // A photo or PDF of the menu the owner uploads (a data URL).
