@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, Trash2, UserPlus } from 'lucide-react';
+import { Copy, Pencil, ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { sendToLogin } from '@/components/app/session-watch';
-import { addTeamMemberAction, removeTeamMemberAction, updateTeamMemberAction } from '@/app/actions/admin';
-import { ErrorText } from '@/components/ui/alert';
+import { addTeamMemberAction, editTeamMemberAction, removeTeamMemberAction, sendTeamResetCodeAction, setTeamPasswordAction, updateTeamMemberAction } from '@/app/actions/admin';
+import { Alert, ErrorText } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ export function TeamPanel() {
   const queryClient = useQueryClient();
   const { error: loadError, data, isLoading } = useAdmin<Member[]>(['team'], 'team');
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Member | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
   const change = async (m: Member, patch: Partial<Pick<Member, 'role' | 'canRefund'>>) => {
     const next = { role: m.role, canRefund: m.canRefund, ...patch };
@@ -79,12 +80,20 @@ export function TeamPanel() {
                     : <Checkbox checked={m.canRefund} onChange={(e) => change(m, { canRefund: e.target.checked })} label="Refunds" />}
                 </td>
                 <td className="text-sm">{m.lastSignInAt ? day(m.lastSignInAt) : 'never'}</td>
-                <td>{m.id !== me.id && <Button size="sm" variant="ghost" className="text-danger" onClick={() => remove(m)} aria-label={`Remove ${m.username}`}><Trash2 /></Button>}</td>
+                <td className="whitespace-nowrap">
+                  <div className="flex gap-1.5">
+                    <Button size="sm" variant="ghost" onClick={() => setEditing(m)}><Pencil /> Edit / password</Button>
+                    {m.id !== me.id && <Button size="sm" variant="ghost" className="text-danger" onClick={() => remove(m)} aria-label={`Remove ${m.username}`}><Trash2 /></Button>}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </Table>
       )}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        {editing && <EditMember member={editing} self={editing.id === me.id} onSaved={refresh} />}
+      </Dialog>
       <Dialog open={adding} onOpenChange={setAdding}>
         {adding && <AddMember onDone={() => { setAdding(false); refresh(); }} />}
       </Dialog>
@@ -135,3 +144,84 @@ function AddMember({ onDone }: { onDone: () => void }) {
     </DialogContent>
   );
 }
+
+// Edit a team member: their email and user name, and their password (set one, give a temporary one they must change
+// at their next log-in, or email them a code to choose their own).
+function EditMember({ member: m, self, onSaved }: { member: Member; self: boolean; onSaved: () => void }) {
+  const [f, setF] = useState({ email: m.email, username: m.username });
+  const [pw, setPw] = useState({ password: '', confirm: '', email: false });
+  const [temp, setTemp] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const call = async <T,>(what: string, fn: () => Promise<{ ok: true; data: T } | { ok: false; error: string; status?: number }>) => {
+    setBusy(what);
+    setError(null);
+    const res = await fn()
+      .catch(() => ({ ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.' }))
+      .finally(() => setBusy(null));
+    if (!res.ok && 'status' in res && res.status === 401) return sendToLogin();
+    if (!res.ok) return void setError(res.error);
+    return res.data;
+  };
+  const saveDetails = async () => {
+    const d = await call('details', () => editTeamMemberAction({ id: m.id, ...f }));
+    if (d === undefined) return;
+    toast.success(d.changed ? `${f.username} is updated.` : 'Nothing to change.');
+    onSaved();
+  };
+  const setPassword = async (mode: 'set' | 'temporary') => {
+    if (mode === 'temporary' && !confirm(`Give ${m.username} a temporary password? Their current password stops working, and they must choose a new one when they log in.`)) return;
+    const d = await call(mode, () => setTeamPasswordAction({ id: m.id, mode, ...pw }));
+    if (d === undefined) return;
+    if (d.password) setTemp(d.password);
+    else toast.success(`${m.username}'s password is changed.${pw.email ? ' We emailed it to them.' : ' Give it to them in person.'}`);
+    setPw({ password: '', confirm: '', email: pw.email });
+  };
+  const sendCode = async () => {
+    const d = await call('code', () => sendTeamResetCodeAction({ id: m.id }));
+    if (d) toast.success(`We emailed a 6-digit code to ${d.email}. They enter it with "Forgot password" on the admin log-in page.`);
+  };
+  return (
+    <DialogContent title={`Edit ${m.username}`} description={self ? 'Your own team account.' : `${m.role === 'admin' ? 'Admin' : 'Employee'} · added ${day(m.createdAt)}`}>
+      <SectionTitle>Details</SectionTitle>
+      <div className="grid gap-x-3 sm:grid-cols-2">
+        <Field label="Email" htmlFor="em-email"><Input id="em-email" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
+        <Field label="User name" htmlFor="em-user" hint="Letters, numbers, dots or underscores."><Input id="em-user" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} /></Field>
+      </div>
+      <Button size="sm" disabled={!!busy} onClick={saveDetails}>{busy === 'details' ? 'Saving…' : 'Save details'}</Button>
+
+      <SectionTitle>Password</SectionTitle>
+      {temp ? (
+        <Alert tone="info" className="mb-3">
+          <b>Temporary password for {m.username}:</b>
+          <div className="my-2 flex items-center gap-2">
+            <code className="rounded-lg bg-surface px-2.5 py-1.5 font-mono text-base font-bold">{temp}</code>
+            <Button size="sm" variant="ghost" onClick={() => { void navigator.clipboard?.writeText(temp); toast.success('Copied.'); }}><Copy /> Copy</Button>
+          </div>
+          Give it to them{pw.email ? ' (we also emailed it)' : ''}. It works once: they must choose their own password when they log in. It won&apos;t be shown again.
+        </Alert>
+      ) : null}
+      <div className="grid gap-x-3 sm:grid-cols-2">
+        <Field label="New password" htmlFor="em-pass" hint="At least 8 characters, with a letter and a number.">
+          <Input id="em-pass" type="password" autoComplete="new-password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
+        </Field>
+        <Field label="Re-enter new password" htmlFor="em-confirm">
+          <Input id="em-confirm" type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
+        </Field>
+      </div>
+      {!self && <Checkbox checked={pw.email} onChange={(e) => setPw({ ...pw, email: e.target.checked })} label={`Email the new or temporary password to ${m.email}`} />}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" disabled={!!busy} onClick={() => setPassword('set')}>{busy === 'set' ? 'Saving…' : 'Update password'}</Button>
+        {!self && <Button size="sm" variant="ghost" disabled={!!busy} onClick={() => setPassword('temporary')}>{busy === 'temporary' ? 'Creating…' : 'Create temporary password'}</Button>}
+        {!self && <Button size="sm" variant="ghost" disabled={!!busy} onClick={sendCode}>{busy === 'code' ? 'Sending…' : 'Email a reset code'}</Button>}
+      </div>
+      <p className="mt-2 mb-0 text-xs text-muted">
+        <b>Update password</b> sets the password you typed. <b>Temporary password</b> makes one up; they must change it when they log in. <b>Reset code</b> emails them a
+        6-digit code to choose their own password with &quot;Forgot password&quot;.
+      </p>
+      <ErrorText error={error} />
+    </DialogContent>
+  );
+}
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => <h3 className="mt-5 mb-2 text-sm font-extrabold tracking-wide text-muted uppercase first:mt-0">{children}</h3>;

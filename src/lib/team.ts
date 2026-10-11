@@ -1,7 +1,9 @@
 import 'server-only';
 import { randomBytes } from 'node:crypto';
 import { sendEmail } from '@/lib/email/send';
-import { teamWelcomeEmail } from '@/lib/email/templates';
+import { updateAccount } from '@/lib/admin-edit';
+import { teamPasswordEmail, teamWelcomeEmail } from '@/lib/email/templates';
+import { requestPasswordReset } from '@/lib/password-reset';
 import { publicEnv } from '@/lib/env';
 import { AppError, check, must } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
@@ -58,4 +60,42 @@ export async function checkTeamRemoval(by: string, id: string) {
   if (p.role !== 'admin' && p.role !== 'support') throw new AppError(404, 'Team member not found.');
   if (id === by) throw new AppError(400, 'You can\'t delete your own account here.');
   if (p.role === 'admin' && !(await adminsLeft(id))) throw new AppError(400, 'Bite Wise needs at least one admin.');
+}
+
+async function teamMember(id: string) {
+  const p = must(await db().from('profiles').select('id, email, username, role, status').eq('id', id).single());
+  if ((p.role !== 'admin' && p.role !== 'support') || p.status === 'deleted') throw new AppError(404, 'Team member not found.');
+  return p;
+}
+
+// A team member's email address and user name.
+export async function editTeamMember(id: string, o: { email: string; username: string }) {
+  await teamMember(id);
+  return updateAccount(id, o);
+}
+
+// A readable temporary password (e.g. "Kite-4827-Plum") that meets the password rules.
+const WORDS = ['Apple', 'Basil', 'Cedar', 'Delta', 'Ember', 'Fable', 'Grove', 'Harbor', 'Indigo', 'Juniper', 'Kite', 'Lemon', 'Maple', 'Nova',
+  'Olive', 'Pepper', 'Quartz', 'River', 'Sage', 'Tulip', 'Umber', 'Violet', 'Willow', 'Yarrow', 'Zephyr', 'Plum', 'Mint', 'Coral'];
+export function temporaryPassword() {
+  const b = randomBytes(4);
+  return `${WORDS[b[0] % WORDS.length]}-${1000 + (b.readUInt16BE(1) % 9000)}-${WORDS[b[3] % WORDS.length]}`;
+}
+
+// Sets a team member's password. A temporary one must be changed the next time they log in (Viewer.mustChangePassword).
+export async function setTeamPassword(id: string, password: string, o: { temporary: boolean; email: boolean }) {
+  const p = await teamMember(id);
+  const { error } = await db().auth.admin.updateUserById(id, { password, app_metadata: { must_change_password: o.temporary } });
+  if (error) throw new AppError(400, error.message);
+  if (o.email) {
+    await sendEmail({ to: p.email, ...teamPasswordEmail({ username: p.username, password, temporary: o.temporary, loginUrl: `${publicEnv.siteUrl.replace(/\/$/, '')}/admin/login` }) });
+  }
+  return p;
+}
+
+// Emails a team member a 6-digit code to choose a new password themselves (the Forgot password flow).
+export async function sendTeamResetCode(id: string) {
+  const p = await teamMember(id);
+  await requestPasswordReset(p.email);
+  return p;
 }

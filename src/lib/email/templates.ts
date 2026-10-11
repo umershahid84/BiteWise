@@ -485,3 +485,24 @@ export function teamWelcomeEmail(o: { username: string; role: 'admin' | 'support
 Log in at ${o.loginUrl} with your user name or this email. Your admin will give you your password, or use "Forgot password" to choose your own.`,
   };
 }
+
+// An admin set a team member's password (only when the admin chose to email it).
+export function teamPasswordEmail(o: { username: string; password: string; temporary: boolean; loginUrl: string }) {
+  const after = o.temporary ? 'It is a <b>temporary password</b>: you will be asked to choose your own as soon as you log in.' : 'Keep it private.';
+  return {
+    subject: o.temporary ? 'Your temporary Bite Wise password' : 'Your new Bite Wise password',
+    html: layout({
+      preview: 'An admin set a new password for your Bite Wise owner console account.',
+      emoji: '🔑',
+      title: o.temporary ? 'Your temporary password' : 'Your new password',
+      subtitle: `Owner console · ${esc(o.username)}`,
+      body: `<p style="margin:0 0 14px;">An admin set a new password for your Bite Wise account <b>${esc(o.username)}</b>:</p>
+        ${box(`<span style="font:700 20px/1.4 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;">${esc(o.password)}</span>`, '#F1F5F9', '#CBD5E1')}
+        <p style="margin:0 0 20px;">${after} If you didn't expect this, tell your Bite Wise admin.</p>
+        <div style="padding:6px 0 0;">${button(o.loginUrl, 'Log in to the owner console', '#14284B')}</div>`,
+    }),
+    text: `An admin set a new password for your Bite Wise account ${o.username}: ${o.password}
+${o.temporary ? 'It is temporary: you will be asked to choose your own when you log in.' : 'Keep it private.'}
+Log in: ${o.loginUrl}`,
+  };
+}

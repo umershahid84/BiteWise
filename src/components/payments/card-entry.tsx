@@ -1,6 +1,6 @@
 'use client';
 
-import { useImperativeHandle, useState } from 'react';
+import { useEffect, useImperativeHandle, useState } from 'react';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { Field, Input } from '@/components/ui/field';
@@ -119,14 +119,35 @@ function StripeFields({ ref }: { ref: React.Ref<CardEntryHandle> }) {
       return setupIntent.payment_method;
     },
   }));
+  const colors = useThemeColors();
   return (
     <div>
       <div className="rounded-field border border-line bg-bg-2 px-3.5 py-3.5">
-        <CardElement options={{ style: { base: { fontSize: '16px', color: '#ecfdf5', '::placeholder': { color: '#86998f' } } } }} />
+        <CardElement options={{ style: { base: { fontSize: '16px', color: colors.ink, iconColor: colors.muted, '::placeholder': { color: colors.muted } }, invalid: { color: colors.danger } } }} />
       </div>
       <div className="mt-2 text-xs text-muted">🔒 Card details are sent securely to Stripe and never stored on Bite Wise servers.</div>
     </div>
   );
+}
+
+// Stripe's card field lives in its own frame and can't see our styles, so it gets the current theme's text colors,
+// updated when the look or light/dark mode changes.
+function useThemeColors() {
+  const read = () => {
+    if (typeof document === 'undefined') return { ink: '#1c1917', muted: '#78716c', danger: '#dc2626' };
+    const css = getComputedStyle(document.documentElement);
+    const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
+    return { ink: v('--color-ink', '#1c1917'), muted: v('--color-muted', '#78716c'), danger: v('--color-danger', '#dc2626') };
+  };
+  const [colors, setColors] = useState(read);
+  useEffect(() => {
+    const update = () => setColors(read());
+    update();
+    const watch = new MutationObserver(update);
+    watch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode', 'data-theme'] });
+    return () => watch.disconnect();
+  }, []);
+  return colors;
 }
 
 export function CardEntry({ config, ref }: { config: PaymentConfig; ref: React.Ref<CardEntryHandle> }) {

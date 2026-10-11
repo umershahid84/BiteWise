@@ -12,6 +12,7 @@ import { OrdersPanel } from './orders';
 import { OverviewPanel } from './overview';
 import { PayoutsPanel } from './payouts';
 import { PlansPanel } from './plans';
+import { ChangePasswordButton } from '@/components/auth/change-password';
 import { RestaurantsPanel } from './restaurants';
 import { SettingsPanel } from './settings';
 import { AccessContext, daysAgo, todayPT, type Access, type Range } from './shared';
@@ -48,17 +49,22 @@ export function AdminConsole({ access }: { access: Access }) {
   return (
     <AccessContext.Provider value={access}>
     <main className="container-wide py-8">
-      <h1 className="text-3xl font-extrabold">Owner console</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="m-0 flex-1 text-3xl font-extrabold">Owner console</h1>
+        <ChangePasswordButton />
+      </div>
       <p className="-mt-1 mb-5 text-muted">
         {access.role === 'admin'
           ? 'Everything about Bite Wise in one place: income, alerts, restaurants, customers, orders, refunds, payouts and taxes.'
           : `Support: alerts, restaurants, customers, orders and live offers${access.canRefund ? ', including refunds and credit' : ''}.`}
       </p>
       <Tabs value={tab} onValueChange={go}>
-        <TabsList>
+        {/* The console has many tabs: on laptop screens and up the bar uses the full width of the window, so they all fit
+            on one line. */}
+        <TabsList className="lg:relative lg:left-1/2 lg:w-[calc(100vw-32px)] lg:max-w-[1600px] lg:-translate-x-1/2">
           {tabs.map(([k, label, Icon]) => (
             // Tighter tabs below 1536px, so all of them fit on one row on laptop screens.
-            <TabsTrigger key={k} value={k} className="px-2 text-[13px] 2xl:px-3 2xl:text-sm">
+            <TabsTrigger key={k} value={k} className="gap-1 px-1.5 text-[13px] xl:px-2.5 2xl:gap-1.5 2xl:px-3 2xl:text-sm">
               <Icon /> {label}
               {k === 'alerts' && unread > 0 && <span className="ml-1 rounded-full bg-danger px-1.5 text-[11px] leading-[18px] font-extrabold text-white" aria-label={`${unread} new`}>{unread}</span>}
             </TabsTrigger>

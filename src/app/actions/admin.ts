@@ -17,7 +17,7 @@ import { onboardingMessage, sendOnboardingEmails } from '@/lib/restaurant-onboar
 import { refreshRestaurantTax, setManualTaxRate } from '@/lib/restaurant-tax';
 import { parseStates } from '@/lib/subscriptions';
 import { stateByCode } from '@/lib/tax/states';
-import { addTeamMember, checkTeamRemoval, updateTeamMember } from '@/lib/team';
+import { addTeamMember, checkTeamRemoval, editTeamMember, sendTeamResetCode, setTeamPassword, temporaryPassword, updateTeamMember } from '@/lib/team';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { dollars, emailSchema, int, parse, passwordSchema, restaurantFieldsSchema, taxRateSchema, usernameSchema } from '@/lib/validate';
@@ -445,6 +445,48 @@ export async function updateTeamMemberAction(input: unknown) {
     await updateTeamMember(me.id, d.id, d);
     await log(me.id, 'team.update', 'user', d.id, d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ', no refunds'}`);
     return null;
+  });
+}
+
+// A team member's email address and user name.
+export async function editTeamMemberAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({ id: z.string().uuid(), email: emailSchema, username: usernameSchema }), input);
+    const changed = await editTeamMember(d.id, d);
+    if (changed.length) await log(me.id, 'team.edit', 'user', d.id, changed.join('; '));
+    return { changed: changed.length };
+  });
+}
+
+// Sets a team member's password: one the admin chose, or a generated temporary one (returned once, so the admin can
+// pass it on) that must be changed at the next log-in. Optionally emailed to them.
+export async function setTeamPasswordAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({
+      id: z.string().uuid(), mode: z.enum(['set', 'temporary']), password: z.string().optional(), confirm: z.string().optional(), email: z.boolean().default(false),
+    }), input);
+    let password: string;
+    if (d.mode === 'temporary') password = temporaryPassword();
+    else {
+      password = parse(passwordSchema, d.password ?? '');
+      if (password !== d.confirm) throw new AppError(400, 'The two passwords don\'t match.');
+    }
+    const p = await setTeamPassword(d.id, password, { temporary: d.mode === 'temporary', email: d.email });
+    await log(me.id, d.mode === 'temporary' ? 'team.temporary_password' : 'team.set_password', 'user', d.id, `${p.username}${d.email ? ' (emailed)' : ''}`);
+    return { password: d.mode === 'temporary' ? password : null };
+  });
+}
+
+// Emails a team member a 6-digit code to choose their own new password.
+export async function sendTeamResetCodeAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const { id } = parse(z.object({ id: z.string().uuid() }), input);
+    const p = await sendTeamResetCode(id);
+    await log(me.id, 'team.reset_code', 'user', id, p.username);
+    return { email: p.email };
   });
 }
 

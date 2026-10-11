@@ -8,6 +8,7 @@ import { Providers } from '@/components/app/providers';
 import { SiteFooter } from '@/components/app/site-footer';
 import { SiteHeader } from '@/components/app/site-header';
 import { TermsGate } from '@/components/app/terms-gate';
+import { PasswordGate } from '@/components/auth/change-password';
 import { ThemeSync } from '@/components/app/theme-sync';
 import { cookies, headers } from 'next/headers';
 import { getViewer } from '@/lib/auth';
@@ -75,7 +76,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {viewer && <IdleLogout />}
           {viewer && <SessionWatch userId={viewer.id} />}
           {viewer && sessionId && <TabSession sessionId={sessionId} />}
-          {viewer && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
+          {viewer?.mustChangePassword && <PasswordGate />}
+          {viewer && !viewer.mustChangePassword && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
         </Providers>
       </body>
     </html>

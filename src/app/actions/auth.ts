@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { serverEnv } from '@/lib/env';
+import { publicEnv, serverEnv } from '@/lib/env';
 import { checkEmailDomain } from '@/lib/email-domain';
 import { confirmationEmail, sendsOwnConfirmation } from '@/lib/email/confirmation';
 import { sendEmail } from '@/lib/email/send';
@@ -19,6 +19,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
 import { parse, passwordSchema, signupSchema } from '@/lib/validate';
 import { z } from 'zod';
+import { createClient } from '@supabase/supabase-js';
 
 async function requestInfo() {
   const h = await headers();
@@ -307,6 +308,30 @@ export async function resetPasswordWithCode(input: unknown) {
     const d = parse(resetSchema, input);
     const portal = await resetPassword(d.login, d.code, d.password);
     return { portal };
+  });
+}
+
+// Changes the signed-in user's own password. With a temporary password an admin set, the current one isn't asked for
+// (they just logged in with it); otherwise it must be given and is checked first.
+export async function changeMyPassword(input: unknown) {
+  return action(async () => {
+    const viewer = await getViewer();
+    if (!viewer) throw new AppError(401, 'You have been logged out. Please log in again.');
+    const d = parse(z.object({ current: z.string().optional(), password: passwordSchema, confirm: z.string() })
+      .refine((x) => x.password === x.confirm, { message: 'The two passwords don\'t match.', path: ['confirm'] }), input);
+    if (!viewer.mustChangePassword) {
+      // Check the current password on a separate client, so the signed-in session isn't touched.
+      const check = createClient(publicEnv.supabaseUrl, publicEnv.supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { error } = await check.auth.signInWithPassword({ email: viewer.email, password: d.current ?? '' });
+      if (error) throw new AppError(400, 'Your current password is not right.');
+      await check.auth.signOut({ scope: 'local' });
+    }
+    if (d.current && d.current === d.password) throw new AppError(400, 'Choose a password that is different from your current one.');
+    const { error } = await supabaseAdmin().auth.admin.updateUserById(viewer.id, { password: d.password, app_metadata: { must_change_password: false } });
+    if (error) throw new AppError(400, /different from the old/i.test(error.message) ? 'Choose a password that is different from your current one.' : error.message);
+    // A new password ends the old sign-in session: start a fresh one, so they stay logged in on this browser.
+    await (await supabaseServer()).auth.signInWithPassword({ email: viewer.email, password: d.password });
+    return null;
   });
 }
 

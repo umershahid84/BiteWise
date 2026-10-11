@@ -18,6 +18,8 @@ export type Viewer = {
   // Restaurant staff (managers, supervisors): their restaurant is in `restaurant`.
   staff: { fullName: string; title: string } | null;
   creditCents: number;
+  // Logged in with a temporary password an admin set: must choose a new one before doing anything else.
+  mustChangePassword: boolean;
   pendingTerms: { id: string; title: string; version: string }[];
 };
 
@@ -52,11 +54,13 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     canRefund: profile.role === 'admin' || (profile.role === 'support' && profile.can_refund),
     staff: staff.data ? { fullName: staff.data.full_name, title: staff.data.title } : null,
     creditCents: Number(credit.data ?? 0),
+    mustChangePassword: auth.user.app_metadata?.must_change_password === true,
     pendingTerms: (pending.data ?? []).map((d) => ({ id: d.id, title: d.title, version: d.version })),
   };
 });
 
 const SIGNED_OUT = 'You have been logged out. Please log in again.';
+const CHANGE_FIRST = 'Choose your own password first: you logged in with a temporary password.';
 
 // For pages: sends visitors to the log-in page, and users with another role to their own home page.
 // `role` may list several roles (e.g. the restaurant dashboard: owners and staff).
@@ -78,6 +82,7 @@ export async function requirePageViewer(role?: Role | Role[]): Promise<Viewer> {
 export async function requireActor(role?: Role): Promise<Viewer> {
   const viewer = await getViewer();
   if (!viewer) throw new AppError(401, SIGNED_OUT);
+  if (viewer.mustChangePassword) throw new AppError(403, CHANGE_FIRST);
   if (role && viewer.role !== role) throw new AppError(403, 'This page is not available for your account type.');
   if (viewer.pendingTerms.length) throw new AppError(403, 'Please review and accept our updated terms to continue.', 'terms_required');
   return viewer;
@@ -89,6 +94,7 @@ export async function requireActor(role?: Role): Promise<Viewer> {
 export async function requireAdmin(allow?: 'support' | 'refund'): Promise<Viewer> {
   const viewer = await getViewer();
   if (!viewer) throw new AppError(401, SIGNED_OUT);
+  if (viewer.mustChangePassword) throw new AppError(403, CHANGE_FIRST);
   if (viewer.role === 'admin') return viewer;
   if (viewer.role === 'support') {
     if (allow === 'support') return viewer;
@@ -106,6 +112,7 @@ export async function requireAdmin(allow?: 'support' | 'refund'): Promise<Viewer
 export async function requireRestaurant(o: { staff?: boolean } = {}) {
   const viewer = await getViewer();
   if (!viewer) throw new AppError(401, SIGNED_OUT);
+  if (viewer.mustChangePassword) throw new AppError(403, CHANGE_FIRST);
   if (viewer.role === 'staff' && !o.staff) throw new AppError(403, 'Only the restaurant owner can do this.');
   if (viewer.role !== 'restaurant' && viewer.role !== 'staff') throw new AppError(403, 'This page is not available for your account type.');
   if (viewer.pendingTerms.length) throw new AppError(403, 'Please review and accept our updated terms to continue.', 'terms_required');
