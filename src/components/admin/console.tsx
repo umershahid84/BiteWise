@@ -59,9 +59,9 @@ export function AdminConsole({ access }: { access: Access }) {
           : `Support: alerts, restaurants, customers, orders and live offers${access.canRefund ? ', including refunds and credit' : ''}.`}
       </p>
       <Tabs value={tab} onValueChange={go}>
-        {/* The console has many tabs: on laptop screens and up the bar uses the full width of the window, so they all fit
+        {/* The console has many tabs: on laptop screens and up the bar is as wide as its tabs (wider than the page if needed), so they all fit
             on one line. */}
-        <TabsList className="lg:relative lg:left-1/2 lg:w-[calc(100vw-32px)] lg:max-w-[1600px] lg:-translate-x-1/2">
+        <TabsList className="lg:relative lg:left-1/2 lg:w-max lg:max-w-[calc(100vw-32px)] lg:-translate-x-1/2">
           {tabs.map(([k, label, Icon]) => (
             // Tighter tabs below 1536px, so all of them fit on one row on laptop screens.
             <TabsTrigger key={k} value={k} className="gap-1 px-1.5 text-[13px] xl:px-2.5 2xl:gap-1.5 2xl:px-3 2xl:text-sm">
