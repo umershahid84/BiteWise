@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Checkbox, Field, Input, Select } from '@/components/ui/field';
+import { Field, Input, Select } from '@/components/ui/field';
 import { SectionLabel, Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/constants';
@@ -23,7 +23,7 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [refunding, setRefunding] = useState<AdminOrder | null>(null);
-  const { role, canRefund } = useAccess();
+  const { canRefund } = useAccess();
   const { error: loadError, data, isLoading } = useAdmin<{ orders: AdminOrder[] }>(['orders', range, status, q], 'orders', { ...range, status, q });
   const pager = usePager(data?.orders ?? [], `${range.from}|${range.to}|${status}|${q}`);
   const cancel = async (o: AdminOrder) => {
@@ -67,7 +67,7 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
                     <td><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} /></td>
                     <td className="whitespace-nowrap">
                       <div className="flex gap-1.5">
-                        {canRefund && o.status === 'picked_up' && o.refundableCents > 0 && <Button size="sm" variant="warm" title="Courtesy platform credit (or, for admins, a refund a law requires)" onClick={() => setRefunding(o)}>Refund…</Button>}
+                        {canRefund && o.status === 'picked_up' && o.refundableCents > 0 && <Button size="sm" variant="warm" title="Courtesy refund, case by case (all sales are final)" onClick={() => setRefunding(o)}>Refund…</Button>}
                         {(o.status === 'reserved' || o.status === 'pending_payment') && <Button size="sm" variant="danger" onClick={() => cancel(o)}>Cancel</Button>}
                         <a className={buttonVariants({ variant: 'ghost', size: 'sm' })} href={`/api/orders/${o.id}/receipt`} aria-label={`Receipt PDF for order ${o.id}`}><Download /></a>
                       </div>
@@ -81,7 +81,7 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
         )}
       </Card>
       <Dialog open={!!refunding} onOpenChange={(o) => !o && setRefunding(null)}>
-        {refunding && <RefundForm order={refunding} admin={role === 'admin'} onDone={() => { setRefunding(null); queryClient.invalidateQueries({ queryKey: ['admin'] }); }} />}
+        {refunding && <RefundForm order={refunding} onDone={() => { setRefunding(null); queryClient.invalidateQueries({ queryKey: ['admin'] }); }} />}
       </Dialog>
     </>
   );
@@ -89,15 +89,14 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
 
 const PRESETS = [10, 25, 50, 75, 100];
 
-// All sales are final (Customer Terms, Section 6): food is never refunded in cash or to the card. Bite Wise can give a
-// courtesy / loyalty refund as platform credit, case by case (paid by Bite Wise; the restaurant keeps its payout). Only
-// admins, and only when a law requires it (Section 6.5), can refund to the original payment. Never the service fee.
-function RefundForm({ order: o, admin, onDone }: { order: AdminOrder; admin: boolean; onDone: () => void }) {
+// All sales are final (Customer Terms, Section 6): customers have no right to a refund. Bite Wise may refund case by case,
+// as a courtesy or for loyalty: as platform credit (paid by Bite Wise; the restaurant keeps its payout) or back to the
+// card (the restaurant gives up the matching part of its payout). Never the service fee.
+function RefundForm({ order: o, onDone }: { order: AdminOrder; onDone: () => void }) {
   const [percent, setPercent] = useState<number | null>(100);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<'credit' | 'original'>('credit');
   const [reason, setReason] = useState('');
-  const [lawRequires, setLawRequires] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const history = useQuery({ queryKey: ['admin', 'refunds', o.id], queryFn: () => adminGet<{ id: number; amount_cents: number; method: string; reason: string; created_at: string }[]>('refunds', { orderId: o.id }) });
@@ -106,7 +105,7 @@ function RefundForm({ order: o, admin, onDone }: { order: AdminOrder; admin: boo
   const creditBack = method === 'original' ? cents - card : cents;
   const submit = async () => {
     setBusy(true);
-    const res = await refundOrder({ id: o.id, method, lawRequires, reason, ...(percent !== null ? { percent } : { amount }) });
+    const res = await refundOrder({ id: o.id, method, reason, ...(percent !== null ? { percent } : { amount }) });
     setBusy(false);
     if (!res.ok) return setError(res.error);
     onDone();
@@ -114,8 +113,8 @@ function RefundForm({ order: o, admin, onDone }: { order: AdminOrder; admin: boo
   return (
     <DialogContent title={`Refund order #${o.id}`} description={`${o.quantity} × ${o.itemTitle} · ${o.restaurant} · ${o.customer}. Paid ${money(o.totalCents)}; at most ${money(o.refundableCents)} can be refunded. The ${money(o.nonRefundableCents)} service fee is never refunded.`}>
       <Alert tone="info" className="mb-4">
-        <b>All sales are final:</b> food is sold as is and isn&apos;t refunded to the card. As a courtesy, case by case, you can give the customer
-        <b> Bite Wise platform credit</b> for future orders.
+        <b>All sales are final:</b> food is sold as is and customers have no right to a refund, so food isn&apos;t bought and returned over and over.
+        Refund only case by case, as a <b>courtesy or for loyalty</b>.
       </Alert>
       <SectionLabel className="mt-0">Amount</SectionLabel>
       <div className="flex flex-wrap gap-2">
@@ -134,23 +133,20 @@ function RefundForm({ order: o, admin, onDone }: { order: AdminOrder; admin: boo
           <span><b>Courtesy platform credit</b>
             <span className="block text-xs text-muted">{money(cents)} added to their Bite Wise credit for future orders, as a courtesy or for loyalty. Paid by Bite Wise; the restaurant keeps its full payout.</span></span>
         </label>
-        {admin && (
-          <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
-            <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'original'} onChange={() => setMethod('original')} />
-            <span><b>Back to the card: only when a law requires it</b>
-              <span className="block text-xs text-muted">{card > 0 && `${money(card)} back to ${o.card}`}{card > 0 && creditBack > 0 && ' + '}{creditBack > 0 && `${money(creditBack)} back to the credit they paid with`}. The restaurant gives up the matching part of its payout. Admins only.</span></span>
-          </label>
-        )}
+        <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
+          <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'original'} onChange={() => setMethod('original')} />
+          <span><b>Courtesy refund to the card</b>
+            <span className="block text-xs text-muted">{card > 0 && `${money(card)} back to ${o.card}`}{card > 0 && creditBack > 0 && ' + '}{creditBack > 0 && `${money(creditBack)} back to the credit they paid with`}. The restaurant gives up the matching part of its payout.</span></span>
+        </label>
       </div>
-      <Field label={method === 'original' ? 'The law that requires this refund, and why' : 'Reason'} htmlFor="r-reason" className="mt-4">
-        <Input id="r-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={method === 'original' ? 'e.g. Court order no. …, or state consumer law (as advised by counsel)' : 'e.g. Loyal customer, food was cold at pickup'} />
+      <Field label="Reason (recorded in the audit log)" htmlFor="r-reason" className="mt-4">
+        <Input id="r-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Loyal customer, food was cold at pickup" />
       </Field>
-      {method === 'original' && <Checkbox className="mb-3" checked={lawRequires} onChange={(e) => setLawRequires(e.target.checked)} label="I confirm a law requires this refund to the card (recorded in the audit log)" />}
       {history.data && history.data.length > 0 && (
         <div className="mb-3 text-xs text-muted">Earlier refunds: {history.data.map((h) => `${money(h.amount_cents)} (${h.method === 'credit' ? 'credit' : 'card'})`).join(', ')}</div>
       )}
       <ErrorText error={error} />
-      <Button variant="warm" block disabled={busy || cents < 1 || (method === 'original' && !lawRequires)} onClick={submit}>
+      <Button variant="warm" block disabled={busy || cents < 1} onClick={submit}>
         {busy ? 'Refunding…' : method === 'credit' ? `Give ${money(cents)} credit` : `Refund ${money(cents)} to the card`}
       </Button>
     </DialogContent>

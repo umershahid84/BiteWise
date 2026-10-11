@@ -94,7 +94,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
           <div className="pos-spaced small-print">{r.receiptNumber}</div>
           <div className="b pos-thanks">Thank you for rescuing food!</div>
           <p className="small-print">
-            Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. Food is sold as is and all sales are final: picked-up orders are not refunded. The service fee is not
+            Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. Food is sold as is and all sales are final: picked-up orders are not refundable. The service fee is not
             refundable: if an order is cancelled by you or not picked up, only the service fee is charged. Times in Pacific Time.
           </p>
           <div className="small-print">support@bitewise.app</div>

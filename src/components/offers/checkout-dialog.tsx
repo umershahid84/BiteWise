@@ -150,7 +150,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
         <br />
         Pick up by <b>{fmtTime(offer.pickup_end)}</b>. If you cancel or don&apos;t make it, the food is released and you&apos;re charged only the service fee, which is not refundable.
         <br />
-        <b>Sold as is, all sales final:</b> check your food at the counter before you accept it. Picked-up orders are not refunded.
+        <b>Sold as is, all sales final:</b> check your food at the counter before you accept it. Picked-up orders are not refundable.
       </Alert>
 
       <div className="flex items-center gap-3">

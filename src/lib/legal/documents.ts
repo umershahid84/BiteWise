@@ -8,7 +8,7 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-17.1';
+export const LEGAL_VERSION = '2026-10-17.2';
 export const EFFECTIVE = 'October 17, 2026';
 
 export type Company = {
@@ -120,13 +120,15 @@ automatically, and the following steps are taken automatically by the platform, 
 <p>6.1 <b>Sold as is.</b> Surplus food is food a Restaurant has already prepared and would otherwise throw away. It is sold at a discount,
 <b>as is</b>, in the condition it is in when you pick it up, with no warranty of any kind from the Restaurant or Bite Wise beyond what the
 law requires.</p>
-<p>6.2 <b>No refunds.</b> <b>All sales are final.</b> Once you have picked up an order (the Restaurant has entered your PIN), <b>neither the
-Restaurant nor Bite Wise will refund it</b>, in whole or in part, in cash or to your card. This includes matters of taste, portion,
-temperature, packaging or preparation, and food that differs from the Restaurant's regular menu. The service fee is never refunded
-(Section 4.6).</p>
-<p><b>Courtesy credit.</b> Bite Wise may, on a case-by-case basis and at its sole discretion, give you Bite Wise Platform Credit as a
-courtesy or for your loyalty (Section 6.6). This is a goodwill gesture, not a refund you are entitled to: Bite Wise has no obligation to
-give it, and giving it once does not mean it will be given again.</p>
+<p>6.2 <b>No right to a refund.</b> <b>All sales are final.</b> Once you have picked up an order (the Restaurant has entered your PIN),
+<b>you are not entitled to a refund</b> from the Restaurant or from Bite Wise, in whole or in part. This includes matters of taste,
+portion, temperature, packaging or preparation, and food that differs from the Restaurant's regular menu. Surplus food can't be resold
+once it has left the Restaurant, so this rule keeps food from being bought and returned and going to waste. The service fee is never
+refunded (Section 4.6).</p>
+<p><b>Courtesy refunds.</b> Bite Wise may, on a case-by-case basis and at its sole discretion, give a refund as a courtesy or for your
+loyalty, either to your original form of payment or as Bite Wise Platform Credit (Section 6.6). A courtesy refund is a goodwill gesture,
+not a right: Bite Wise has no obligation to give one, and giving one does not mean it will be given again. Card refunds usually appear
+within 5 to 10 business days, depending on your card issuer.</p>
 <p>6.3 <b>Before you accept it.</b> Because there are no refunds, please check your order at the counter (Section 3.3). If it is not the
 food you ordered, or it appears unsafe or spoiled, do not accept it: the Restaurant can cancel the order through Bite Wise support, and
 then you are not charged (Section 4.6).</p>
@@ -304,14 +306,20 @@ automatically from the address in your profile; keep that address accurate.</p>
   <li>Bite Wise remits any sales tax on its own service fee and on your subscription. You remain responsible for all other taxes on
   your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</li>
 </ul>
-<p>5.5 <b>Sold as is; no refunds; Platform Credit and chargebacks.</b> Food is sold to customers <b>as is</b>, and <b>all sales are
-final</b>: once you have confirmed a pickup with the customer's PIN, neither you nor Bite Wise refunds the order, and your proceeds for
-it are not taken back for a refund (Customer Terms, Section 6). Do not hand over food that is unsafe, spoiled or not what was ordered:
-cancel the order through Bite Wise support instead, so the customer is not charged and you are not paid for it. Where a law that cannot
-be waived requires a refund, Bite Wise will give it, and the refunded share of what you were paid for that order (the food, and its sales
-tax when it was paid to you) is taken back from you by reversing the transfer or deducting it from future payouts. Bite Wise may, at its
-own expense and discretion, give a customer Platform Credit as a courtesy or for loyalty (including for an order you completed); that never
-reduces your proceeds.</p>
+<p>5.5 <b>Sold as is; all sales final; courtesy refunds; chargebacks.</b> Food is sold to customers <b>as is</b>, and <b>all sales are
+final</b>: customers have no right to a refund once you have confirmed a pickup with their PIN (Customer Terms, Section 6), and you do not
+give refunds yourself. Do not hand over food that is unsafe, spoiled or not what was ordered: cancel the order through Bite Wise support
+instead, so the customer is not charged and you are not paid for it. Bite Wise may, case by case and at its discretion, give a customer a
+courtesy refund (for example for a genuine problem with the food, or for loyalty), and will share the customer's complaint with you first
+where it can:</p>
+<ul>
+  <li><b>(a) Courtesy refund to the customer's original form of payment.</b> The refunded share of what you were paid for the order (the
+  food, and its sales tax when it was paid to you) is taken back from you, by reversing the transfer for that order or deducting it from
+  future payouts. The customer's service fee is never refunded. Bite Wise will also give any refund a law that cannot be waived requires,
+  on the same terms.</li>
+  <li><b>(b) Courtesy Platform Credit.</b> Platform Credit, including goodwill credit, is funded solely by Bite Wise. You keep your full
+  proceeds for the order, and nothing is deducted from your payouts.</li>
+</ul>
 <p>When a customer pays for an order with Platform Credit, in whole or in part, you receive your full proceeds for that order exactly as
 if it had been paid by card. Bite Wise bears the cost of the credit. If a payment is reversed through a chargeback caused by your acts or
 omissions, the corresponding amount is deducted from your future payouts.</p>
