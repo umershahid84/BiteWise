@@ -22,10 +22,10 @@ const PAGES: Record<Portal, { tag?: string; title: string; footer: React.ReactNo
 
 // The log-in page of one kind of account (src/lib/constants.ts LOGIN_PATH).
 export async function LoginPage({ portal, searchParams }: { portal: Portal; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const { next, confirmed, error, idle, as } = await searchParams;
+  const { next, confirmed, error, idle, session, as } = await searchParams;
   const viewer = await getViewer();
   if (viewer) redirect(portalFor(viewer.role) === portal ? (safeNext(next) ?? homeFor(viewer.role)) : homeFor(viewer.role));
-  const notice: LoginNotice = confirmed ? 'confirmed' : error === 'confirmation' ? 'confirmation-failed' : idle ? 'idle' : null;
+  const notice: LoginNotice = confirmed ? 'confirmed' : error === 'confirmation' ? 'confirmation-failed' : idle ? 'idle' : session ? 'session' : null;
   const page = PAGES[portal];
   return (
     <AuthCard tag={page.tag}>

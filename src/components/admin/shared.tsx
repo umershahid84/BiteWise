@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react';
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { FileSpreadsheet, FileText } from 'lucide-react';
+import { sendToLogin } from '@/components/app/session-watch';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
@@ -16,6 +17,7 @@ export async function adminGet<T>(resource: string, params: Record<string, strin
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
   const res = await fetch(`/api/admin/${resource}?${qs}`);
   const data = await res.json().catch(() => ({ error: `The server didn't answer properly (error ${res.status}). Please try again in a minute.` }));
+  if (res.status === 401) sendToLogin(); // the session ended while the console was open
   if (!res.ok || data.error) throw new Error(data.error ?? 'Request failed');
   return data as T;
 }
@@ -32,6 +34,7 @@ export function LoadError({ error }: { error: Error }) {
 // Runs a server action and shows the outcome. Returns true on success.
 export async function run(fn: () => Promise<{ ok: boolean; error?: string }>, success?: string) {
   const res = await fn();
+  if (!res.ok && (res as { status?: number }).status === 401) sendToLogin();
   if (!res.ok) {
     toast.error(res.error);
     return false;

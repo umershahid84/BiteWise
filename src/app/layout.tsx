@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { IdleLogout } from '@/components/app/idle-logout';
+import { SessionWatch } from '@/components/app/session-watch';
 import { Providers } from '@/components/app/providers';
 import { SiteFooter } from '@/components/app/site-footer';
 import { SiteHeader } from '@/components/app/site-header';
@@ -68,6 +69,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <SiteFooter />
           <ThemeSync />
           {viewer && <IdleLogout />}
+          {viewer && <SessionWatch />}
           {viewer && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
         </Providers>
       </body>

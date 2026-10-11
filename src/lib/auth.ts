@@ -55,6 +55,8 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   };
 });
 
+const SIGNED_OUT = 'You have been logged out. Please log in again.';
+
 // For pages: sends visitors to the log-in page, and users with another role to their own home page.
 // `role` may list several roles (e.g. the restaurant dashboard: owners and staff).
 export async function requirePageViewer(role?: Role | Role[]): Promise<Viewer> {
@@ -69,7 +71,7 @@ export async function requirePageViewer(role?: Role | Role[]): Promise<Viewer> {
 // the current terms.
 export async function requireActor(role?: Role): Promise<Viewer> {
   const viewer = await getViewer();
-  if (!viewer) throw new AppError(401, 'Please log in.');
+  if (!viewer) throw new AppError(401, SIGNED_OUT);
   if (role && viewer.role !== role) throw new AppError(403, 'This page is not available for your account type.');
   if (viewer.pendingTerms.length) throw new AppError(403, 'Please review and accept our updated terms to continue.', 'terms_required');
   return viewer;
@@ -80,7 +82,7 @@ export async function requireActor(role?: Role): Promise<Viewer> {
 // them to).
 export async function requireAdmin(allow?: 'support' | 'refund'): Promise<Viewer> {
   const viewer = await getViewer();
-  if (!viewer) throw new AppError(401, 'Please log in.');
+  if (!viewer) throw new AppError(401, SIGNED_OUT);
   if (viewer.role === 'admin') return viewer;
   if (viewer.role === 'support') {
     if (allow === 'support') return viewer;
@@ -97,7 +99,7 @@ export async function requireAdmin(allow?: 'support' | 'refund'): Promise<Viewer
 // over). Payouts, billing, reports, the kiosk link, the profile and staff accounts are for the owner only.
 export async function requireRestaurant(o: { staff?: boolean } = {}) {
   const viewer = await getViewer();
-  if (!viewer) throw new AppError(401, 'Please log in.');
+  if (!viewer) throw new AppError(401, SIGNED_OUT);
   if (viewer.role === 'staff' && !o.staff) throw new AppError(403, 'Only the restaurant owner can do this.');
   if (viewer.role !== 'restaurant' && viewer.role !== 'staff') throw new AppError(403, 'This page is not available for your account type.');
   if (viewer.pendingTerms.length) throw new AppError(403, 'Please review and accept our updated terms to continue.', 'terms_required');

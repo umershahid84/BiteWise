@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendToLogin } from '@/components/app/session-watch';
 import { addTeamMemberAction, removeTeamMemberAction, updateTeamMemberAction } from '@/app/actions/admin';
 import { ErrorText } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -99,8 +100,12 @@ function AddMember({ onDone }: { onDone: () => void }) {
   const save = async () => {
     if (f.password !== f.confirm) return setError('The two passwords don\'t match.');
     setBusy(true);
-    const res = await addTeamMemberAction({ email: f.email, username: f.username, password: f.password, role: f.role, canRefund: f.canRefund });
-    setBusy(false);
+    setError(null);
+    // Never leave the button stuck on "Adding…", whatever happens to the request.
+    const res = await addTeamMemberAction({ email: f.email, username: f.username, password: f.password, role: f.role, canRefund: f.canRefund })
+      .catch(() => ({ ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.', status: 0 }))
+      .finally(() => setBusy(false));
+    if (!res.ok && res.status === 401) return sendToLogin();
     if (!res.ok) return setError(res.error);
     toast.success(`${f.username} is added. They log in at /admin/login; we emailed them a welcome (without the password).`);
     onDone();

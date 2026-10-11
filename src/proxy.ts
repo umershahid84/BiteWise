@@ -30,7 +30,10 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const path = request.nextUrl.pathname;
-  if (!data?.claims && !PUBLIC.has(path) && PROTECTED.some((p) => path === p || path.startsWith(`${p}/`))) {
+  // Only page loads are redirected. Server Actions (POST) and API calls answer "please log in" themselves, so the
+  // page that sent them can say so instead of waiting for an answer that never comes.
+  const pageLoad = request.method === 'GET' && !request.headers.has('next-action');
+  if (pageLoad && !data?.claims && !PUBLIC.has(path) && PROTECTED.some((p) => path === p || path.startsWith(`${p}/`))) {
     const url = request.nextUrl.clone();
     url.pathname = loginForPath(path);
     url.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
