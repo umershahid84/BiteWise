@@ -8,7 +8,7 @@ import { serverEnv } from '@/lib/env';
 // can't be found (the caller then falls back to the ZIP code). GEOCODING=off turns lookups off.
 
 export type Point = { lat: number; lng: number };
-type Address = { address: string; city: string; zip: string; state?: string };
+type Address = { address: string; city: string; zip: string; state?: string; country?: 'US' | 'CA' };
 type Fetch = typeof fetch;
 
 const TIMEOUT_MS = 6000;
@@ -32,6 +32,7 @@ async function getJson(fetcher: Fetch, url: string) {
 }
 
 async function census(a: Address, fetcher: Fetch): Promise<Point | null> {
+  if (a.country === 'CA') return null; // US addresses only
   const q = new URLSearchParams({ street: a.address, city: a.city, state: a.state ?? 'WA', zip: a.zip.slice(0, 5), benchmark: 'Public_AR_Current', format: 'json' });
   const data = await getJson(fetcher, `https://geocoding.geo.census.gov/geocoder/locations/address?${q}`);
   const c = data?.result?.addressMatches?.[0]?.coordinates;
@@ -39,7 +40,10 @@ async function census(a: Address, fetcher: Fetch): Promise<Point | null> {
 }
 
 async function nominatim(a: Address, fetcher: Fetch): Promise<Point | null> {
-  const q = new URLSearchParams({ street: a.address, city: a.city, state: a.state ?? 'WA', postalcode: a.zip.slice(0, 5), countrycodes: 'us', format: 'jsonv2', limit: '1' });
+  const ca = a.country === 'CA';
+  const q = new URLSearchParams({
+    street: a.address, city: a.city, state: a.state ?? 'WA', postalcode: ca ? a.zip : a.zip.slice(0, 5), countrycodes: ca ? 'ca' : 'us', format: 'jsonv2', limit: '1',
+  });
   const data = await getJson(fetcher, `https://nominatim.openstreetmap.org/search?${q}`);
   const r = Array.isArray(data) ? data[0] : null;
   return r ? { lat: Number(r.lat), lng: Number(r.lon) } : null;

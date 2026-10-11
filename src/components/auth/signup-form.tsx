@@ -9,7 +9,8 @@ import { markActive } from '@/components/app/idle-logout';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { StateSelect } from '@/components/ui/state-select';
+import { CountrySelect, StateSelect } from '@/components/ui/state-select';
+import { countryInfo, type Country } from '@/lib/regions';
 import { Field, Input } from '@/components/ui/field';
 import { PasswordInput } from '@/components/ui/password-input';
 import { SectionLabel } from '@/components/ui/misc';
@@ -26,6 +27,9 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [role, setRole] = useState<Role>(initialRole);
+  // Where the customer lives, or where the restaurant is: decides the terms and the sales tax rules.
+  const [country, setCountry] = useState<Country>('US');
+  const c = countryInfo(country);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<React.ReactNode>(null);
   const [agreementOpen, setAgreementOpen] = useState(false);
@@ -40,8 +44,11 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
       email: get('email'),
       username: get('username'),
       password: get('password'),
+      country,
+      region: role === 'restaurant' ? get('r-state') : get('region'),
+      city: role === 'restaurant' ? get('r-city') : get('city'),
       restaurant: role === 'restaurant'
-        ? { name: get('r-name'), address: get('r-address'), city: get('r-city'), state: get('r-state'), zip: get('r-zip'), phone: get('r-phone'), cuisine: get('r-cuisine') }
+        ? { name: get('r-name'), address: get('r-address'), city: get('r-city'), state: get('r-state'), zip: get('r-zip'), country, phone: get('r-phone'), cuisine: get('r-cuisine') }
         : undefined,
     };
   };
@@ -65,10 +72,10 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
       setNotice(
         <Alert tone="warn" className="mb-4">
           <b>No account was created.</b> You declined the terms. You can review them any time (
-          <a href={`/legal/${role === 'restaurant' ? 'restaurant-agreement' : 'customer-terms'}`} target="_blank" rel="noopener">
+          <a href={`/legal/${role === 'restaurant' ? 'restaurant-agreement' : 'customer-terms'}${country === 'CA' ? '-ca' : ''}`} target="_blank" rel="noopener">
             {role === 'restaurant' ? 'Partner Agreement' : 'Terms'}
           </a>
-          , <a href="/legal/privacy" target="_blank" rel="noopener">Privacy Policy</a>) and sign up when you&apos;re ready.
+          , <a href={`/legal/privacy${country === 'CA' ? '-ca' : ''}`} target="_blank" rel="noopener">Privacy Policy</a>) and sign up when you&apos;re ready.
         </Alert>,
       );
       return;
@@ -104,6 +111,15 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
         <Field label="Password" htmlFor="password" hint="At least 8 characters, with a letter and a number.">
           <PasswordInput id="password" name="password" autoComplete="new-password" required />
         </Field>
+        <Field label="Country" htmlFor="country" hint={role === 'restaurant' ? 'Where your restaurant is. It decides your agreement and sales tax.' : 'Where you live. It decides which terms apply to you.'}>
+          <CountrySelect id="country" value={country} onChange={(e) => setCountry(e.target.value as Country)} />
+        </Field>
+        {role === 'customer' && (
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={c.regionLabel} htmlFor="region"><StateSelect key={country} id="region" name="region" country={country} defaultValue="" /></Field>
+            <Field label="City" htmlFor="city"><Input id="city" name="city" autoComplete="address-level2" /></Field>
+          </div>
+        )}
         {role === 'restaurant' && (
           <>
             <SectionLabel>Restaurant details</SectionLabel>
@@ -111,8 +127,10 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
             <Field label="Street address" htmlFor="r-address"><Input id="r-address" name="r-address" autoComplete="street-address" /></Field>
             <Field label="City" htmlFor="r-city"><Input id="r-city" name="r-city" autoComplete="address-level2" placeholder="City" /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="State" htmlFor="r-state"><StateSelect id="r-state" name="r-state" defaultValue="" /></Field>
-              <Field label="ZIP code" htmlFor="r-zip"><Input id="r-zip" name="r-zip" autoComplete="postal-code" inputMode="numeric" /></Field>
+              <Field label={c.regionLabel} htmlFor="r-state"><StateSelect key={country} id="r-state" name="r-state" country={country} defaultValue="" /></Field>
+              <Field label={c.postalLabel} htmlFor="r-zip">
+                <Input id="r-zip" name="r-zip" autoComplete="postal-code" inputMode={country === 'CA' ? 'text' : 'numeric'} placeholder={country === 'CA' ? 'A1A 1A1' : '98101'} className={country === 'CA' ? 'uppercase' : undefined} />
+              </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Phone" htmlFor="r-phone"><PhoneInput id="r-phone" name="r-phone" /></Field>
@@ -121,7 +139,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
             <p className="mb-4 text-sm text-muted">Your sales tax rate is set automatically from your address. You can fine-tune your map pin in the portal after signing up.</p>
           </>
         )}
-        <p className="mb-3 text-sm text-muted">Next, you&apos;ll be asked to review and accept our terms. Your account is created only if you accept.</p>
+        <p className="mb-3 text-sm text-muted">Next, you&apos;ll be asked to review and accept our terms for {country === 'CA' ? 'Canada' : 'the United States'}. Your account is created only if you accept.</p>
         <Button block type="submit" disabled={pending}>
           {pending ? 'Please wait…' : role === 'restaurant' ? 'Create restaurant account' : 'Create account'}
         </Button>
@@ -130,6 +148,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
       <AgreementDialog
         open={agreementOpen}
         role={role}
+        country={country}
         title={role === 'restaurant' ? 'Restaurant Partner Agreement' : 'Terms of Service'}
         intro="Please read and accept these terms to create your Bite Wise account. If you decline, no account will be created."
         acceptLabel="Accept & create account"

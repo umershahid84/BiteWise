@@ -13,6 +13,8 @@ import { LegalProse } from './legal-prose';
 type Props = {
   open: boolean;
   role: 'customer' | 'restaurant';
+  // Which country's terms: the person's (or the restaurant's) country.
+  country?: 'US' | 'CA';
   title: string;
   intro: string;
   acceptLabel?: string;
@@ -32,10 +34,10 @@ export function AgreementDialog(props: Props) {
   );
 }
 
-function AgreementContent({ role, title, intro, acceptLabel = 'Accept', declineLabel = 'Decline', busy, onResult }: Props) {
+function AgreementContent({ role, country = 'US', title, intro, acceptLabel = 'Accept', declineLabel = 'Decline', busy, onResult }: Props) {
   const { data, isLoading } = useQuery({
-    queryKey: ['legal', role],
-    queryFn: async () => (await (await fetch(`/api/legal?role=${role}`)).json()) as { documents: LegalDocument[] },
+    queryKey: ['legal', role, country],
+    queryFn: async () => (await (await fetch(`/api/legal?role=${role}&country=${country}`)).json()) as { documents: LegalDocument[] },
     staleTime: Infinity,
   });
   const docs = data?.documents ?? [];

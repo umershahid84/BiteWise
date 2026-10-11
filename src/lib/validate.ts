@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { formatPhoneInput, phoneDigits } from '@/lib/phone';
 import { DIETARY_TAGS } from '@/lib/constants';
-import { STATE_CODES } from '@/lib/tax/states';
+import { countryInfo, isCountry, normalizePostal, validRegion, type Country } from '@/lib/regions';
 import { AppError } from '@/lib/errors';
 
 // Parses input with a zod schema and throws a 400 AppError with the first problem's message.
@@ -30,6 +30,19 @@ export const passwordSchema = z.string({ error: 'Password is required.' })
   .max(200, 'Password is too long.')
   .refine((v) => /[A-Za-z]/.test(v) && /\d/.test(v), 'Password must include at least one letter and one number.');
 
+export const countrySchema = z.string().optional().default('US').transform((v) => v.trim().toUpperCase())
+  .refine(isCountry, 'Choose United States or Canada.').transform((v) => v as Country);
+
+// The state or province must belong to the country, and the ZIP or postal code must look right for it. Returns the
+// address with the postal code normalized (Canada: "A1A 1A1").
+export function checkAddress<T extends { country: Country; state: string; zip: string }>(a: T): T {
+  const c = countryInfo(a.country);
+  if (!validRegion(a.country, a.state)) throw new AppError(400, `Choose the ${c.regionLabel.toLowerCase()}.`);
+  const zip = normalizePostal(a.country, a.zip);
+  if (!zip) throw new AppError(400, a.country === 'CA' ? 'Please enter a valid postal code, like K1A 0B1.' : 'Please enter a valid ZIP code.');
+  return { ...a, zip };
+}
+
 export const zipSchema = z.string({ error: 'ZIP code is required.' }).trim().regex(/^\d{5}(-\d{4})?$/, 'Please enter a valid ZIP code.');
 
 const coord = (limit: number) =>
@@ -41,10 +54,12 @@ export const restaurantFieldsSchema = z.object({
   name: text('Restaurant name', 2, 80),
   address: text('Street address', 3, 120),
   city: text('City', 2, 60),
-  // Two-letter state code. Sets the sales tax rules for the restaurant (src/lib/tax). Older clients that don't send
-  // it get WA; the forms always send it.
-  state: z.string().optional().default('WA').transform((v) => v.trim()).transform((v) => v.toUpperCase()).refine((v) => STATE_CODES.includes(v), 'Choose the state.'),
-  zip: zipSchema,
+  // United States or Canada, and the two-letter state or province code: they set the sales tax rules and the terms
+  // (src/lib/tax, src/lib/legal). Older clients that don't send them get US / WA. Checked together by checkAddress().
+  country: countrySchema,
+  state: z.string().optional().default('WA').transform((v) => v.trim().toUpperCase()),
+  // ZIP code (US) or postal code (Canada); checked and normalized by checkAddress().
+  zip: z.string({ error: 'ZIP or postal code is required.' }).trim().max(10, 'Please enter a valid ZIP or postal code.'),
   // Optional; when given, a 10-digit US number, stored as (xxx) xxx-xxxx.
   phone: z.string().trim().max(30).optional().default('')
     .refine((v) => !v || phoneDigits(v).length === 10, 'Enter a 10-digit phone number, like (206) 555-0123.')
@@ -56,6 +71,11 @@ export const restaurantFieldsSchema = z.object({
 
 export const signupSchema = z.object({
   role: z.enum(['customer', 'restaurant']).default('customer'),
+  // Where the person lives (customers) or the restaurant is: decides the terms they accept. Restaurants give the
+  // country and province in their address; customers give country, state or province, and city.
+  country: countrySchema,
+  region: z.string().optional().default('').transform((v) => v.trim().toUpperCase()),
+  city: optionalText('City', 60),
   email: emailSchema,
   username: usernameSchema,
   password: passwordSchema,

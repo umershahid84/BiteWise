@@ -18,9 +18,9 @@ export type TaxRefresh = { rateBps: number; jurisdiction: string; accuracy: stri
 
 export async function refreshRestaurantTax(restaurantId: number, o: LookupOptions & { force?: boolean } = {}): Promise<TaxRefresh | null> {
   const r = must(await db().from('restaurants')
-    .select('address, city, state, zip, tax_rate_bps, tax_source, tax_accuracy, tax_jurisdiction').eq('id', restaurantId).single());
+    .select('address, city, state, zip, country, tax_rate_bps, tax_source, tax_accuracy, tax_jurisdiction').eq('id', restaurantId).single());
   if ((r.tax_source === 'manual' || process.env.TAX_LOOKUP === 'off') && !o.force) return null;
-  const found = await lookupTaxRate({ address: r.address, city: r.city, state: r.state, zip: r.zip }, o);
+  const found = await lookupTaxRate({ address: r.address, city: r.city, state: r.state, zip: r.zip, country: r.country === 'CA' ? 'CA' : 'US' }, o);
   // A lookup service was down and only the state estimate is left: keep the rate we have (unless there is none
   // yet) and try again tomorrow, rather than dropping a city's rate to the state's.
   if (found.failed && found.accuracy === 'state' && r.tax_rate_bps > 0) {

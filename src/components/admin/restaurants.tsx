@@ -15,7 +15,8 @@ import { Field, Input, Select } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { StateSelect } from '@/components/ui/state-select';
+import { CountrySelect, StateSelect } from '@/components/ui/state-select';
+import { countryInfo, type Country } from '@/lib/regions';
 import { SUSPENSION_DAYS } from '@/lib/constants';
 import { money, pct } from '@/lib/format';
 import { day, run, TableHead, useAccess, useAdmin, LoadError } from './shared';
@@ -24,7 +25,7 @@ import { DaysPicker } from './users';
 type Plan = { plan: 'founding' | 'monthly' | 'annual'; status: 'active' | 'past_due' | 'expired'; foundingNumber: number | null; autoRenew: boolean; periodEnd: string | null };
 type Tax = { source: 'auto' | 'manual'; accuracy: '' | 'address' | 'zip' | 'state' | 'manual'; jurisdiction: string; checkedAt: string | null; problem: string };
 type Row = {
-  id: number; name: string; cuisine: string; description: string; address: string; city: string; state: string; zip: string; tax: Tax; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
+  id: number; name: string; cuisine: string; description: string; address: string; city: string; state: string; zip: string; country: Country; tax: Tax; phone: string; status: 'pending' | 'approved' | 'suspended' | 'banned' | 'deleted';
   adminNote: string; taxRateBps: number; createdAt: string; suspendedUntil: string | null; ownerEmail: string; ownerUsername: string; activeOffers: number; orders: number;
   foodCents: number; stripeReady: boolean; stripeAccount: string | null; plan: Plan | null; ownerConfirmed: boolean; welcomeEmailSentAt: string | null;
 };
@@ -174,7 +175,7 @@ export function RestaurantsPanel() {
 function EditRestaurant({ restaurant: r, onDone, onWelcome }: { restaurant: Row; onDone: () => void; onWelcome: (r: Row) => Promise<unknown> }) {
   const [f, setF] = useState({
     name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone,
-    ownerEmail: r.ownerEmail, ownerUsername: r.ownerUsername,
+    country: r.country, ownerEmail: r.ownerEmail, ownerUsername: r.ownerUsername,
   });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,10 +198,11 @@ function EditRestaurant({ restaurant: r, onDone, onWelcome }: { restaurant: Row;
       </div>
       <Field label="About" htmlFor="er-desc"><Input id="er-desc" value={f.description} onChange={set('description')} /></Field>
       <Field label="Street address" htmlFor="er-address"><Input id="er-address" value={f.address} onChange={set('address')} /></Field>
-      <div className="grid gap-x-3 sm:grid-cols-3">
+      <div className="grid gap-x-3 sm:grid-cols-4">
         <Field label="City" htmlFor="er-city"><Input id="er-city" value={f.city} onChange={set('city')} /></Field>
-        <Field label="State" htmlFor="er-state"><StateSelect id="er-state" value={f.state} onChange={set('state')} /></Field>
-        <Field label="ZIP" htmlFor="er-zip"><Input id="er-zip" value={f.zip} onChange={set('zip')} /></Field>
+        <Field label={countryInfo(f.country).regionLabel} htmlFor="er-state"><StateSelect id="er-state" country={f.country} value={f.state} onChange={set('state')} /></Field>
+        <Field label={countryInfo(f.country).postalLabel} htmlFor="er-zip"><Input id="er-zip" value={f.zip} onChange={set('zip')} /></Field>
+        <Field label="Country" htmlFor="er-country"><CountrySelect id="er-country" value={f.country} onChange={(e) => { setF({ ...f, country: e.target.value as Country, state: '' }); setSaved(false); }} /></Field>
       </div>
       <Field label="Phone" htmlFor="er-phone"><PhoneInput id="er-phone" value={f.phone} onValueChange={(phone) => { setF({ ...f, phone }); setSaved(false); }} /></Field>
       <div className="grid gap-x-3 sm:grid-cols-2">

@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Field, Input, Textarea } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
-import { StateSelect } from '@/components/ui/state-select';
+import { CountrySelect, StateSelect } from '@/components/ui/state-select';
+import { countryInfo, type Country } from '@/lib/regions';
 import { pct } from '@/lib/format';
 import type { Ctx } from './types';
 
@@ -23,6 +24,7 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
   const router = useRouter();
   const [f, setF] = useState({
     name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone,
+    country: (r.country === 'CA' ? 'CA' : 'US') as Country,
     lat: r.lat != null ? r.lat.toFixed(5) : '', lng: r.lng != null ? r.lng.toFixed(5) : '',
   });
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +32,10 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
   const [locating, setLocating] = useState(false);
   // Changing the address clears the pin: saving then looks the new address up, unless the pin is placed again.
-  const setAddress = (k: 'address' | 'city' | 'state' | 'zip') => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((x) => ({ ...x, [k]: e.target.value, lat: '', lng: '' }));
+  const setAddress = (k: 'address' | 'city' | 'state' | 'zip' | 'country') => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF((x) => ({ ...x, [k]: e.target.value, lat: '', lng: '' }));
   const findOnMap = async () => {
     setLocating(true);
-    const res = await locateAddress({ address: f.address, city: f.city, state: f.state, zip: f.zip });
+    const res = await locateAddress({ address: f.address, city: f.city, state: f.state, zip: f.zip, country: f.country });
     setLocating(false);
     if (!res.ok) return toast.error(res.error);
     setPin(res.data.lat, res.data.lng);
@@ -62,10 +64,13 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
         </div>
         <Field label="About" htmlFor="p-desc"><Textarea id="p-desc" maxLength={400} value={f.description} onChange={set('description')} /></Field>
         <Field label="Street address" htmlFor="p-address"><Input id="p-address" value={f.address} onChange={setAddress('address')} /></Field>
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Field label="City" htmlFor="p-city"><Input id="p-city" value={f.city} onChange={setAddress('city')} /></Field>
-          <Field label="State" htmlFor="p-state"><StateSelect id="p-state" value={f.state} onChange={setAddress('state')} /></Field>
-          <Field label="ZIP" htmlFor="p-zip"><Input id="p-zip" value={f.zip} onChange={setAddress('zip')} /></Field>
+          <Field label={countryInfo(f.country).regionLabel} htmlFor="p-state"><StateSelect id="p-state" country={f.country} value={f.state} onChange={setAddress('state')} /></Field>
+          <Field label={countryInfo(f.country).postalLabel} htmlFor="p-zip"><Input id="p-zip" value={f.zip} onChange={setAddress('zip')} /></Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Country" htmlFor="p-country"><CountrySelect id="p-country" value={f.country} onChange={(e) => setF((x) => ({ ...x, country: e.target.value as Country, state: '', lat: '', lng: '' }))} /></Field>
           <Field label="Phone" htmlFor="p-phone"><PhoneInput id="p-phone" value={f.phone} onValueChange={(phone) => setF((x) => ({ ...x, phone }))} /></Field>
         </div>
         <SectionLabel>Map location</SectionLabel>

@@ -30,13 +30,13 @@ export async function updateAccount(userId: string, o: { email?: string; usernam
   return changed;
 }
 
-type RestaurantFields = { name: string; cuisine: string; description: string; address: string; city: string; state: string; zip: string; phone: string };
+type RestaurantFields = { name: string; cuisine: string; description: string; address: string; city: string; state: string; zip: string; country: 'US' | 'CA'; phone: string };
 
 export async function updateRestaurantDetails(restaurantId: number, f: RestaurantFields) {
-  const r = must(await db().from('restaurants').select('name, cuisine, description, address, city, state, zip, phone').eq('id', restaurantId).single());
+  const r = must(await db().from('restaurants').select('name, cuisine, description, address, city, state, zip, country, phone').eq('id', restaurantId).single());
   const changed = (Object.keys(f) as (keyof RestaurantFields)[]).filter((k) => r[k] !== f[k]);
   if (!changed.length) return changed;
-  const moved = (['address', 'city', 'state', 'zip'] as const).some((k) => r[k] !== f[k]);
+  const moved = (['address', 'city', 'state', 'zip', 'country'] as const).some((k) => r[k] !== f[k]);
   // A new address moves the map pin to it (or to the ZIP code's center) and can change the sales tax rate.
   const spot = moved ? await locateRestaurant(f) : null;
   check(await db().from('restaurants').update({

@@ -17,7 +17,8 @@ import { refreshRestaurantTax } from '@/lib/restaurant-tax';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
-import { parse, passwordSchema, signupSchema } from '@/lib/validate';
+import { checkAddress, parse, passwordSchema, signupSchema } from '@/lib/validate';
+import { countryInfo, validRegion } from '@/lib/regions';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 
@@ -29,9 +30,17 @@ async function requestInfo() {
   };
 }
 
+// The country, and state or province, decide which terms apply: customers give where they live; a restaurant's come
+// from its address.
 function checkSignup(input: unknown) {
   const data = parse(signupSchema, input);
-  if (data.role === 'restaurant' && !data.restaurant) throw new AppError(400, 'Please enter your restaurant details.');
+  if (data.role === 'restaurant') {
+    if (!data.restaurant) throw new AppError(400, 'Please enter your restaurant details.');
+    const restaurant = checkAddress(data.restaurant);
+    return { ...data, restaurant, country: restaurant.country, region: restaurant.state, city: restaurant.city };
+  }
+  if (!validRegion(data.country, data.region)) throw new AppError(400, `Choose your ${countryInfo(data.country).regionLabel.toLowerCase()}.`);
+  if (data.city.length < 2) throw new AppError(400, 'Enter your city.');
   return data;
 }
 
@@ -76,7 +85,7 @@ export async function validateSignup(input: unknown) {
   return action(async () => {
     const data = checkSignup(input);
     await assertAvailable(data.email, data.username);
-    return { documents: requiredDocuments(data.role) };
+    return { documents: requiredDocuments(data.role, data.country) };
   });
 }
 
@@ -104,7 +113,7 @@ async function asDatabaseVersions(accepted: Record<string, string> | undefined) 
 export async function signUp(input: unknown) {
   return action(async () => {
     const data = checkSignup(input);
-    const missing = requiredDocuments(data.role).filter((d) => data.acceptedTerms?.[d.id] !== d.version);
+    const missing = requiredDocuments(data.role, data.country).filter((d) => data.acceptedTerms?.[d.id] !== d.version);
     if (missing.length) {
       throw new AppError(400, `To create an account you must accept the ${missing.map((d) => d.title).join(' and ')}.`, 'terms_required');
     }
@@ -118,6 +127,9 @@ export async function signUp(input: unknown) {
     const metadata = {
       username: data.username,
       role: data.role,
+      country: data.country,
+      region: data.region,
+      city: data.city,
       accepted_terms: await asDatabaseVersions(data.acceptedTerms),
       restaurant: data.role === 'restaurant' ? data.restaurant : undefined,
       ip,

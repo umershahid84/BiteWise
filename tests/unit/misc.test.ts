@@ -89,3 +89,41 @@ describe('password reset email', () => {
     }
   });
 });
+
+describe('United States and Canada', () => {
+  const company = { entity: 'Bite Wise', email: 'support@bitewise.app', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
+  it('asks people to accept the documents of their country', async () => {
+    const { requiredDocuments } = await import('@/lib/legal/documents');
+    expect(requiredDocuments('customer', 'CA').map((d) => d.id)).toEqual(['customer-terms-ca', 'privacy-ca']);
+    expect(requiredDocuments('restaurant', 'CA').map((d) => d.id)).toEqual(['restaurant-agreement-ca', 'privacy-ca']);
+    expect(requiredDocuments('restaurant', 'US').map((d) => d.id)).toEqual(['restaurant-agreement', 'privacy']);
+  });
+  it('writes the US documents for the whole country and the Canadian ones for Canada', async () => {
+    const { renderDocument } = await import('@/lib/legal/documents');
+    for (const id of ['customer-terms', 'restaurant-agreement']) {
+      const html = renderDocument(id, company)!.html;
+      expect(html).not.toMatch(/King County|RCW|Washington State|State of Washington/);
+      expect(html).toContain('United States');
+    }
+    const ca = renderDocument('customer-terms-ca', company)!.html;
+    expect(ca).toMatch(/province or territory/);
+    expect(ca).toContain('/legal/privacy-ca');
+    expect(renderDocument('restaurant-agreement-ca', company)!.html).toMatch(/GST\/HST/);
+    expect(renderDocument('privacy-ca', company)!.html).toMatch(/PIPEDA/);
+  });
+  it('knows the sales tax on restaurant meals in every province', async () => {
+    const { lookupTaxRate } = await import('@/lib/tax/lookup');
+    const on = await lookupTaxRate({ address: '1 Main St', city: 'Toronto', state: 'ON', zip: 'M5V 2T6', country: 'CA' });
+    expect(on).toMatchObject({ rateBps: 1300, accuracy: 'address', failed: false });
+    expect((await lookupTaxRate({ address: '1 Rue', city: 'Montréal', state: 'QC', zip: 'H2X 1Y4', country: 'CA' })).rateBps).toBe(1498);
+    expect((await lookupTaxRate({ address: '1 St', city: 'Calgary', state: 'AB', zip: 'T2P 1J9', country: 'CA' })).rateBps).toBe(500);
+  });
+  it('checks postal codes for the country', async () => {
+    const { normalizePostal, validRegion } = await import('@/lib/regions');
+    expect(normalizePostal('CA', 'k1a0b1')).toBe('K1A 0B1');
+    expect(normalizePostal('CA', '98101')).toBeNull();
+    expect(normalizePostal('US', '98101')).toBe('98101');
+    expect(validRegion('CA', 'ON')).toBe(true);
+    expect(validRegion('US', 'ON')).toBe(false);
+  });
+});

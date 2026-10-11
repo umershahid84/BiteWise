@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { Database } from '@/lib/database.types';
 import { LOGIN_PATH, portalFor, type Role } from '@/lib/constants';
+import type { Country } from '@/lib/regions';
 import { AppError, must } from '@/lib/errors';
 import { supabaseServer } from '@/lib/supabase/server';
 
@@ -12,6 +13,8 @@ export type Viewer = {
   email: string;
   username: string;
   role: Role;
+  // United States or Canada: decides the legal documents and tax rules that apply.
+  country: Country;
   restaurant: { id: number; name: string; status: Database['public']['Enums']['restaurant_status'] } | null;
   // Admin employees ('support') allowed to give goodwill platform credit (always true for admins). All sales are final, so
   // there are no refunds; the only refund path (one a law requires) is for full admins.
@@ -51,6 +54,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     email: profile.email,
     username: profile.username,
     role: profile.role,
+    country: profile.country === 'CA' ? 'CA' : 'US',
     restaurant: restaurant.data ?? staffOf ?? null,
     canRefund: profile.role === 'admin' || (profile.role === 'support' && profile.can_refund),
     staff: staff.data ? { fullName: staff.data.full_name, title: staff.data.title } : null,

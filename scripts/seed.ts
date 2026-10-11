@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/lib/database.types';
-import { LEGAL_VERSION, REQUIRED } from '../src/lib/legal/documents';
+import { LEGAL_VERSION, requiredIds } from '../src/lib/legal/documents';
 import { quote } from '../src/lib/pricing';
 
 config({ path: '.env.local' });
@@ -167,7 +167,7 @@ async function findOrCreateUser(username: string, role: 'customer' | 'restaurant
   }
   // Admins are created as customers and then promoted (like scripts/create-admin.ts does).
   const signupRole = role === 'admin' ? 'customer' : role;
-  const accepted = Object.fromEntries(REQUIRED[signupRole].map((d) => [d, LEGAL_VERSION]));
+  const accepted = Object.fromEntries(requiredIds(signupRole).map((d) => [d, LEGAL_VERSION]));
   const email = `${username}@bitewise.test`;
   const create = () => db.auth.admin.createUser({
     email,
@@ -294,7 +294,7 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
 
   // Demo accounts accept the current terms, so they aren't asked again after the terms change.
   for (const u of demoUsers.filter((x) => x.role !== 'admin')) {
-    for (const document of REQUIRED[u.role as 'customer' | 'restaurant']) {
+    for (const document of requiredIds(u.role as 'customer' | 'restaurant')) {
       const has = await db.from('terms_acceptances').select('id').eq('user_id', u.id).eq('document', document).eq('version', LEGAL_VERSION).limit(1);
       if (!has.data?.length) must(await db.from('terms_acceptances').insert({ user_id: u.id, document, version: LEGAL_VERSION, ip: 'seed', user_agent: 'npm run seed' }).select('id'), 'terms');
     }

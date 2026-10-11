@@ -101,13 +101,13 @@ isOneToOne: false
                   ]
                 },"legal_documents": {
                   Row: {
-                    "id": string,"roles": (Database["public"]['Enums']["user_role"])[],"title": string,"version": string
+                    "country": string,"id": string,"roles": (Database["public"]['Enums']["user_role"])[],"title": string,"version": string
                   }
                   Insert: {
-                    "id": string,"roles": (Database["public"]['Enums']["user_role"])[],"title": string,"version": string
+                    "country"?: string,"id": string,"roles": (Database["public"]['Enums']["user_role"])[],"title": string,"version": string
                   }
                   Update: {
-                    "id"?: string,"roles"?: (Database["public"]['Enums']["user_role"])[],"title"?: string,"version"?: string
+                    "country"?: string,"id"?: string,"roles"?: (Database["public"]['Enums']["user_role"])[],"title"?: string,"version"?: string
                   }
                   Relationships: [
                     
@@ -319,13 +319,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "can_refund": boolean,"created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
+                    "can_refund": boolean,"city": string,"country": string,"created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"region": string,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
                   }
                   Insert: {
-                    "can_refund"?: boolean,"created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
                   }
                   Update: {
-                    "can_refund"?: boolean,"created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
                   }
                   Relationships: [
                     
@@ -494,13 +494,13 @@ isOneToOne: true
                   ]
                 },"restaurants": {
                   Row: {
-                    "address": string,"admin_note": string,"city": string,"created_at": string,"cuisine": string,"description": string,"id": number,"lat": number | null,"lng": number | null,"location": unknown,"name": string,"owner_id": string,"phone": string,"state": string,"status": Database["public"]['Enums']["restaurant_status"],"suspended_until": string | null,"tax_accuracy": string,"tax_checked_at": string | null,"tax_jurisdiction": string,"tax_lookup_error": string,"tax_rate_bps": number,"tax_source": string,"zip": string
+                    "address": string,"admin_note": string,"city": string,"country": string,"created_at": string,"cuisine": string,"description": string,"id": number,"lat": number | null,"lng": number | null,"location": unknown,"name": string,"owner_id": string,"phone": string,"state": string,"status": Database["public"]['Enums']["restaurant_status"],"suspended_until": string | null,"tax_accuracy": string,"tax_checked_at": string | null,"tax_jurisdiction": string,"tax_lookup_error": string,"tax_rate_bps": number,"tax_source": string,"zip": string
                   }
                   Insert: {
-                    "address": string,"admin_note"?: string,"city": string,"created_at"?: string,"cuisine"?: string,"description"?: string,"id"?: number,"lat"?: never,"lng"?: never,"location"?: unknown,"name": string,"owner_id": string,"phone"?: string,"state"?: string,"status"?: Database["public"]['Enums']["restaurant_status"],"suspended_until"?: string | null,"tax_accuracy"?: string,"tax_checked_at"?: string | null,"tax_jurisdiction"?: string,"tax_lookup_error"?: string,"tax_rate_bps": number,"tax_source"?: string,"zip": string
+                    "address": string,"admin_note"?: string,"city": string,"country"?: string,"created_at"?: string,"cuisine"?: string,"description"?: string,"id"?: number,"lat"?: never,"lng"?: never,"location"?: unknown,"name": string,"owner_id": string,"phone"?: string,"state"?: string,"status"?: Database["public"]['Enums']["restaurant_status"],"suspended_until"?: string | null,"tax_accuracy"?: string,"tax_checked_at"?: string | null,"tax_jurisdiction"?: string,"tax_lookup_error"?: string,"tax_rate_bps": number,"tax_source"?: string,"zip": string
                   }
                   Update: {
-                    "address"?: string,"admin_note"?: string,"city"?: string,"created_at"?: string,"cuisine"?: string,"description"?: string,"id"?: number,"lat"?: never,"lng"?: never,"location"?: unknown,"name"?: string,"owner_id"?: string,"phone"?: string,"state"?: string,"status"?: Database["public"]['Enums']["restaurant_status"],"suspended_until"?: string | null,"tax_accuracy"?: string,"tax_checked_at"?: string | null,"tax_jurisdiction"?: string,"tax_lookup_error"?: string,"tax_rate_bps"?: number,"tax_source"?: string,"zip"?: string
+                    "address"?: string,"admin_note"?: string,"city"?: string,"country"?: string,"created_at"?: string,"cuisine"?: string,"description"?: string,"id"?: number,"lat"?: never,"lng"?: never,"location"?: unknown,"name"?: string,"owner_id"?: string,"phone"?: string,"state"?: string,"status"?: Database["public"]['Enums']["restaurant_status"],"suspended_until"?: string | null,"tax_accuracy"?: string,"tax_checked_at"?: string | null,"tax_jurisdiction"?: string,"tax_lookup_error"?: string,"tax_rate_bps"?: number,"tax_source"?: string,"zip"?: string
                   }
                   Relationships: [
                     {
@@ -858,7 +858,8 @@ isOneToOne: false
                            },
 "pending_terms":
 { Args: Record<PropertyKey, never>; Returns: {
-              "id": string,
+              "country": string,
+"id": string,
 "roles": (Database["public"]['Enums']["user_role"])[],
 "title": string,
 "version": string

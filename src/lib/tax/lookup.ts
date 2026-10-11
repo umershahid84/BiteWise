@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { provinceByCode } from './provinces';
 import { stateByCode } from './states';
 
 // Finds the sales tax rate for a restaurant's street address. Food on Bite Wise is always picked up at the
@@ -12,7 +13,7 @@ import { stateByCode } from './states';
 //   3. The state's own rate (an estimate: local taxes missing). Flagged for an admin to check.
 // TAX_LOOKUP=off skips 1 and 2 (tests and offline development).
 
-export type TaxAddress = { address: string; city: string; state: string; zip: string };
+export type TaxAddress = { address: string; city: string; state: string; zip: string; country?: 'US' | 'CA' };
 export type TaxAccuracy = 'address' | 'zip' | 'state';
 export type TaxRate = {
   rateBps: number;
@@ -89,7 +90,17 @@ function stateOnly(a: TaxAddress): TaxRate {
   };
 }
 
+// Canada has no city or county sales taxes: the province or territory sets the whole rate (GST/HST + PST/RST/QST on
+// restaurant meals), so it is exact for every address in it.
+function canada(a: TaxAddress): TaxLookupResult {
+  const p = provinceByCode(a.state);
+  if (!p) return { rateBps: 0, jurisdiction: `${a.state}, Canada`, accuracy: 'state', note: 'Unknown province or territory: set the rate by hand.', failed: false };
+  const ontario = p.code === 'ON' ? ' Ontario exempts the provincial 8% on prepared food of $4.00 or less.' : '';
+  return { rateBps: p.mealsRateBps, jurisdiction: `${p.name}, Canada (${p.taxLabel})`, accuracy: 'address', note: ontario.trim() || undefined, failed: false };
+}
+
 export async function lookupTaxRate(a: TaxAddress, o: LookupOptions = {}): Promise<TaxLookupResult> {
+  if (a.country === 'CA') return canada(a);
   const fetcher = o.fetcher ?? fetch;
   const notes: string[] = [];
   let failed = false;

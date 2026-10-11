@@ -77,7 +77,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {viewer && <SessionWatch userId={viewer.id} />}
           {viewer && sessionId && <TabSession sessionId={sessionId} />}
           {viewer?.mustChangePassword && <PasswordGate />}
-          {viewer && !viewer.mustChangePassword && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
+          {viewer && !viewer.mustChangePassword && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} country={viewer.country} />}
         </Providers>
       </body>
     </html>

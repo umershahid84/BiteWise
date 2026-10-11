@@ -189,7 +189,7 @@ export async function restaurants(params: URLSearchParams) {
   const rank = { pending: 0, suspended: 1, approved: 2, banned: 3, deleted: 4 };
   return rows
     .map((r) => ({
-      id: r.id, name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, phone: r.phone, status: r.status,
+      id: r.id, name: r.name, cuisine: r.cuisine, description: r.description, address: r.address, city: r.city, state: r.state, zip: r.zip, country: (r.country === 'CA' ? 'CA' : 'US') as 'US' | 'CA', phone: r.phone, status: r.status,
       adminNote: r.admin_note, taxRateBps: r.tax_rate_bps, createdAt: r.created_at, suspendedUntil: r.suspended_until,
       // Sales tax: where the rate came from (src/lib/restaurant-tax.ts) and anything an admin should check.
       tax: {

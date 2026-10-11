@@ -20,7 +20,7 @@ import { stateByCode } from '@/lib/tax/states';
 import { addTeamMember, checkTeamRemoval, editTeamMember, sendTeamResetCode, setTeamPassword, temporaryPassword, updateTeamMember } from '@/lib/team';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { dollars, emailSchema, int, parse, passwordSchema, restaurantFieldsSchema, taxRateSchema, usernameSchema } from '@/lib/validate';
+import { checkAddress, dollars, emailSchema, int, parse, passwordSchema, restaurantFieldsSchema, taxRateSchema, usernameSchema } from '@/lib/validate';
 
 // Owner console actions. Every action checks for an admin session and is written to the audit log.
 const db = () => supabaseAdmin();
@@ -382,13 +382,13 @@ export async function updateUserAccount(input: unknown) {
 export async function updateRestaurant(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('support');
-    const d = parse(restaurantFieldsSchema.pick({ name: true, address: true, city: true, state: true, zip: true, phone: true, cuisine: true }).extend({
+    const d = checkAddress(parse(restaurantFieldsSchema.pick({ name: true, address: true, city: true, state: true, zip: true, country: true, phone: true, cuisine: true }).extend({
       id: z.number().int(), description: z.string().trim().max(400).default(''), ownerEmail: emailSchema, ownerUsername: usernameSchema,
-    }), input);
+    }), input));
     const r = must(await db().from('restaurants').select('owner_id').eq('id', d.id).single());
     const owner = await updateAccount(r.owner_id, { email: d.ownerEmail, username: d.ownerUsername });
     const details = await updateRestaurantDetails(d.id, {
-      name: d.name, cuisine: d.cuisine, description: d.description, address: d.address, city: d.city, state: d.state, zip: d.zip, phone: d.phone,
+      name: d.name, cuisine: d.cuisine, description: d.description, address: d.address, city: d.city, state: d.state, zip: d.zip, country: d.country, phone: d.phone,
     });
     const changed = [...details, ...owner];
     if (changed.length) await log(me.id, 'restaurant.update', 'restaurant', d.id, changed.join('; '));

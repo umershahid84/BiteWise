@@ -3,13 +3,18 @@
 // version changes. When you edit the text, change LEGAL_VERSION and EFFECTIVE here AND the versions
 // in the legal_documents table (add a migration); a test checks that they match.
 //
-// Company details come from LEGAL_ENTITY_NAME, SUPPORT_EMAIL and LEGAL_ADDRESS. Have a
-// Washington-licensed attorney review these documents before launch.
+// Company details come from LEGAL_ENTITY_NAME, SUPPORT_EMAIL and LEGAL_ADDRESS.
+//
+// There is one set for the United States and one for Canada (the "-ca" documents): people accept the set for the
+// country they sign up in (a customer's home, a restaurant's address). The text is shared, with the parts that differ
+// written for each country. Have a US attorney and a Canadian lawyer review them before launch; Quebec also requires
+// French versions of consumer and standard-form contracts.
 
 import type { Role } from '@/lib/constants';
+import type { Country } from '@/lib/regions';
 
-export const LEGAL_VERSION = '2026-10-17.2';
-export const EFFECTIVE = 'October 17, 2026';
+export const LEGAL_VERSION = '2026-10-18.1';
+export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -19,15 +24,27 @@ export type Company = {
 
 const usd = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 
+// Which country's version is being rendered, and the links between that set's documents.
+type Jur = { ca: boolean; privacy: string; customerTerms: string };
+const US: Jur = { ca: false, privacy: '/legal/privacy', customerTerms: '/legal/customer-terms' };
+const CA: Jur = { ca: true, privacy: '/legal/privacy-ca', customerTerms: '/legal/customer-terms-ca' };
+// The US text, or the Canadian text.
+const t = (j: Jur, us: string, ca: string) => (j.ca ? ca : us);
+
+const ALLERGENS_US = 'milk, eggs, fish, crustacean shellfish, tree nuts, peanuts, wheat, soybeans and sesame';
+const ALLERGENS_CA = 'peanuts, tree nuts, sesame, milk, eggs, fish, crustaceans and molluscs, soy, wheat and triticale, mustard, and sulphites';
+
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch] as string);
 
-function customerTerms(c: Company) {
+function customerTerms(c: Company, j: Jur) {
   return `
 <p class="lead">Welcome to Bite Wise. These Customer Terms of Service (the "<b>Terms</b>") are a binding agreement between you and ${c.entity}
 ("<b>Bite Wise</b>," "<b>we</b>," "<b>us</b>") and govern your use of the Bite Wise website and services (the "<b>Service</b>") to find and buy
 discounted surplus food from participating restaurants. By selecting <b>Accept</b> when you create an account, or by using the Service,
-you agree to these Terms and to our <a href="/legal/privacy">Privacy Policy</a>. If you do not agree, select <b>Decline</b> and do not use the Service.</p>
+you agree to these Terms and to our <a href="${j.privacy}">Privacy Policy</a>. If you do not agree, select <b>Decline</b> and do not use the Service.</p>
+${t(j, `<p>These are the Terms for customers in the <b>United States</b>. Customers in Canada agree to the Canadian Terms.</p>`,
+  `<p>These are the Terms for customers in <b>Canada</b>. Customers in the United States agree to the US Terms.</p>`)}
 
 <h2>1. Who we are and what we do</h2>
 <p>1.1 <b>Marketplace only.</b> Bite Wise operates an online marketplace that connects customers with independent restaurants, cafés,
@@ -43,8 +60,11 @@ You understand that surplus food:</p>
 </ul>
 
 <h2>2. Eligibility and your account</h2>
-<p>2.1 You must be at least 18 years old and able to form a binding contract to create an account. The Service is available only in
-the areas we serve in Washington State.</p>
+<p>2.1 ${t(j,
+  `You must be at least 18 years old (or the age of majority where you live, if it is higher) and able to form a binding contract to
+create an account. The Service is available in the United States, in the areas where participating Restaurants operate.`,
+  `You must have reached the age of majority in your province or territory (18 or 19) and be able to form a binding contract to create
+an account. The Service is available in Canada, in the areas where participating Restaurants operate.`)}</p>
 <p>2.2 You agree to give accurate information (including a valid email address), to keep your password confidential, and to be
 responsible for all activity on your account. Tell us immediately at <a href="mailto:${c.email}">${c.email}</a> if you believe your account
 has been used without your permission. You may have only one customer account.</p>
@@ -54,19 +74,20 @@ has been used without your permission. You may have only one customer account.</
 "vegan" or "gluten-free") are provided by the Restaurant. Bite Wise does not verify them and does not guarantee that food is free of any
 allergen.</p>
 <p>3.2 <b>If you have a food allergy or dietary restriction, ask the Restaurant before you eat.</b> Surplus food may have been
-prepared in kitchens that handle common allergens, including milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soy and sesame,
+prepared in kitchens that handle common allergens, including ${t(j, ALLERGENS_US, ALLERGENS_CA)},
 and "wrong order" items may contain ingredients that differ from the regular menu. Do not buy or eat an item if you are unsure it is
 safe for you.</p>
 <p>3.3 <b>Inspect food before you accept it.</b> Check your order at the counter when you pick it up. If it appears unsafe, spoiled or
 not as described, do not accept or eat it, and tell the Restaurant and us at <a href="mailto:${c.email}">${c.email}</a>. Once you accept
 your order, it is yours as is (Section 6).</p>
-<p>3.4 Each Restaurant is responsible for complying with food safety laws, including the Washington State Retail Food Code and local
-health department rules.</p>
+<p>3.4 Each Restaurant is responsible for complying with food safety laws, including ${t(j,
+  'the food code and health department rules of the state and locality where it operates',
+  'the food safety and food premises laws of its province or territory, local public health rules and, where they apply, the Safe Food for Canadians Act and Regulations')}.</p>
 
 <h2>4. Ordering, pricing and payment</h2>
 <p>4.1 <b>Prices.</b> Before you place an order, we show you the item's original price, the Restaurant's discount, the discounted
 price, a Bite Wise service fee (currently ${c.serviceFeePct}% of the food subtotal), applicable sales tax, and the total.
-Prices are in U.S. dollars.</p>
+${t(j, 'Prices are in U.S. dollars.', 'Prices are in the currency shown at checkout.')}</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold
 on your debit or credit card for the order total. <b>Your card is charged only when the Restaurant confirms pickup by entering your
 PIN.</b> If you cancel an order or do not pick it up, the hold is released except for the service fee, which is charged as described
@@ -76,10 +97,15 @@ it for future orders you place. Card numbers are handled by our payment processo
 digits and expiry date. You can remove a saved card at any time on your Account page.</p>
 <p>4.4 <b>Order confirmation.</b> An order is confirmed when you receive a 4-digit pickup PIN. The Restaurant may decline or cancel an
 order it cannot fulfil (for example, if food is found to be unsuitable), in which case you will not be charged.</p>
-<p>4.5 <b>Taxes.</b> Because you pick your order up at the Restaurant, sales tax is charged at the rate that applies at the
-Restaurant's address (state, county, city and any local taxes), which we calculate automatically. The sales tax on your food is
-passed to the Restaurant, which reports and remits it, except where Bite Wise is required to collect and remit it as a marketplace
-facilitator. Any sales tax on the Bite Wise service fee is remitted by Bite Wise.</p>
+<p>4.5 <b>Taxes.</b> ${t(j,
+  `Because you pick your order up at the Restaurant, sales tax is charged at the rate that applies at the Restaurant's address (state,
+county, city and any local taxes), which we calculate automatically. The sales tax on your food is passed to the Restaurant, which reports
+and remits it, except where Bite Wise is required to collect and remit it as a marketplace facilitator. Any sales tax on the Bite Wise
+service fee is remitted by Bite Wise.`,
+  `Because you pick your order up at the Restaurant, sales taxes are charged for the province or territory where the Restaurant is: the
+GST or HST, and any provincial sales tax on restaurant meals (PST, RST or QST), which we calculate automatically. The tax on your food is
+passed to the Restaurant, which reports and remits it, except where Bite Wise is required to collect and remit it as a platform operator
+under the Excise Tax Act or provincial law. Any tax on the Bite Wise service fee is remitted by Bite Wise.`)}</p>
 <p>4.6 <b>The service fee is not refundable.</b> The Bite Wise service fee pays for reserving the food for you and processing your
 order, and <b>it is not refunded, whether or not you pick up your order</b>. In particular:</p>
 <ul>
@@ -134,7 +160,9 @@ food you ordered, or it appears unsafe or spoiled, do not accept it: the Restaur
 then you are not charged (Section 4.6).</p>
 <p>6.4 <b>Report safety problems.</b> If you believe food made you ill or was unsafe, contact your local health department and tell us at
 <a href="mailto:${c.email}">${c.email}</a>, so we can review the Restaurant.</p>
-<p>6.5 <b>Your legal rights.</b> Nothing in these Terms limits any right you have under the Washington Consumer Protection Act (RCW 19.86)
+<p>6.5 <b>Your legal rights.</b> Nothing in these Terms limits any right you have under ${t(j,
+  'the consumer protection laws of your state',
+  'the consumer protection legislation of your province or territory (for example, Ontario\'s Consumer Protection Act, 2002, or Quebec\'s Consumer Protection Act)')}
 or other laws that cannot be waived. Where such a law requires a refund, it will be given as the law requires.</p>
 <p>6.6 <b>Bite Wise Platform Credit.</b> Platform Credit is a promotional and courtesy balance issued by Bite Wise, at its discretion,
 to your account.</p>
@@ -182,8 +210,9 @@ the Service is limited to the greater of (a) the amounts you paid through the Se
 liability for gross negligence, wilful misconduct, or death or personal injury caused by Bite Wise's negligence.</p>
 
 <h2>11. Indemnity</h2>
-<p>You agree to indemnify and hold Bite Wise harmless from claims, losses and expenses (including reasonable attorneys' fees) arising
-from your misuse of the Service or your violation of these Terms or the law.</p>
+<p>${t(j, '', 'To the extent permitted by the consumer protection laws of your province or territory, ')}You agree to indemnify and hold
+Bite Wise harmless from claims, losses and expenses (including reasonable ${t(j, "attorneys' fees", 'legal fees')}) arising from your misuse
+of the Service or your violation of these Terms or the law.</p>
 
 <h2>12. Suspension and termination</h2>
 <p>You may close your account at any time by contacting us. We may suspend your access for a set number of days, or terminate it
@@ -197,29 +226,36 @@ person may not open a new account, and any open orders are cancelled without cha
 you to review and accept it before you continue using the Service. If you do not accept the updated Terms, you may close your account.</p>
 
 <h2>14. Governing law and disputes</h2>
-<p>14.1 These Terms are governed by the laws of the State of Washington, without regard to its conflict-of-law rules.</p>
+<p>14.1 ${t(j,
+  'These Terms are governed by the laws of the state in which you live and by applicable United States federal law.',
+  'These Terms are governed by the laws of the province or territory in which you live and the federal laws of Canada that apply there.')}</p>
 <p>14.2 Before filing a claim, you agree to contact us at <a href="mailto:${c.email}">${c.email}</a> and try to resolve the dispute
 informally for at least 30 days. Either party may bring an individual claim in small claims court if it qualifies. Otherwise, any
-dispute will be resolved exclusively in the state or federal courts located in King County, Washington, and you and Bite Wise consent
-to their jurisdiction.</p>
+dispute will be resolved in the courts of ${t(j, 'the state and county', 'the province or territory')} where you live, and you and Bite
+Wise consent to their jurisdiction. Nothing in this section takes away a right to sue in a particular court that the law gives you as a
+consumer.</p>
 
 <h2>15. General</h2>
 <p>These Terms and the Privacy Policy are the entire agreement between you and Bite Wise about the Service. If any provision is found
 unenforceable, the rest remains in effect. Our failure to enforce a provision is not a waiver. You may not assign these Terms; we may
 assign them in connection with a merger, acquisition or sale of assets. You agree that accepting these Terms electronically has the
-same effect as a handwritten signature under the Washington Uniform Electronic Transactions Act (RCW 1.80) and the federal E-SIGN Act.</p>
+same effect as a handwritten signature under ${t(j,
+  'the federal E-SIGN Act and the Uniform Electronic Transactions Act as adopted in your state',
+  'the electronic commerce and electronic transactions laws of your province or territory')}.</p>
 
 <h2>16. Contact</h2>
 <p>${c.entity} · ${c.address} · <a href="mailto:${c.email}">${c.email}</a></p>`;
 }
 
-function restaurantAgreement(c: Company) {
+function restaurantAgreement(c: Company, j: Jur) {
   return `
 <p class="lead">This Restaurant Partner Agreement (the "<b>Agreement</b>") is a binding agreement between ${c.entity} ("<b>Bite Wise</b>,"
 "<b>we</b>," "<b>us</b>") and the food business you register (the "<b>Partner</b>," "<b>you</b>"). It governs your use of the Bite Wise
 Partner Portal and marketplace to sell surplus food. By selecting <b>Accept</b> when you create a restaurant account, you confirm that
-you are authorized to bind the Partner and that the Partner agrees to this Agreement and to our <a href="/legal/privacy">Privacy
+you are authorized to bind the Partner and that the Partner agrees to this Agreement and to our <a href="${j.privacy}">Privacy
 Policy</a>. If you do not agree, select <b>Decline</b> and do not create an account.</p>
+${t(j, `<p>This is the Agreement for restaurants located in the <b>United States</b>. Restaurants in Canada agree to the Canadian Agreement.</p>`,
+  `<p>This is the Agreement for restaurants located in <b>Canada</b>. Restaurants in the United States agree to the US Agreement.</p>`)}
 
 <h2>1. The Bite Wise marketplace</h2>
 <p>1.1 Bite Wise provides an online marketplace, software and payment facilitation that let you list surplus food ("<b>Offers</b>") for
@@ -231,27 +267,34 @@ or end an Offer at any time. Orders already placed must still be honoured unless
 <h2>2. Eligibility, licences and insurance</h2>
 <p>You represent and warrant, and will ensure throughout the term, that you:</p>
 <ul>
-  <li>are a legally operating business in Washington State, holding a current Washington business licence, UBI number and all
-  food establishment permits required by the Washington State Department of Health and your local health jurisdiction
-  (such as Public Health – Seattle &amp; King County or the Tacoma-Pierce County Health Department);</li>
-  <li>comply with the Washington State Retail Food Code (WAC 246-215) and all other applicable food safety, labelling, health,
+${t(j, `  <li>are a legally operating business in the United States, holding all business licences, tax registrations and food
+  establishment permits required by your state, county and city, and by your local health department;</li>
+  <li>comply with the food code adopted by your state and local health jurisdiction and all other applicable food safety, labelling,
+  health, employment and consumer protection laws;</li>
+  <li>maintain commercial general liability insurance, including products-completed operations coverage, of at least
+  US$1,000,000 per occurrence, and provide proof to Bite Wise on request; and</li>`,
+  `  <li>are a legally operating business in Canada, holding all business licences and food premises permits required by your province
+  or territory and municipality, and registered for the GST/HST (and the QST in Quebec, or provincial sales tax where it applies)
+  unless you qualify as a small supplier;</li>
+  <li>comply with the food safety and food premises laws of your province or territory, local public health requirements, and, where
+  they apply, the Safe Food for Canadians Act and Regulations and the Food and Drugs Act, as well as all applicable labelling, health,
   employment and consumer protection laws;</li>
   <li>maintain commercial general liability insurance, including products-completed operations coverage, of at least
-  $1,000,000 per occurrence, and provide proof to Bite Wise on request; and</li>
+  CA$2,000,000 per occurrence, and provide proof to Bite Wise on request; and</li>`)}
   <li>will notify Bite Wise within 2 business days if any permit is suspended or revoked, or if you receive a health department
   closure order. Bite Wise may suspend your listings immediately in that case.</li>
 </ul>
 
 <h2>3. Food safety and listing standards</h2>
 <p>3.1 <b>Only safe food.</b> You will list only food that is safe to eat at the time of sale and throughout its discard timer, and that
-has been prepared, held and packaged in compliance with the Food Code. This includes time and temperature control for safety (TCS)
-foods (for example, hot holding at 135°F or above, cold holding at 41°F or below, or time-as-a-public-health-control procedures). You
+has been prepared, held and packaged in compliance with the food safety laws that apply to you. This includes foods that need time and
+temperature control for safety (for example, hot holding at ${t(j, '135°F (57°C)', '60°C (140°F)')} or above, cold holding at
+${t(j, '41°F (5°C)', '4°C (40°F)')} or below, or approved time-based procedures). You
 will set the discard timer so that food will still be safe when collected, and will discard food as required by law when the timer
 ends or earlier if needed.</p>
 <p>3.2 <b>Accurate listings.</b> Item names, descriptions, photos, prices, ingredients and dietary tags must be accurate and not
 misleading. The "original price" must be the price you genuinely charge for the item. You must disclose, in the description or on
-request, the presence of major food allergens (milk, eggs, fish, crustacean shellfish, tree nuts, peanuts, wheat, soybeans and
-sesame), and must clearly state when a "wrong order" item differs from your standard recipe.</p>
+request, the presence of ${t(j, 'major food allergens', 'priority food allergens')} (${t(j, ALLERGENS_US, ALLERGENS_CA)}), and must clearly state when a "wrong order" item differs from your standard recipe.</p>
 <p>3.3 <b>Packaging.</b> Food must be packaged in clean, food-grade, closed containers suitable for transport, labelled with the item
 name, and where appropriate, with reheating or storage guidance.</p>
 <p>3.4 <b>No prohibited items.</b> You will not list alcohol, cannabis, tobacco, recalled products, food past a manufacturer's
@@ -293,7 +336,7 @@ includes the Stripe Services Agreement.</p>
   each deposit.</li>
   <li><b>Questions:</b> raise any question about a payout within 60 days.</li>
 </ul>
-<p>5.4 <b>Taxes.</b> Sales tax on each order is charged at the rate for your restaurant's address, which Bite Wise looks up
+${t(j, `<p>5.4 <b>Taxes.</b> Sales tax on each order is charged at the rate for your restaurant's address, which Bite Wise looks up
 automatically from the address in your profile; keep that address accurate.</p>
 <ul>
   <li><b>Sales tax on your food is paid to you.</b> It is included in your payout for each completed order, and it is shown on your
@@ -305,7 +348,20 @@ automatically from the address in your profile; keep that address accurate.</p>
   subtotal only.</li>
   <li>Bite Wise remits any sales tax on its own service fee and on your subscription. You remain responsible for all other taxes on
   your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</li>
-</ul>
+</ul>`, `<p>5.4 <b>Taxes.</b> Sales taxes on each order are charged for the province or territory of your restaurant's address: the GST or
+HST, and any provincial sales tax on restaurant meals (PST, RST or QST). Bite Wise sets the rate from the address in your profile; keep
+it accurate.</p>
+<ul>
+  <li><b>Sales tax on your food is paid to you.</b> It is included in your payout for each completed order, and it is shown on your
+  daily report ("Sales tax paid to you"). <b>You are responsible for reporting and remitting it</b> to the Canada Revenue Agency, to
+  Revenu Québec, and to your provincial tax authority, as they apply to you. If you are a small supplier not registered for the GST/HST,
+  tell us before you list Offers.</li>
+  <li><b>Platform operator.</b> If the Excise Tax Act or a provincial law requires Bite Wise to collect and remit tax on sales made
+  through the marketplace, Bite Wise will tell you in writing at least 14 days in advance where possible. From then on, Bite Wise keeps
+  that tax on new orders and remits it, and your proceeds are the food subtotal only.</li>
+  <li>Bite Wise remits any tax on its own service fee and on your subscription. You remain responsible for all other taxes on your
+  business, including income taxes.</li>
+</ul>`)}
 <p>5.5 <b>Sold as is; all sales final; courtesy refunds; chargebacks.</b> Food is sold to customers <b>as is</b>, and <b>all sales are
 final</b>: customers have no right to a refund once you have confirmed a pickup with their PIN (Customer Terms, Section 6), and you do not
 give refunds yourself. Do not hand over food that is unsafe, spoiled or not what was ordered: cancel the order through Bite Wise support
@@ -331,10 +387,12 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   invoice that shows the plan price, a Pioneer Members Discount of the same amount, and a total of $0.00; no card is needed. Pioneer
   status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
-  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). Prices are in US dollars and exclude taxes.</li>
-  <li><b>Sales tax.</b> Where your state taxes software subscriptions, sales tax is added to every plan payment at the combined
+  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). ${t(j, 'Prices are in US dollars and exclude taxes.', 'Prices are in the currency shown in the Partner Portal and exclude taxes.')}</li>
+  <li><b>Sales tax.</b> ${t(j, `Where your state taxes software subscriptions, sales tax is added to every plan payment at the combined
   state and local rate for your restaurant's location, and is shown separately on each invoice. Bite Wise collects it and remits it to
-  the state tax authority. A Pioneer Member's $0.00 plan has no sales tax.</li>
+  the state tax authority.`, `Where Bite Wise is registered to collect it, the GST/HST (and the QST in Quebec, or provincial sales tax
+  where it applies to software subscriptions) is added to every plan payment at the rate for your restaurant's province or territory,
+  and is shown separately on each invoice.`)} A Pioneer Member's $0.00 plan has no sales tax.</li>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
   renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
   is charged the plan price then in effect, plus sales tax. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
@@ -360,7 +418,7 @@ represent that you own or have permission to use all content you upload, and tha
 <h2>7. Customer data</h2>
 <p>You will receive limited customer information (such as username, order details and pickup time) solely to fulfil orders. You will
 not use it for any other purpose, contact customers for marketing, or sell or share it, and you will protect it with reasonable
-security measures. Bite Wise's handling of personal information is described in the <a href="/legal/privacy">Privacy Policy</a>.</p>
+security measures${t(j, '', ', and you will comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and any provincial privacy law that applies to you')}. Bite Wise's handling of personal information is described in the <a href="${j.privacy}">Privacy Policy</a>.</p>
 
 <h2>8. Account security and conduct</h2>
 <p>You are responsible for keeping your Partner Portal login secure and for all activity under it, including by your staff. You will
@@ -368,7 +426,7 @@ not manipulate prices, create fake orders or reviews, or use the marketplace for
 
 <h2>9. Indemnification</h2>
 <p>You will defend, indemnify and hold harmless Bite Wise and its officers, employees and agents from any claims, damages, losses,
-penalties and expenses (including reasonable attorneys' fees) arising out of or related to: (a) food you sell, including foodborne
+penalties and expenses (including reasonable ${t(j, "attorneys' fees", 'legal fees')}) arising out of or related to: (a) food you sell, including foodborne
 illness, allergic reaction or injury; (b) your breach of this Agreement or of law; (c) inaccurate listings; or (d) content you upload.</p>
 
 <h2>10. Disclaimers and limitation of liability</h2>
@@ -392,20 +450,30 @@ ask you to accept the new version. If you do not accept, you may terminate under
 
 <h2>13. General</h2>
 <p>You and Bite Wise are independent contractors; nothing in this Agreement creates a partnership, joint venture, franchise or
-employment relationship. This Agreement is governed by the laws of the State of Washington, and the parties consent to the exclusive
-jurisdiction of the state and federal courts in King County, Washington. You may not assign this Agreement without our consent. If any
+employment relationship. ${t(j,
+  `This Agreement is governed by the laws of the state where your restaurant is located (for a Partner with restaurants in more than one
+state, the state of its main location) and applicable United States federal law, and the parties consent to the jurisdiction of the
+state and federal courts of that state.`,
+  `This Agreement is governed by the laws of the province or territory where your restaurant is located (for a Partner with restaurants
+in more than one, the province or territory of its main location) and the federal laws of Canada that apply there, and the parties
+consent to the jurisdiction of the courts of that province or territory.`)} You may not assign this Agreement without our consent. If any
 provision is unenforceable, the rest remains in effect. This Agreement, together with the Privacy Policy, is the entire agreement
-between the parties about its subject. Electronic acceptance has the same effect as a signature under the Washington Uniform
-Electronic Transactions Act (RCW 1.80) and the federal E-SIGN Act.</p>
+between the parties about its subject. Electronic acceptance has the same effect as a signature under ${t(j,
+  'the federal E-SIGN Act and the Uniform Electronic Transactions Act as adopted in your state',
+  'the electronic commerce and electronic transactions laws of your province or territory')}.</p>
 
 <h2>14. Contact</h2>
 <p>${c.entity} · ${c.address} · <a href="mailto:${c.email}">${c.email}</a></p>`;
 }
 
-function privacyPolicy(c: Company) {
+function privacyPolicy(c: Company, j: Jur) {
   return `
 <p class="lead">This Privacy Policy explains how ${c.entity} ("<b>Bite Wise</b>," "<b>we</b>") collects, uses and shares personal information
-when you use the Bite Wise website and services as a customer or restaurant partner.</p>
+when you use the Bite Wise website and services as a customer or restaurant partner${t(j, ' in the United States', ' in Canada')}.
+${t(j, '', `It is written to meet the Personal Information Protection and Electronic Documents Act (PIPEDA) and, where they apply, the
+private-sector privacy laws of Alberta, British Columbia and Quebec (including Quebec's Law 25). By creating an account you consent to the
+collection, use and disclosure of your personal information as described here; you can withdraw your consent at any time (Section 7),
+although we may then be unable to provide the service.`)}</p>
 
 <h2>1. Information we collect</h2>
 <ul>
@@ -420,7 +488,9 @@ when you use the Bite Wise website and services as a customer or restaurant part
   the bank account (bank name and last four digits) for payout records.</li>
   <li><b>Platform Credit:</b> a ledger of credit issued to you, used on orders and returned, with dates and reasons.</li>
   <li><b>Location:</b> if you choose "Use my location," your browser shares your approximate location with us to show nearby deals.
-  We use it for that search and do not store it on our servers. You can also search by city or ZIP code instead.</li>
+  We use it for that search and do not store it on our servers. You can also search by city or ${t(j, 'ZIP code', 'postal code')} instead.</li>
+  <li><b>Where you are:</b> the country, ${t(j, 'state', 'province or territory')} and city you give when you sign up, so we can show you the
+  right terms and taxes.</li>
   <li><b>Legal acceptances:</b> which versions of our terms you accepted, when, and the IP address and browser used, as a record
   of your agreement.</li>
   <li><b>Technical information:</b> IP address, browser type and server logs needed to operate and secure the service.</li>
@@ -439,10 +509,15 @@ it for targeted advertising.</p>
   <li><b>With service providers:</b> our payment processor (Stripe), our database, authentication and file storage provider
   (Supabase), and our hosting, email and map providers, only as needed to provide the service and under confidentiality obligations. Maps load tiles from a map provider (by default, OpenStreetMap), which receives your IP
   address when your browser requests map images.</li>
-  <li><b>For legal reasons:</b> to comply with law, legal process or requests from government authorities (including the Washington
-  State Department of Revenue for tax purposes), or to protect the rights, safety and property of users, restaurants or Bite Wise.</li>
+  <li><b>For legal reasons:</b> to comply with law, legal process or requests from government authorities (including ${t(j,
+    'state and local tax authorities', 'the Canada Revenue Agency, Revenu Québec and provincial tax authorities')} for tax purposes), or to
+  protect the rights, safety and property of users, restaurants or Bite Wise.</li>
   <li><b>Business transfers:</b> in connection with a merger, acquisition or sale of assets, subject to this Policy.</li>
 </ul>
+
+${t(j, '', `<p><b>Information stored outside Canada.</b> Bite Wise and several of its service providers (including Supabase, Stripe and our
+hosting provider) store and process information in the United States. While it is there, it is protected by contracts and security
+measures, but it may be accessed by courts, law enforcement and national security authorities of that country under its laws.</p>`)}
 
 <h2>4. Cookies</h2>
 <p>We use essential cookies to keep you signed in (your authentication session). They are not used for tracking. Your browser's local storage
@@ -463,10 +538,19 @@ rate limiting and a payment processor certified to PCI DSS. No system is complet
 delete your personal information by emailing <a href="mailto:${c.email}">${c.email}</a>. We will respond within 30 days and may need to
 verify your identity. We may keep information we are legally required to retain. We will not discriminate against you for exercising
 these rights.</p>
+${t(j, `<p>If you live in a state with a consumer privacy law (such as California, Colorado, Connecticut, Virginia or Washington's My
+Health My Data Act), you may have additional rights under it, and you can exercise them the same way. We do not sell or share personal
+information for targeted advertising.</p>`, `<p>You may withdraw your consent, subject to legal or contractual limits, and ask us how your information is used and
+shared. Our Privacy Officer is responsible for our compliance and can be reached at <a href="mailto:${c.email}">${c.email}</a>. If you
+are not satisfied with our answer, you may complain to the Office of the Privacy Commissioner of Canada or, where it applies, your
+provincial privacy commissioner (such as Quebec's Commission d'accès à l'information). We send service emails about your account and
+orders; we send promotional emails only with your consent, as required by Canada's Anti-Spam Legislation (CASL), and every one has a way
+to unsubscribe.</p>`)}
 
 <h2>8. Children</h2>
-<p>The service is not directed to children. You must be at least 18 to create a customer account. We do not knowingly collect personal
-information from children under 13; if you believe we have, contact us and we will delete it.</p>
+<p>The service is not directed to children. ${t(j,
+  'You must be at least 18 to create a customer account. We do not knowingly collect personal information from children under 13',
+  'You must have reached the age of majority in your province or territory to create a customer account. We do not knowingly collect personal information from minors')}; if you believe we have, contact us and we will delete it.</p>
 
 <h2>9. Changes</h2>
 <p>We may update this Policy. We will post the new version with a new effective date and, for material changes, notify you and ask you
@@ -477,15 +561,26 @@ to review it before continuing to use the service.</p>
 }
 
 export const DOCUMENTS = {
-  'customer-terms': { title: 'Customer Terms of Service', render: customerTerms },
-  'restaurant-agreement': { title: 'Restaurant Partner Agreement', render: restaurantAgreement },
-  privacy: { title: 'Privacy Policy', render: privacyPolicy },
+  'customer-terms': { title: 'Customer Terms of Service', country: 'US', render: (c: Company) => customerTerms(c, US) },
+  'restaurant-agreement': { title: 'Restaurant Partner Agreement', country: 'US', render: (c: Company) => restaurantAgreement(c, US) },
+  privacy: { title: 'Privacy Policy', country: 'US', render: (c: Company) => privacyPolicy(c, US) },
+  'customer-terms-ca': { title: 'Customer Terms of Service (Canada)', country: 'CA', render: (c: Company) => customerTerms(c, CA) },
+  'restaurant-agreement-ca': { title: 'Restaurant Partner Agreement (Canada)', country: 'CA', render: (c: Company) => restaurantAgreement(c, CA) },
+  'privacy-ca': { title: 'Privacy Policy (Canada)', country: 'CA', render: (c: Company) => privacyPolicy(c, CA) },
 } as const;
 
 export type DocumentId = keyof typeof DOCUMENTS;
 
-// Documents each role must accept.
-export const REQUIRED: Record<Exclude<Role, 'admin'>, DocumentId[]> = {
+// The same document in the other country's set (for the country switch on the legal pages).
+export const COUNTERPART: Record<DocumentId, DocumentId> = {
+  'customer-terms': 'customer-terms-ca', 'customer-terms-ca': 'customer-terms',
+  'restaurant-agreement': 'restaurant-agreement-ca', 'restaurant-agreement-ca': 'restaurant-agreement',
+  privacy: 'privacy-ca', 'privacy-ca': 'privacy',
+};
+
+// Documents each role must accept, by country.
+type SigningRole = Exclude<Role, 'admin'>;
+const REQUIRED_US: Record<SigningRole, DocumentId[]> = {
   customer: ['customer-terms', 'privacy'],
   restaurant: ['restaurant-agreement', 'privacy'],
   // Staff work under their restaurant's agreement, accepted by the owner.
@@ -493,15 +588,22 @@ export const REQUIRED: Record<Exclude<Role, 'admin'>, DocumentId[]> = {
   // Admin employees work for Bite Wise.
   support: [],
 };
+const REQUIRED_CA: Record<SigningRole, DocumentId[]> = {
+  customer: ['customer-terms-ca', 'privacy-ca'],
+  restaurant: ['restaurant-agreement-ca', 'privacy-ca'],
+  staff: [],
+  support: [],
+};
+export const requiredIds = (role: SigningRole, country: Country = 'US') => (country === 'CA' ? REQUIRED_CA : REQUIRED_US)[role];
 
-export type LegalDocument = { id: DocumentId; title: string; version: string; effective: string; html: string };
+export type LegalDocument = { id: DocumentId; title: string; version: string; effective: string; html: string; country: Country };
 
 export function renderDocument(id: string, company: Company): LegalDocument | null {
   if (!(id in DOCUMENTS)) return null;
   const def = DOCUMENTS[id as DocumentId];
   const c = { ...company, entity: esc(company.entity), email: esc(company.email), address: esc(company.address) };
-  return { id: id as DocumentId, title: def.title, version: LEGAL_VERSION, effective: EFFECTIVE, html: def.render(c) };
+  return { id: id as DocumentId, title: def.title, version: LEGAL_VERSION, effective: EFFECTIVE, html: def.render(c), country: def.country };
 }
 
-export const requiredDocuments = (role: Exclude<Role, 'admin'>) =>
-  REQUIRED[role].map((id) => ({ id, title: DOCUMENTS[id].title, version: LEGAL_VERSION }));
+export const requiredDocuments = (role: SigningRole, country: Country = 'US') =>
+  requiredIds(role, country).map((id) => ({ id, title: DOCUMENTS[id].title, version: LEGAL_VERSION }));

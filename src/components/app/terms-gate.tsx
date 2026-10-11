@@ -7,7 +7,7 @@ import { acceptUpdatedTerms, signOut } from '@/app/actions/auth';
 import { AgreementDialog } from './agreement-dialog';
 
 // Existing users must accept updated terms before continuing; declining signs them out.
-export function TermsGate({ role }: { role: 'customer' | 'restaurant' }) {
+export function TermsGate({ role, country }: { role: 'customer' | 'restaurant'; country: 'US' | 'CA' }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const [busy, start] = useTransition();
@@ -15,6 +15,7 @@ export function TermsGate({ role }: { role: 'customer' | 'restaurant' }) {
     <AgreementDialog
       open={open}
       role={role}
+      country={country}
       title="Our terms have been updated"
       intro="Please review and accept the updated terms to keep using Bite Wise. If you decline, you will be signed out."
       acceptLabel="Accept & continue"

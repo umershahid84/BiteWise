@@ -39,11 +39,13 @@ const when = (iso: string) =>
 
 export async function signedAgreementPdf(restaurantId: number, approvedAt?: string | null): Promise<{ filename: string; pdf: Buffer }> {
   const db = supabaseAdmin();
-  const r = must(await db.from('restaurants').select('id, name, address, city, zip, phone, owner_id, status').eq('id', restaurantId).single());
+  const r = must(await db.from('restaurants').select('id, name, address, city, zip, phone, owner_id, status, country').eq('id', restaurantId).single());
   const owner = must(await db.from('profiles').select('email, username').eq('id', r.owner_id).single());
+  // The agreement of the restaurant's country (US or Canada).
+  const docId = r.country === 'CA' ? 'restaurant-agreement-ca' : 'restaurant-agreement';
   const { data: accepted } = await db.from('terms_acceptances').select('version, accepted_at, ip, user_agent')
-    .eq('user_id', r.owner_id).eq('document', 'restaurant-agreement').order('accepted_at', { ascending: false }).limit(1).maybeSingle();
-  const doc = renderDocument('restaurant-agreement', await company());
+    .eq('user_id', r.owner_id).eq('document', docId).order('accepted_at', { ascending: false }).limit(1).maybeSingle();
+  const doc = renderDocument(docId, await company());
   if (!doc) throw new Error('Restaurant Partner Agreement not found.');
   const fingerprint = createHash('sha256').update(doc.html).digest('hex');
 
