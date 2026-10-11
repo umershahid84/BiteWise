@@ -8,16 +8,26 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 // Stripe webhook (Dashboard → Developers → Webhooks → endpoint https://<site>/api/stripe/webhook).
 // Listen to "Connected accounts" events: account.updated; and "Your account" events:
 // payment_intent.amount_capturable_updated, payment_intent.payment_failed.
+// The US and Canadian Stripe accounts each send their events here, signed with their own secret
+// (STRIPE_WEBHOOK_SECRET and STRIPE_WEBHOOK_SECRET_CA).
 export async function POST(req: NextRequest) {
-  if (!serverEnv.stripeSecretKey || !serverEnv.stripeWebhookSecret) {
-    return NextResponse.json({ error: 'Stripe webhooks are not configured.' }, { status: 501 });
+  const accounts = [
+    [serverEnv.stripeSecretKey, serverEnv.stripeWebhookSecret],
+    [serverEnv.stripeSecretKeyCa, serverEnv.stripeWebhookSecretCa],
+  ].filter(([key, secret]) => key && secret);
+  if (!accounts.length) return NextResponse.json({ error: 'Stripe webhooks are not configured.' }, { status: 501 });
+  const body = await req.text();
+  const signature = req.headers.get('stripe-signature') ?? '';
+  let event: Stripe.Event | null = null;
+  for (const [key, secret] of accounts) {
+    try {
+      event = constructWebhookEvent(key, body, signature, secret);
+      break;
+    } catch {
+      // not signed by this account
+    }
   }
-  let event: Stripe.Event;
-  try {
-    event = constructWebhookEvent(serverEnv.stripeSecretKey, await req.text(), req.headers.get('stripe-signature') ?? '', serverEnv.stripeWebhookSecret);
-  } catch {
-    return NextResponse.json({ error: 'Invalid signature.' }, { status: 400 });
-  }
+  if (!event) return NextResponse.json({ error: 'Invalid signature.' }, { status: 400 });
   const db = supabaseAdmin();
 
   switch (event.type) {

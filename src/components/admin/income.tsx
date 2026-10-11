@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
-import { money } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { DownloadIcons, RangePicker, daysAgo, todayPT, useAdmin, type Range, LoadError } from './shared';
+import { DownloadIcons, RangePicker, daysAgo, todayPT, useAdmin, type Range, LoadError, money, useMarket } from './shared';
 
 type Line = {
   orders: number; meals: number; gmvCents: number; serviceFeesCents: number; planFeesCents: number; planInvoices: number; pioneerDiscountsCents: number;
@@ -40,7 +39,8 @@ export function IncomePanel() {
   const periods = usePager(useMemo(() => [...(data?.periods ?? [])].reverse(), [data]), key);
   const restaurants = usePager(data?.restaurants ?? [], key);
   const year = today.slice(0, 4);
-  const qs = `from=${range.from}&to=${range.to}&by=${by}`;
+  const market = useMarket();
+  const qs = `from=${range.from}&to=${range.to}&by=${by}&country=${market}`;
   const perLabel = by === 'day' ? 'per day' : by === 'month' ? 'per month' : 'per year';
   const presets: [string, Range, By][] = [
     ['This month', { from: `${today.slice(0, 8)}01`, to: today }, 'day'],

@@ -7,6 +7,8 @@ export const publicEnv = {
   supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? '',
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '',
+  // The Canadian Stripe account (payments in Canadian dollars for restaurants in Canada).
+  stripePublishableKeyCa: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_CA ?? '',
   map: {
     tileUrl: process.env.NEXT_PUBLIC_MAP_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution:
@@ -21,6 +23,8 @@ export const serverEnv = {
   supabaseSecretKey: process.env.SUPABASE_SECRET_KEY ?? '',
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? '',
+  stripeSecretKeyCa: process.env.STRIPE_SECRET_KEY_CA ?? '',
+  stripeWebhookSecretCa: process.env.STRIPE_WEBHOOK_SECRET_CA ?? '',
   cronSecret: process.env.CRON_SECRET ?? '',
   timeZone: process.env.TIME_ZONE || 'America/Los_Angeles',
   legal: {
@@ -42,6 +46,22 @@ export const serverEnv = {
   pickupGraceMinutes: int(process.env.PICKUP_GRACE_MINUTES, 10),
 };
 
-// Payments use Stripe when both keys are set, and the built-in mock processor otherwise.
-export const paymentMode = (): 'stripe' | 'mock' =>
-  serverEnv.stripeSecretKey && publicEnv.stripePublishableKey ? 'stripe' : 'mock';
+// Payments in each country use that country's Stripe account: the US account (STRIPE_SECRET_KEY,
+// NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) charges in US dollars, the Canadian one (STRIPE_SECRET_KEY_CA,
+// NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_CA) in Canadian dollars.
+//   'stripe': the country's keys are set.
+//   'mock':   no Stripe keys at all (development and demos): the built-in test processor, nothing is charged.
+//   'off':    Stripe is set up for the other country only, so payments in this one aren't available yet.
+export type PaymentMode = 'stripe' | 'mock' | 'off';
+export function paymentMode(country: 'US' | 'CA' = 'US'): PaymentMode {
+  const us = !!(serverEnv.stripeSecretKey && publicEnv.stripePublishableKey);
+  const ca = !!(serverEnv.stripeSecretKeyCa && publicEnv.stripePublishableKeyCa);
+  if (country === 'CA' ? ca : us) return 'stripe';
+  return us || ca ? 'off' : 'mock';
+}
+// What the browser needs to collect cards for a country's Stripe account.
+export const paymentConfig = (country: 'US' | 'CA' = 'US') => ({
+  mode: paymentMode(country),
+  publishableKey: country === 'CA' ? publicEnv.stripePublishableKeyCa : publicEnv.stripePublishableKey,
+});
+export const paymentConfigs = () => ({ US: paymentConfig('US'), CA: paymentConfig('CA') });

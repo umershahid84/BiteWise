@@ -3,12 +3,14 @@ import type { Database } from '@/lib/database.types';
 import { sendEmail } from '@/lib/email/send';
 import { paymentFailedEmail, renewalReminderEmail, subscriptionReceiptEmail } from '@/lib/email/templates';
 import { publicEnv } from '@/lib/env';
+import { currencyOf } from '@/lib/format';
 import { AppError, check, maybe, must } from '@/lib/errors';
 import { planPrice, priceContext } from '@/lib/fee-changes';
 import * as orders from '@/lib/orders';
 import { PaymentError, payments } from '@/lib/payments';
 import { planInvoicePdf } from '@/lib/receipts/pdf';
 import { planInvoiceByNumber } from '@/lib/receipts/plan-invoice';
+import type { Country } from '@/lib/regions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Restaurant subscriptions (supabase/migrations/20261006000200_bans_and_subscriptions.sql, 20261007000100_delinquent_plans.sql).
@@ -85,15 +87,17 @@ export async function getSubscription(restaurantId: number) {
 }
 
 async function ownerOf(restaurantId: number) {
-  const r = must(await db().from('restaurants').select('id, name, owner_id, profiles!restaurants_owner_id_fkey(id, email, username, stripe_customer_id)').eq('id', restaurantId).single());
-  return { restaurant: r, owner: r.profiles! };
+  const r = must(await db().from('restaurants').select('id, name, owner_id, country, profiles!restaurants_owner_id_fkey(id, email, username)').eq('id', restaurantId).single());
+  // Plan fees are paid through the Stripe account of the restaurant's country, in its currency, with cards saved there.
+  const country: Country = r.country === 'CA' ? 'CA' : 'US';
+  return { restaurant: r, owner: { ...r.profiles!, country } };
 }
 
 type Card = { id: number; brand: string; last4: string; exp_month: number; exp_year: number; is_default: boolean; provider_ref: string };
 const label = (c: Pick<Card, 'brand' | 'last4'>) => `${c.brand.toUpperCase()} •••• ${c.last4}`;
 
-export async function cardsOf(userId: string) {
-  return must(await db().from('payment_methods').select('id, brand, last4, exp_month, exp_year, is_default, provider_ref').eq('user_id', userId)
+export async function cardsOf(userId: string, country: Country = 'US') {
+  return must(await db().from('payment_methods').select('id, brand, last4, exp_month, exp_year, is_default, provider_ref').eq('user_id', userId).eq('country', country)
     .order('is_default', { ascending: false }).order('created_at', { ascending: false })) as Card[];
 }
 
@@ -108,7 +112,7 @@ export async function planSummary(restaurantId: number) {
     prices(),
     db().from('subscription_payments').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }).limit(24),
     db().rpc('restaurant_plan_ok', { p_restaurant_id: restaurantId }),
-    cardsOf(owner.id),
+    cardsOf(owner.id, owner.country),
     priceContext(),
     taxRate(restaurantId),
   ]);
@@ -154,7 +158,7 @@ export type PlanSummary = Awaited<ReturnType<typeof planSummary>>;
 export async function addCard(restaurantId: number, token: unknown, makeDefault: boolean) {
   const { owner } = await ownerOf(restaurantId);
   try {
-    return await orders.addCard(owner.id, token, makeDefault);
+    return await orders.addCard(owner.id, token, makeDefault, owner.country);
   } catch (err) {
     if (err instanceof PaymentError) throw new AppError(402, err.message);
     throw err;
@@ -169,7 +173,7 @@ export async function setDefaultCard(restaurantId: number, cardId: number) {
 // An auto-renewing paid plan needs a card on file, so its last card can't be removed.
 export async function removeCard(restaurantId: number, cardId: number) {
   const { owner } = await ownerOf(restaurantId);
-  const [sub, cards] = await Promise.all([getSubscription(restaurantId), cardsOf(owner.id)]);
+  const [sub, cards] = await Promise.all([getSubscription(restaurantId), cardsOf(owner.id, owner.country)]);
   const renewing = sub && sub.plan !== 'founding' && !isPioneer(sub) && sub.status !== 'expired' && sub.auto_renew;
   if (renewing && cards.length <= 1 && cards.some((c) => c.id === cardId)) {
     throw new AppError(409, 'Your plan renews automatically with this card. Add another card first, or turn off auto-renewal.');
@@ -178,25 +182,21 @@ export async function removeCard(restaurantId: number, cardId: number) {
 }
 
 // The card to charge: the one asked for, or the default card on file.
-async function chargeCard(ownerId: string, cardId?: number | null) {
-  const cards = await cardsOf(ownerId);
+async function chargeCard(owner: { id: string; country: Country }, cardId?: number | null) {
+  const cards = await cardsOf(owner.id, owner.country);
   const card = cardId ? cards.find((c) => c.id === cardId) : (cards.find((c) => c.is_default) ?? cards[0]);
   if (cardId && !card) throw new AppError(404, 'Card not found.');
   return card ?? null;
 }
 
-async function customerRef(owner: { id: string; email: string; username: string; stripe_customer_id: string | null }) {
-  const id = await payments().ensureCustomer({ email: owner.email, username: owner.username, existingId: owner.stripe_customer_id });
-  if (id !== owner.stripe_customer_id) check(await db().from('profiles').update({ stripe_customer_id: id }).eq('id', owner.id));
-  return id;
-}
+const customerRef = (owner: { id: string; country: Country }) => orders.ensureCustomer(owner.id, owner.country);
 
 // ---------------------------------------------------------------- charging
 
 // Charges one period of a plan and records the payment (paid or failed).
 // `priceCents` is the plan price; sales tax is added on top, and the total is charged.
 async function chargePeriod(o: {
-  restaurantId: number; name: string; plan: PaidPlan; priceCents: number; customerId: string; card: Card | null; start: Date; key: string;
+  restaurantId: number; name: string; plan: PaidPlan; priceCents: number; customerId: string; card: Card | null; start: Date; key: string; country: Country;
 }) {
   const end = addPeriod(o.start, o.plan);
   const { rateBps, jurisdiction } = await planTax(o.restaurantId);
@@ -213,7 +213,7 @@ async function chargePeriod(o: {
     return { ok: false as const, error: 'No card on file.', ...amounts };
   }
   try {
-    const charge = await payments().charge({
+    const charge = await payments(o.country).charge({
       amountCents: total, customerId: o.customerId, paymentRef: o.card.provider_ref,
       description: `Bite Wise ${o.plan} plan · ${o.name}`,
       metadata: { restaurant_id: String(o.restaurantId), plan: o.plan, period_start: o.start.toISOString() },
@@ -242,7 +242,7 @@ async function receipt(o: {
         restaurant: o.restaurant, plan: o.plan, amountCents: o.amountCents, invoiceNumber: o.invoice, cardLabel: o.cardLabel,
         periodStart: o.start?.toISOString(), periodEnd: o.end.toISOString(), autoRenew: o.autoRenew, renewal: o.renewal, planUrl: planUrl(),
         listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel, taxCents: o.taxCents, taxRateBps: o.taxRateBps,
-        invoiceUrl: `${publicEnv.siteUrl}/restaurant/invoices/${inv.id}`,
+        invoiceUrl: `${publicEnv.siteUrl}/restaurant/invoices/${inv.id}`, currency: inv.currency,
       }),
       attachments: [{ filename: `Bite-Wise-invoice-${o.invoice}.pdf`, content: await planInvoicePdf(inv), contentType: 'application/pdf' }],
     });
@@ -336,12 +336,12 @@ export async function subscribe(restaurantId: number, input: { plan: PaidPlan; c
     if (input.token === undefined) throw new AppError(400, 'Choose a card.');
     cardId = (await addCard(restaurantId, input.token, true)).id;
   }
-  const card = await chargeCard(owner.id, cardId);
+  const card = await chargeCard(owner, cardId);
   const start = new Date();
   // A lapsed plan restarts at the price new plans pay (any lock went with it).
   const amountCents = planPrice(await priceContext(), null, input.plan, start);
   const res = await chargePeriod({
-    restaurantId, name: restaurant.name, plan: input.plan, priceCents: amountCents, customerId, card, start,
+    restaurantId, name: restaurant.name, plan: input.plan, priceCents: amountCents, customerId, card, start, country: owner.country,
     key: `sub-start-${restaurantId}-${cardId}-${Math.floor(start.getTime() / 60_000)}`,
   });
   if (!res.ok) {
@@ -372,7 +372,7 @@ export async function setAutoRenew(restaurantId: number, on: boolean) {
   if (isPioneer(sub)) throw new AppError(409, 'Pioneer memberships renew automatically, free.');
   if (on) {
     const { owner } = await ownerOf(restaurantId);
-    if (!(await cardsOf(owner.id)).length) throw new AppError(409, 'Add a card on file first: auto-renewal charges your default card.');
+    if (!(await cardsOf(owner.id, owner.country)).length) throw new AppError(409, 'Add a card on file first: auto-renewal charges your default card.');
   }
   must(await db().from('restaurant_subscriptions').update({ auto_renew: on, updated_at: new Date().toISOString() }).eq('restaurant_id', restaurantId).select('restaurant_id'));
 }
@@ -417,12 +417,12 @@ async function charge(restaurantId: number, o: { manual: boolean; cardId?: numbe
     const plan = (claimed.renew_plan ?? claimed.plan) as PaidPlan;
     const amountCents = planPrice(await priceContext(), claimed, plan, now);
     const { restaurant, owner } = await ownerOf(restaurantId);
-    const card = await chargeCard(owner.id, o.cardId);
+    const card = await chargeCard(owner, o.cardId);
     const customerId = claimed.customer_ref ?? (await customerRef(owner));
     // A renewal continues where the last period ended; a delinquent plan starts again from the day it is paid.
     const start = delinquent ? now : periodEnd;
     const res = await chargePeriod({
-      restaurantId, name: restaurant.name, plan, priceCents: amountCents, customerId, card, start,
+      restaurantId, name: restaurant.name, plan, priceCents: amountCents, customerId, card, start, country: owner.country,
       key: `sub-${restaurantId}-${periodEnd.toISOString()}-${card?.id ?? 0}-${o.manual ? now.toISOString().slice(0, 16) : now.toISOString().slice(0, 10)}`,
     });
     if (res.ok) {
@@ -444,7 +444,7 @@ async function charge(restaurantId: number, o: { manual: boolean; cardId?: numbe
     });
     await pauseOffers(restaurantId);
     if (!delinquent) {
-      await sendEmail({ to: owner.email, ...paymentFailedEmail({ restaurant: restaurant.name, amountCents: res.totalCents, error: res.error, planUrl: planUrl() }) })
+      await sendEmail({ to: owner.email, ...paymentFailedEmail({ restaurant: restaurant.name, amountCents: res.totalCents, error: res.error, planUrl: planUrl(), currency: currencyOf(owner.country) }) })
         .catch((err) => console.error('payment declined email:', err));
     }
     if (o.manual) throw new AppError(402, `The card was declined: ${res.error} Please try another card.`);
@@ -496,12 +496,12 @@ export async function renewDue() {
     if (s.current_period_start && now.getTime() - Date.parse(s.current_period_start) < DAY) continue;
     try {
       const { restaurant, owner } = await ownerOf(s.restaurant_id);
-      const card = await chargeCard(owner.id);
+      const card = await chargeCard(owner);
       const sent = await sendEmail({
         to: owner.email,
         ...renewalReminderEmail({
           restaurant: restaurant.name, plan, amountCents: withTax(planPrice(ctx, s, plan, renewsOn), await taxRate(s.restaurant_id)), renewsOn: s.current_period_end!,
-          cardLabel: card ? label(card) : 'your card on file', planUrl: planUrl(),
+          cardLabel: card ? label(card) : 'your card on file', planUrl: planUrl(), currency: currencyOf(owner.country),
         }),
       });
       if (sent) {

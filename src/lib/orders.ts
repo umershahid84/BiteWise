@@ -5,8 +5,9 @@ import { isTestStripeAccount } from '@/lib/constants';
 import { AppError, check, maybe, must } from '@/lib/errors';
 import { orderInvoiceEmail } from '@/lib/email/templates';
 import { sendEmail } from '@/lib/email/send';
-import { publicEnv } from '@/lib/env';
-import { payments, PaymentError } from '@/lib/payments';
+import { countryOfCurrency, payments, PaymentError } from '@/lib/payments';
+import { paymentMode, publicEnv } from '@/lib/env';
+import type { Country } from '@/lib/regions';
 import { receiptData } from '@/lib/receipts/data';
 import { receiptPdf } from '@/lib/receipts/pdf';
 import { refundableTotalCents, restaurantShareOfRefund, type Quote } from '@/lib/pricing';
@@ -28,10 +29,16 @@ export async function getOrder(id: number): Promise<Order> {
 
 // ---------------------------------------------------------------- restaurant Connect accounts
 
+// Which country's Stripe account handles a restaurant's money (US dollars or Canadian dollars).
+export async function restaurantCountry(restaurantId: number): Promise<Country> {
+  const r = maybe(await db().from('restaurants').select('country').eq('id', restaurantId).maybeSingle());
+  return r?.country === 'CA' ? 'CA' : 'US';
+}
+
 async function paymentAccount(restaurantId: number) {
   const acct = maybe(await db().from('restaurant_payment_accounts').select('*').eq('restaurant_id', restaurantId).maybeSingle());
   // A test-payments account (see isTestStripeAccount) is not connected once real Stripe keys are set.
-  if (acct && payments().mode !== 'mock' && isTestStripeAccount(acct.stripe_account_id)) {
+  if (acct && paymentMode(await restaurantCountry(restaurantId)) === 'stripe' && isTestStripeAccount(acct.stripe_account_id)) {
     return { ...acct, stripe_account_id: null, charges_enabled: false, payouts_enabled: false, details_submitted: false, bank_summary: '' };
   }
   return acct;
@@ -48,48 +55,52 @@ const bankDetails = (acct: { id: string; bank: string }) =>
 
 // ---------------------------------------------------------------- checkout
 
-async function ensureCustomer(userId: string) {
-  const profile = must(await db().from('profiles').select('email, username, stripe_customer_id').eq('id', userId).single());
-  if (profile.stripe_customer_id) return profile.stripe_customer_id;
-  const id = await payments().ensureCustomer({ email: profile.email, username: profile.username });
-  check(await db().from('profiles').update({ stripe_customer_id: id }).eq('id', userId));
+// The person's customer record in a country's Stripe account (each account has its own customers and saved cards).
+export async function ensureCustomer(userId: string, country: Country = 'US') {
+  const profile = must(await db().from('profiles').select('email, username, stripe_customer_id, stripe_customer_id_ca').eq('id', userId).single());
+  const existing = country === 'CA' ? profile.stripe_customer_id_ca : profile.stripe_customer_id;
+  if (existing) return existing;
+  const id = await payments(country).ensureCustomer({ email: profile.email, username: profile.username });
+  check(await db().from('profiles').update(country === 'CA' ? { stripe_customer_id_ca: id } : { stripe_customer_id: id }).eq('id', userId));
   return id;
 }
 
-export async function saveCard(userId: string, card: { ref: string; brand: string; last4: string; expMonth: number; expYear: number }, makeDefault: boolean) {
-  const existing = must(await db().from('payment_methods').select('id').eq('user_id', userId).limit(1));
+// Saved cards belong to one country's Stripe account. The default card is per country.
+export async function saveCard(userId: string, card: { ref: string; brand: string; last4: string; expMonth: number; expYear: number }, makeDefault: boolean, country: Country = 'US') {
+  const existing = must(await db().from('payment_methods').select('id').eq('user_id', userId).eq('country', country).limit(1));
   const isDefault = makeDefault || existing.length === 0;
-  if (isDefault) check(await db().from('payment_methods').update({ is_default: false }).eq('user_id', userId));
+  if (isDefault) check(await db().from('payment_methods').update({ is_default: false }).eq('user_id', userId).eq('country', country));
   return must(
     await db().from('payment_methods').insert({
       user_id: userId, provider_ref: card.ref, brand: card.brand, last4: card.last4,
-      exp_month: card.expMonth, exp_year: card.expYear, is_default: isDefault,
-    }).select('id, brand, last4, exp_month, exp_year, is_default').single(),
+      exp_month: card.expMonth, exp_year: card.expYear, is_default: isDefault, country,
+    }).select('id, brand, last4, exp_month, exp_year, is_default, country').single(),
   );
 }
 
-export async function addCard(userId: string, token: unknown, makeDefault: boolean) {
-  const customerId = await ensureCustomer(userId);
-  const card = await payments().resolvePaymentMethod({ customerId, token, save: true });
-  return saveCard(userId, card, makeDefault);
+export async function addCard(userId: string, token: unknown, makeDefault: boolean, country: Country = 'US') {
+  const customerId = await ensureCustomer(userId, country);
+  const card = await payments(country).resolvePaymentMethod({ customerId, token, save: true });
+  return saveCard(userId, card, makeDefault, country);
 }
 
 export async function removeCard(userId: string, cardId: number) {
   const card = maybe(await db().from('payment_methods').select('*').eq('id', cardId).eq('user_id', userId).maybeSingle());
   if (!card) throw new AppError(404, 'Card not found.');
+  const country: Country = card.country === 'CA' ? 'CA' : 'US';
   // An existing hold stays capturable after the card is removed, so open orders don't block this.
-  await payments().detach(card.provider_ref);
+  await payments(country).detach(card.provider_ref);
   check(await db().from('payment_methods').delete().eq('id', card.id));
   if (card.is_default) {
-    const next = must(await db().from('payment_methods').select('id').eq('user_id', userId).order('created_at', { ascending: false }).limit(1));
+    const next = must(await db().from('payment_methods').select('id').eq('user_id', userId).eq('country', country).order('created_at', { ascending: false }).limit(1));
     if (next[0]) check(await db().from('payment_methods').update({ is_default: true }).eq('id', next[0].id));
   }
 }
 
 export async function setDefaultCard(userId: string, cardId: number) {
-  const card = maybe(await db().from('payment_methods').select('id').eq('id', cardId).eq('user_id', userId).maybeSingle());
+  const card = maybe(await db().from('payment_methods').select('id, country').eq('id', cardId).eq('user_id', userId).maybeSingle());
   if (!card) throw new AppError(404, 'Card not found.');
-  check(await db().from('payment_methods').update({ is_default: false }).eq('user_id', userId));
+  check(await db().from('payment_methods').update({ is_default: false }).eq('user_id', userId).eq('country', card.country));
   check(await db().from('payment_methods').update({ is_default: true }).eq('id', card.id));
 }
 
@@ -113,6 +124,15 @@ export async function checkout(userId: string, input: CheckoutInput) {
     throw new AppError(400, 'Invalid credit amount.');
   }
   const needsCard = q.totalCents - input.creditCents > 0;
+  // The order is paid through the Stripe account of the restaurant's country, in its currency.
+  const offer = must(await db().from('offers').select('restaurant_id').eq('id', input.offerId).single());
+  const country = await restaurantCountry(offer.restaurant_id);
+  if (input.creditCents > 0) {
+    // Platform Credit is in the currency of the customer's own country.
+    const me = must(await db().from('profiles').select('country').eq('id', userId).single());
+    if ((me.country === 'CA' ? 'CA' : 'US') !== country) throw new AppError(400, 'Your Bite Wise credit can only be used at restaurants in your own country.');
+  }
+  const pay = needsCard ? payments(country) : null; // fails early if payments aren't set up in that country
 
   let paymentRef: string | null = null;
   let label: string | null = null;
@@ -121,14 +141,17 @@ export async function checkout(userId: string, input: CheckoutInput) {
   if (needsCard && input.cardId) {
     const card = maybe(await db().from('payment_methods').select('*').eq('id', input.cardId).eq('user_id', userId).maybeSingle());
     if (!card) throw new AppError(400, 'Please choose a card.');
+    if ((card.country === 'CA' ? 'CA' : 'US') !== country) {
+      throw new AppError(400, `This card is saved for ${card.country === 'CA' ? 'Canada' : 'the United States'}. Use a new card for restaurants in ${country === 'CA' ? 'Canada' : 'the United States'}.`);
+    }
     paymentRef = card.provider_ref;
     label = cardLabel(card);
     attached = true;
-    customerId = await ensureCustomer(userId);
+    customerId = await ensureCustomer(userId, country);
   } else if (needsCard && input.newCard?.token) {
-    customerId = await ensureCustomer(userId);
-    const card = await payments().resolvePaymentMethod({ customerId, token: input.newCard.token, save: input.newCard.save });
-    if (input.newCard.save) await saveCard(userId, card, false);
+    customerId = await ensureCustomer(userId, country);
+    const card = await pay!.resolvePaymentMethod({ customerId, token: input.newCard.token, save: input.newCard.save });
+    if (input.newCard.save) await saveCard(userId, card, false, country);
     paymentRef = card.ref;
     label = cardLabel(card);
     attached = input.newCard.save;
@@ -153,7 +176,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
   const destination = await transferAccount(order.restaurant_id);
   let result;
   try {
-    result = await payments().authorize({
+    result = await pay!.authorize({
       amountCents: cardCents,
       customerId,
       paymentRef: paymentRef!,
@@ -180,7 +203,7 @@ export async function confirmAuthorization(userId: string, orderId: number) {
   const order = await getOrder(orderId);
   if (order.user_id !== userId) throw new AppError(404, 'Order not found.');
   if (order.status !== 'pending_payment' || !order.payment_ref) return order.status;
-  const status = await payments().authorizationStatus(order.payment_ref);
+  const status = await payments(countryOfCurrency(order.currency)).authorizationStatus(order.payment_ref);
   if (status === 'authorized') check(await db().rpc('mark_order_reserved', { p_order_id: order.id }));
   else if (status === 'failed') {
     await release(order.id, 'pending_payment', 'failed', true);
@@ -193,24 +216,25 @@ export async function confirmAuthorization(userId: string, orderId: number) {
 
 // Settles the card hold of an order that was released in the database: voids it, or, for missed pickups and orders
 // the customer cancelled, charges the non-refundable service fee from it (the rest of the hold is let go).
-async function settleHold(o: Pick<Order, 'id' | 'payment_ref' | 'needs_void' | 'needs_fee_charge' | 'kept_card_cents' | 'destination_account'>) {
+async function settleHold(o: Pick<Order, 'id' | 'payment_ref' | 'needs_void' | 'needs_fee_charge' | 'kept_card_cents' | 'destination_account' | 'currency'>) {
+  const pay = () => payments(countryOfCurrency(o.currency));
   if (o.needs_fee_charge && o.payment_ref && o.kept_card_cents > 0) {
     try {
       // On a destination charge all of it is Bite Wise's application fee: the restaurant gets nothing for a missed order.
-      const charge = await payments().capture(o.payment_ref, {
+      const charge = await pay().capture(o.payment_ref, {
         amountCents: o.kept_card_cents, applicationFeeCents: o.destination_account ? o.kept_card_cents : null, idempotencyKey: `fee-${o.id}`,
       });
       check(await db().rpc('finish_fee_charge', { p_order_id: o.id, p_ref: charge.chargeId ?? o.payment_ref }));
     } catch (err) {
       if (!(err instanceof PaymentError)) throw err; // try again on the next sweep
       console.error(`Service fee for order ${o.id} could not be charged; the hold is released.`, err.message);
-      await payments().void(o.payment_ref);
+      await pay().void(o.payment_ref);
       check(await db().rpc('finish_fee_charge', { p_order_id: o.id, p_ref: null as unknown as string }));
     }
     return;
   }
   if (o.needs_void) {
-    if (o.payment_ref) await payments().void(o.payment_ref);
+    if (o.payment_ref) await pay().void(o.payment_ref);
     await db().rpc('clear_void', { p_order_id: o.id });
   }
 }
@@ -229,7 +253,7 @@ export async function release(orderId: number, from: Order['status'], to: 'cance
 // Every minute: the database sweep releases stale orders; then card holds are voided (or charged the service fee) here.
 export async function sweep() {
   const counts = must(await db().rpc('sweep'));
-  const cols = 'id, payment_ref, needs_void, needs_fee_charge, kept_card_cents, destination_account';
+  const cols = 'id, payment_ref, needs_void, needs_fee_charge, kept_card_cents, destination_account, currency';
   const pending = must(await db().from('orders').select(cols).or('needs_void.eq.true,needs_fee_charge.eq.true').limit(200));
   for (const o of pending) await settleHold(o);
   return { ...(counts as object), voided: pending.filter((o) => !o.needs_fee_charge).length, feesCharged: pending.filter((o) => o.needs_fee_charge).length };
@@ -251,7 +275,7 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
     try {
       // Destination charge: Bite Wise keeps the service fee (and any sales tax it remits); Stripe sends the rest.
       const applicationFee = destination ? Math.max(0, cardCents - share) : null;
-      charge = await payments().capture(claimed.paymentRef, { applicationFeeCents: applicationFee, idempotencyKey: `capture-${order.id}` });
+      charge = await payments(countryOfCurrency(order.currency)).capture(claimed.paymentRef, { applicationFeeCents: applicationFee, idempotencyKey: `capture-${order.id}` });
     } catch (err) {
       await db().rpc('abort_pickup', { p_order_id: order.id });
       if (err instanceof PaymentError) throw new AppError(402, `The card could not be charged: ${err.message}`);
@@ -310,7 +334,7 @@ export async function emailInvoice(orderId: number) {
 async function sendTransfer(restaurantId: number, amountCents: number, sourceChargeId: string | null, note: string, orderId: number | null, key: string, by: string | null = null) {
   const acct = await transferAccount(restaurantId);
   if (!acct) throw new AppError(409, 'This restaurant has not finished setting up Stripe payouts yet.');
-  const t = await payments().transfer({
+  const t = await payments(await restaurantCountry(restaurantId)).transfer({
     accountId: acct.id, amountCents, sourceChargeId, description: `Bite Wise payout: ${note}`,
     metadata: { restaurant_id: String(restaurantId), ...(orderId ? { order_id: String(orderId) } : {}) }, idempotencyKey: key,
   });
@@ -359,7 +383,7 @@ export async function refundOrder(orderId: number, p: { amountCents: number; met
     cardCents = Math.min(p.amountCents, cardRefundable);
     creditCents = p.amountCents - cardCents; // back to the credit balance they paid with
     restaurantShare = restaurantShareOfRefund(p.amountCents, o);
-    if (cardCents > 0) providerRef = (await payments().refund(o.payment_ref!, cardCents, `refund-${o.id}-${refundNo}`)).id;
+    if (cardCents > 0) providerRef = (await payments(countryOfCurrency(o.currency)).refund(o.payment_ref!, cardCents, `refund-${o.id}-${refundNo}`)).id;
   }
 
   const updated = must(await db().rpc('apply_refund', {
@@ -384,7 +408,7 @@ async function reverseOrderTransfers(orderId: number, restaurantId: number, amou
     const take = Math.min(left, available);
     if (take <= 0) continue;
     try {
-      const rev = await payments().reverseTransfer(t.transaction_id, take, `${key}-${t.id}`);
+      const rev = await payments(await restaurantCountry(restaurantId)).reverseTransfer(t.transaction_id, take, `${key}-${t.id}`);
       must(await db().rpc('record_payout', {
         p_restaurant_id: restaurantId, p_order_id: orderId, p_kind: 'reversal', p_amount_cents: -take,
         p_transaction_id: rev.id, p_bank_details: t.bank_details, p_note: `Refund on order #${orderId}`, p_by: adminId,
@@ -403,7 +427,7 @@ async function reverseOrderTransfers(orderId: number, restaurantId: number, amou
 export async function refreshConnectStatus(restaurantId: number) {
   const acct = await paymentAccount(restaurantId);
   if (!acct?.stripe_account_id) return acct;
-  const s = await payments().accountStatus(acct.stripe_account_id);
+  const s = await payments(await restaurantCountry(restaurantId)).accountStatus(acct.stripe_account_id);
   return must(
     await db().from('restaurant_payment_accounts').update({
       charges_enabled: s.chargesEnabled, payouts_enabled: s.payoutsEnabled, details_submitted: s.detailsSubmitted,
@@ -417,10 +441,10 @@ export async function connectOnboardingLink(restaurantId: number, email: string,
   if (!acct) acct = must(await db().from('restaurant_payment_accounts').insert({ restaurant_id: restaurantId }).select('*').single());
   let accountId = acct.stripe_account_id;
   if (!accountId) {
-    accountId = await payments().createConnectedAccount({ email, businessName, restaurantId });
+    accountId = await payments(await restaurantCountry(restaurantId)).createConnectedAccount({ email, businessName, restaurantId });
     check(await db().from('restaurant_payment_accounts').update({ stripe_account_id: accountId }).eq('restaurant_id', restaurantId));
   }
-  return payments().onboardingLink(accountId, {
+  return payments(await restaurantCountry(restaurantId)).onboardingLink(accountId, {
     returnUrl: `${siteUrl}/restaurant?tab=payouts&stripe=return`,
     refreshUrl: `${siteUrl}/restaurant?tab=payouts&stripe=refresh`,
   });

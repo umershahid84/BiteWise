@@ -6,9 +6,10 @@ import { PaymentError, type PaymentProvider } from './types';
 // state, so it survives server restarts and hot reloads. Connect onboarding completes instantly.
 const id = (prefix: string) => `${prefix}_mock_${randomBytes(8).toString('hex')}`;
 
-export function createMockProvider(): PaymentProvider {
+export function createMockProvider(currency: 'usd' | 'cad' = 'usd'): PaymentProvider {
   return {
     mode: 'mock',
+    currency,
 
     async ensureCustomer({ existingId }) {
       return existingId || id('cus');

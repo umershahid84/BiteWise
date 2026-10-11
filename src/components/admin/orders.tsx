@@ -13,10 +13,10 @@ import { Field, Input, Select } from '@/components/ui/field';
 import { SectionLabel, Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/constants';
-import { fmtDateTime, money } from '@/lib/format';
+import { fmtDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { AdminOrder } from '@/lib/admin';
-import { adminGet, RangePicker, run, TableHead, useAccess, useAdmin, type Range, LoadError } from './shared';
+import { adminGet, RangePicker, run, TableHead, useAccess, useAdmin, type Range, LoadError, money } from './shared';
 
 export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: Range) => void }) {
   const queryClient = useQueryClient();

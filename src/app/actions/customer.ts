@@ -2,11 +2,14 @@
 
 import { z } from 'zod';
 import { requireActor } from '@/lib/auth';
-import { action, maybe, must } from '@/lib/errors';
-import { payments } from '@/lib/payments';
+import { action, must } from '@/lib/errors';
 import * as orders from '@/lib/orders';
+import { payments } from '@/lib/payments';
 import { supabaseServer } from '@/lib/supabase/server';
-import { int, parse } from '@/lib/validate';
+import { countrySchema, int, parse } from '@/lib/validate';
+import { saveHomeArea } from '@/lib/home-area';
+import { geocodePostal } from '@/lib/geocode';
+import { normalizePostal } from '@/lib/regions';
 
 const checkoutSchema = z.object({
   offerId: int('Offer', 1, Number.MAX_SAFE_INTEGER),
@@ -68,20 +71,20 @@ export async function cancelOrder(orderId: number) {
 
 // ---- Saved cards
 
-export async function createCardSetupIntent() {
+// Cards are saved with the Stripe account of a country (US dollars or Canadian dollars): the country of the
+// restaurant being ordered from, or the one chosen on the account page.
+export async function createCardSetupIntent(country: unknown = 'US') {
   return action(async () => {
     const viewer = await requireActor('customer');
-    const supabase = await supabaseServer();
-    const profile = maybe(await supabase.from('profiles').select('stripe_customer_id').eq('id', viewer.id).maybeSingle());
-    const customerId = await payments().ensureCustomer({ email: viewer.email, username: viewer.username, existingId: profile?.stripe_customer_id });
-    return payments().createSetupIntent(customerId);
+    const c = parse(countrySchema, country);
+    return payments(c).createSetupIntent(await orders.ensureCustomer(viewer.id, c));
   });
 }
 
-export async function addCard(token: unknown, makeDefault: boolean) {
+export async function addCard(token: unknown, makeDefault: boolean, country: unknown = 'US') {
   return action(async () => {
     const viewer = await requireActor('customer');
-    return orders.addCard(viewer.id, token, makeDefault);
+    return orders.addCard(viewer.id, token, makeDefault, parse(countrySchema, country));
   });
 }
 
@@ -101,3 +104,25 @@ export async function setDefaultCard(cardId: number) {
   });
 }
 
+
+// ---- Home area (ZIP or postal code): the deals page opens around it.
+
+export async function updateHomeArea(postal: unknown) {
+  return action(async () => {
+    const viewer = await requireActor('customer');
+    return saveHomeArea(viewer.id, viewer.country, String(postal ?? ''));
+  });
+}
+
+// Finds a ZIP or postal code typed in the deals search that the app's own ZIP list doesn't know.
+export async function locatePostal(query: unknown) {
+  return action(async () => {
+    await requireActor('customer');
+    const q = String(query ?? '').trim();
+    const country = /^[A-Za-z]\d[A-Za-z]/.test(q) ? 'CA' : 'US';
+    const code = normalizePostal(country, q);
+    if (!code) return null;
+    const spot = await geocodePostal(country, code);
+    return spot ? { ...spot, label: code } : null;
+  });
+}

@@ -1,0 +1,75 @@
+// Canada: orders at Canadian restaurants are in Canadian dollars, through the Canadian payment account, with cards saved
+// for Canada; customers' ZIP or postal codes place them on the deals map.
+import { describe, expect, it } from 'vitest';
+import { saveHomeArea } from '@/lib/home-area';
+import * as orders from '@/lib/orders';
+import { admin, CANADIAN_CUSTOMER, restaurantWithOffer, signUp, supabaseAvailable, visa } from '../support/db';
+
+const available = await supabaseAvailable();
+const db = () => admin();
+const pinOf = async (orderId: number) => (await db().from('order_pins').select('pin').eq('order_id', orderId).single()).data!.pin;
+
+describe.skipIf(!available)('Canadian dollars', () => {
+  it('charges an order at a Canadian restaurant in Canadian dollars and saves the card for Canada', async () => {
+    const shop = await restaurantWithOffer({ canada: true });
+    const c = await signUp('customer', CANADIAN_CUSTOMER);
+    const res = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 0, newCard: { ...visa, save: true } });
+    const o = await orders.getOrder(res.orderId);
+    expect(o.currency).toBe('cad');
+    const cards = (await db().from('payment_methods').select('country, is_default').eq('user_id', c.id)).data!;
+    expect(cards).toEqual([{ country: 'CA', is_default: true }]);
+
+    // Picked up: captured, and the restaurant's share is recorded in Canadian dollars.
+    const claimed = await shop.owner.client.rpc('restaurant_begin_pickup', { p_pin: await pinOf(o.id), p_order_id: o.id });
+    expect(claimed.error).toBeNull();
+    await orders.completePickup(claimed.data as { id: number; paymentRef: string | null; destinationAccount: string | null });
+    expect((await orders.getOrder(o.id)).status).toBe('picked_up');
+  });
+
+  it("doesn't use a card saved for the US at a Canadian restaurant", async () => {
+    const us = await restaurantWithOffer();
+    const ca = await restaurantWithOffer({ canada: true });
+    const c = await signUp('customer');
+    await orders.checkout(c.id, { offerId: us.offer.id, quantity: 1, creditCents: 0, newCard: { ...visa, save: true } });
+    const card = (await db().from('payment_methods').select('id, country').eq('user_id', c.id).single()).data!;
+    expect(card.country).toBe('US');
+    expect((await orders.getOrder((await db().from('orders').select('id').eq('user_id', c.id).single()).data!.id)).currency).toBe('usd');
+    await expect(orders.checkout(c.id, { offerId: ca.offer.id, quantity: 1, creditCents: 0, cardId: card.id })).rejects.toThrow();
+  });
+
+  it('only lets credit pay at restaurants in the customer\'s own country', async () => {
+    const ca = await restaurantWithOffer({ canada: true });
+    const c = await signUp('customer'); // a US customer: their credit is in US dollars
+    await db().from('credit_ledger').insert({ user_id: c.id, amount_cents: 5000, kind: 'goodwill', note: 'test' });
+    await expect(orders.checkout(c.id, { offerId: ca.offer.id, quantity: 1, creditCents: 500, newCard: visa })).rejects.toThrow(/credit/i);
+  });
+
+  it('shows Canadian offers with their country, found by postal code', async () => {
+    const ca = await restaurantWithOffer({ canada: true });
+    const c = await signUp('customer', CANADIAN_CUSTOMER);
+    const { data, error } = await c.client.rpc('search_offers', { p_area_text: 'm5v3l9' });
+    expect(error).toBeNull();
+    const row = data!.find((o) => o.id === ca.offer.id);
+    expect(row?.country).toBe('CA');
+  });
+});
+
+describe.skipIf(!available)('home ZIP and postal codes', () => {
+  it('saves a customer\'s ZIP code with its map position', async () => {
+    const c = await signUp('customer');
+    const saved = await saveHomeArea(c.id, 'US', '98101');
+    expect(saved).toEqual({ postalCode: '98101', located: true });
+    const p = (await db().from('profiles').select('postal_code, home_lat, home_lng').eq('id', c.id).single()).data!;
+    expect(p.postal_code).toBe('98101');
+    expect(p.home_lat).toBeCloseTo(47.6, 0);
+    expect(p.home_lng).toBeCloseTo(-122.3, 0);
+  });
+
+  it('normalizes a Canadian postal code and refuses one that is malformed', async () => {
+    const c = await signUp('customer', CANADIAN_CUSTOMER);
+    const saved = await saveHomeArea(c.id, 'CA', 'm5v3l9');
+    expect(saved.postalCode).toBe('M5V 3L9');
+    await expect(saveHomeArea(c.id, 'CA', '98101')).rejects.toThrow(/postal code/);
+    await expect(saveHomeArea(c.id, 'US', 'M5V 3L9')).rejects.toThrow(/ZIP code/);
+  });
+});

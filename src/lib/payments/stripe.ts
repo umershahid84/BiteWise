@@ -5,7 +5,11 @@ import { PaymentError, type ConnectStatus, type PaymentProvider } from './types'
 // servers. Orders use PaymentIntents with capture_method=manual: the card is authorized at checkout
 // and captured when the restaurant verifies the pickup PIN.
 // `api` points the client at another Stripe-compatible host (tests use stripe-mock).
-export function createStripeProvider(secretKey: string, api?: { host: string; port: number; protocol: 'http' | 'https' }): PaymentProvider {
+// `market`: the Stripe account's country and the currency it charges and pays out in (one account per country).
+export function createStripeProvider(
+  secretKey: string, api?: { host: string; port: number; protocol: 'http' | 'https' },
+  market: { country: 'US' | 'CA'; currency: 'usd' | 'cad' } = { country: 'US', currency: 'usd' },
+): PaymentProvider {
   const stripe = new Stripe(secretKey, { appInfo: { name: 'Bite Wise' }, ...api });
 
   const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -27,6 +31,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
 
   return {
     mode: 'stripe',
+    currency: market.currency,
 
     async ensureCustomer({ email, username, existingId }) {
       if (existingId) return existingId;
@@ -58,7 +63,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
         const intent = await stripe.paymentIntents.create(
           {
             amount: amountCents,
-            currency: 'usd',
+            currency: market.currency,
             capture_method: 'manual',
             payment_method_types: ['card'],
             customer: attached && customerId ? customerId : undefined,
@@ -109,7 +114,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
         const intent = await stripe.paymentIntents.create(
           {
             amount: amountCents,
-            currency: 'usd',
+            currency: market.currency,
             customer: customerId,
             payment_method: paymentRef,
             payment_method_types: ['card'],
@@ -133,7 +138,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
 
     async createConnectedAccount({ email, businessName, restaurantId }) {
       const account = await stripe.accounts.create({
-        country: 'US',
+        country: market.country,
         email,
         business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through Bite Wise' },
         capabilities: { transfers: { requested: true } },
@@ -189,7 +194,7 @@ export function createStripeProvider(secretKey: string, api?: { host: string; po
       const transfer = await stripe.transfers.create(
         {
           amount: amountCents,
-          currency: 'usd',
+          currency: market.currency,
           destination: accountId,
           source_transaction: sourceChargeId ?? undefined,
           description,

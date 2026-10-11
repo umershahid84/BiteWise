@@ -1,5 +1,5 @@
 import type { Receipt } from '@/lib/receipts/data';
-import { money, pct } from '@/lib/format';
+import { money as fmtMoney, pct } from '@/lib/format';
 import { displayPhone } from '@/lib/phone';
 
 // Point-of-sale (80 mm thermal) receipt. The PDF version is drawn by src/lib/receipts/pdf.ts.
@@ -18,6 +18,7 @@ function Barcode({ bars }: { bars: number[] }) {
 }
 
 export function PosReceipt({ r }: { r: Receipt }) {
+  const money = (cents: number) => fmtMoney(cents, r.currency);
   const it = r.item;
   const rest = r.restaurant;
   const paidWith = r.creditAppliedCents

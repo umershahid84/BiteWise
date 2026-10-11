@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { RestaurantDashboard } from '@/components/restaurant/dashboard';
 import { requirePageViewer } from '@/lib/auth';
-import { paymentMode, publicEnv } from '@/lib/env';
+import { paymentConfig, publicEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
 import { prices } from '@/lib/subscriptions';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -29,8 +29,7 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
       staff={viewer.staff}
       serviceFeeBps={Number(fee?.value ?? 500)}
       map={publicEnv.map}
-      paymentMode={paymentMode()}
-      stripePublishableKey={publicEnv.stripePublishableKey}
+      payment={paymentConfig(viewer.restaurant!.country)}
       planNotice={planOk ? null : sub?.status === 'past_due' ? 'delinquent' : 'choose'}
       hasPlan={!!sub && sub.status !== 'expired'}
       pioneerSpotsLeft={foundingLeft}

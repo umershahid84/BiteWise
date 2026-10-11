@@ -2,8 +2,8 @@
 
 import { Card } from '@/components/ui/card';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
-import { money, pct } from '@/lib/format';
-import { DownloadIcons, exportHref, RangePicker, TableHead, useAdmin, type Range, LoadError } from './shared';
+import { pct } from '@/lib/format';
+import { DownloadIcons, exportHref, RangePicker, TableHead, useAdmin, type Range, LoadError, money } from './shared';
 
 type Totals = { taxableCents: number; taxCents: number };
 type Tax = {

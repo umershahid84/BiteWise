@@ -2,15 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { List, LocateFixed, Map as MapIcon } from 'lucide-react';
 import { DemoVideoButton } from '@/components/app/demo-video';
-import type { PaymentConfig } from '@/components/payments/card-entry';
+import { locatePostal } from '@/app/actions/customer';
+import type { PaymentConfigs } from '@/components/payments/card-entry';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/field';
 import { EmptyState, Spinner } from '@/components/ui/misc';
 import { DIETARY_TAGS } from '@/lib/constants';
+import type { Country } from '@/lib/regions';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { CheckoutDialog } from './checkout-dialog';
@@ -46,10 +49,17 @@ function useDebounced<T>(value: T, ms: number) {
   return v;
 }
 
-export function OffersBrowser({ map, payment }: { map: MapConfig; payment: PaymentConfig }) {
+// The customer's home area from their profile (ZIP code or postal code, and where it is when it could be found).
+type Home = { postalCode: string; lat: number | null; lng: number | null };
+
+export function OffersBrowser({ map, payments, country, home }: { map: MapConfig; payments: PaymentConfigs; country: Country; home: Home | null }) {
+  // Without a map position for the code, deals are matched by the code itself (Canada: its first three characters,
+  // the area).
+  const [homeSpot] = useState<Origin | null>(() => (home && home.lat !== null && home.lng !== null ? { lat: home.lat, lng: home.lng, label: `Near ${home.postalCode}` } : null));
+  const homeArea = home && !homeSpot ? (country === 'CA' ? home.postalCode.slice(0, 3) : home.postalCode.slice(0, 5)) : '';
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<Filters>({ q: '', area: '', dietary: '', sort: '', radius: '' });
+  const [filters, setFilters] = useState<Filters>({ q: '', area: homeArea, dietary: '', sort: '', radius: '' });
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [view, setView] = useState<'list' | 'map'>('list');
   const [locating, setLocating] = useState(false);
@@ -60,9 +70,9 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
   // Browser-only session preferences, read after hydration.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOrigin(readSession<Origin | null>('bw-origin', null));
+    setOrigin(readSession<Origin | null>('bw-origin', null) ?? homeSpot);
     setView(readSession<'list' | 'map'>('bw-view', 'list'));
-  }, []);
+  }, [homeSpot]);
 
   // City and ZIP suggestions for the area box.
   const areas = useQuery({
@@ -81,6 +91,11 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
       if (f.area.trim()) {
         const { data } = await supabase.rpc('resolve_area', { p_query: f.area });
         place = data?.[0] ?? null;
+        // A ZIP or postal code from anywhere in the US or Canada.
+        if (!place && /^(\d{5}|[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d)$/.test(f.area.trim())) {
+          const res = await locatePostal(f.area);
+          if (res.ok && res.data) place = res.data;
+        }
       }
       const center = place ?? origin;
       const radius = f.radius ? Number(f.radius) : place ? 10 : undefined;
@@ -89,7 +104,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
         p_area_text: f.area.trim() && !place ? f.area.trim() : undefined, p_dietary: f.dietary || undefined, p_sort: f.sort || undefined,
       });
       if (error) throw new Error(error.message);
-      return { offers: data ?? [], place, radius, center: center ? { ...center, label: place?.label ?? 'You are here' } : null };
+      return { offers: data ?? [], place, radius, center: center ? { ...center, label: place?.label ?? center.label ?? 'You are here' } : null };
     },
   });
 
@@ -140,7 +155,8 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
   // map and the list start around them. Not again if they already said no; and if they allow it later in the
   // browser's settings, the map moves to them straight away.
   useEffect(() => {
-    if (readSession<Origin | null>('bw-origin', null) || !navigator.geolocation) return;
+    // A customer with a home ZIP or postal code starts there; "Use my location" still switches to where they are.
+    if (homeSpot || homeArea || readSession<Origin | null>('bw-origin', null) || !navigator.geolocation) return;
     let status: PermissionStatus | null = null;
     let cancelled = false;
     const onChange = () => { if (status?.state === 'granted') locate(true); };
@@ -157,7 +173,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
       cancelled = true;
       status?.removeEventListener('change', onChange);
     };
-  }, [locate]);
+  }, [locate, homeSpot, homeArea]);
 
   const list = offers.data?.offers ?? [];
   // The map re-fits once per search, when that search's results have arrived (not to the previous results shown
@@ -187,7 +203,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
 
       <form className="mb-3 grid gap-3 rounded-card border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-[1.4fr_1.2fr_repeat(3,minmax(10.5rem,1fr))_auto]" onSubmit={(e) => e.preventDefault()}>
         <Input placeholder="Search dishes, restaurants, cuisines…" aria-label="Search" value={filters.q} onChange={set('q')} />
-        <Input placeholder="City or ZIP code" aria-label="City or ZIP" list="area-list" value={filters.area} onChange={set('area')} />
+        <Input placeholder={country === 'CA' ? 'City or postal code' : 'City or ZIP code'} aria-label="City, ZIP or postal code" list="area-list" value={filters.area} onChange={set('area')} />
         <datalist id="area-list">
           {cities.map(([c, county]) => <option key={c} value={c}>{county} County</option>)}
           {(areas.data ?? []).map((z) => <option key={z.zip} value={z.zip}>{z.city}</option>)}
@@ -208,12 +224,17 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
           <option value="ending">Ending soon</option>
         </Select>
         <Button type="button" variant="ghost" onClick={() => locate()} disabled={locating}>
-          <LocateFixed /> {locating ? 'Locating…' : origin ? 'Location on' : 'Use my location'}
+          <LocateFixed /> {locating ? 'Locating…' : origin?.label ? 'Use my location' : origin ? 'Location on' : 'Use my location'}
         </Button>
       </form>
       {offers.data?.place && (
         <p className="mb-3 text-sm text-muted">
           Showing deals within {offers.data.radius} miles of {offers.data.place.label}. Change the distance filter to widen the search.
+        </p>
+      )}
+      {!offers.data?.place && origin && origin === homeSpot && home && (
+        <p className="mb-3 text-sm text-muted">
+          Nearest deals first, from your {country === 'CA' ? 'postal code' : 'ZIP code'} <b>{home.postalCode}</b>. <Link href="/account">Change it</Link> or use your current location.
         </p>
       )}
       {geoError && <Alert tone="warn" className="mb-3">{geoError}</Alert>}
@@ -233,7 +254,7 @@ export function OffersBrowser({ map, payment }: { map: MapConfig; payment: Payme
           <EmptyState title="No deals match right now">New surplus food is posted throughout the day. Check back soon or widen your search.</EmptyState>
         )
       )}
-      <CheckoutDialog offer={selected} origin={offers.data?.center ?? origin} payment={payment} onClose={() => setSelected(null)} />
+      <CheckoutDialog offer={selected} origin={offers.data?.center ?? origin} payments={payments} country={country} onClose={() => setSelected(null)} />
     </main>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import type { PaymentConfig } from '@/components/payments/card-entry';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -32,13 +33,13 @@ const OWNER_TABS = ['payouts', 'kiosk', 'plan', 'profile', 'staff'];
 
 // The restaurant portal, for the owner and their staff. Staff (`staff` set) get Verify pickup, Offers, Menu and
 // Orders, without sales amounts; payouts, kiosk, plan, profile and staff accounts are the owner's.
-export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, paymentMode, stripePublishableKey, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
+export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, payment, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
   restaurant: Restaurant;
   staff: { fullName: string; title: string } | null;
   serviceFeeBps: number;
   map: MapConfig;
-  paymentMode: 'stripe' | 'mock';
-  stripePublishableKey: string;
+  // The Stripe account of the restaurant's country (US dollars or Canadian dollars).
+  payment: PaymentConfig;
   planNotice: 'choose' | 'delinquent' | null;
   hasPlan: boolean;
   pioneerSpotsLeft: number;
@@ -55,7 +56,7 @@ export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, pay
   const [soundOn, setSoundOn] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
   const seen = useRef(new Set<number>());
-  const ctx: Ctx = { restaurant, serviceFeeBps, map, paymentMode };
+  const ctx: Ctx = { restaurant, serviceFeeBps, map, paymentMode: payment.mode };
 
   const stats = useQuery({
     queryKey: ['restaurant-stats'],
@@ -227,7 +228,7 @@ export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, pay
           <>
             <TabsContent value="payouts"><PayoutsPanel ctx={ctx} stripeReturn={stripeReturn} /></TabsContent>
             <TabsContent value="kiosk"><KioskPanel approved={restaurant.status === 'approved'} /></TabsContent>
-            <TabsContent value="plan"><PlanPanel payment={{ mode: paymentMode, publishableKey: stripePublishableKey }} approved={restaurant.status === 'approved'} /></TabsContent>
+            <TabsContent value="plan"><PlanPanel payment={payment} approved={restaurant.status === 'approved'} /></TabsContent>
             <TabsContent value="staff"><StaffPanel /></TabsContent>
             <TabsContent value="profile"><ProfilePanel ctx={ctx} /></TabsContent>
           </>

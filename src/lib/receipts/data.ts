@@ -4,7 +4,7 @@ import type { Database } from '@/lib/database.types';
 import { ORDER_STATUS_LABELS } from '@/lib/constants';
 import { serverEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
-import { money } from '@/lib/format';
+import { currencyOf, money as fmtMoney } from '@/lib/format';
 import { refundableTotalCents } from '@/lib/pricing';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { dayRange, formatDateTime, formatTime } from './time';
@@ -30,6 +30,7 @@ export type Receipt = Awaited<ReturnType<typeof receiptData>>;
 
 // Everything shown on a customer receipt (web page and PDF).
 export async function receiptData(order: Order) {
+  const money = (cents: number) => fmtMoney(cents, order.currency);
   const tz = serverEnv.timeZone;
   const db = supabaseAdmin();
   const [restaurant, customer, refunds, pin] = await Promise.all([
@@ -45,6 +46,8 @@ export async function receiptData(order: Order) {
   return {
     receiptNumber: number,
     orderId: order.id,
+    // US dollars or Canadian dollars: the restaurant's country.
+    currency: order.currency,
     status: order.status,
     statusLabel: ORDER_STATUS_LABELS[order.status],
     paymentStatus:
@@ -106,7 +109,7 @@ export async function reportData(restaurantId: number, date: string) {
   const tz = serverEnv.timeZone;
   const { start, end } = dayRange(date, tz);
   const db = supabaseAdmin();
-  const restaurant = must(await db.from('restaurants').select('name, address, city, zip, phone').eq('id', restaurantId).single());
+  const restaurant = must(await db.from('restaurants').select('name, address, city, zip, phone, country').eq('id', restaurantId).single());
   const rows = must(
     await db.from('orders').select('*').eq('restaurant_id', restaurantId)
       .not('status', 'in', '(pending_payment,failed)')
@@ -118,6 +121,7 @@ export async function reportData(restaurantId: number, date: string) {
   const count = (s: Order['status']) => rows.filter((o) => o.status === s).length;
   return {
     date,
+    currency: currencyOf(restaurant.country),
     dateText: new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }),
     generatedAtText: formatDateTime(new Date().toISOString(), tz),
     restaurant,

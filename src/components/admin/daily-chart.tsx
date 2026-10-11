@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { money } from '@/lib/format';
+import { money } from './shared';
 
 type Day = { date: string; orders: number; meals: number; gmvCents: number; feesCents: number; foodCents: number };
 

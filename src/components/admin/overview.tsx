@@ -3,9 +3,8 @@
 import { Alert } from '@/components/ui/alert';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Kpi, SectionLabel, Spinner, Table } from '@/components/ui/misc';
-import { money } from '@/lib/format';
 import { DailyChart } from './daily-chart';
-import { day, RangePicker, useAdmin, type Range } from './shared';
+import { day, RangePicker, useAdmin, type Range, money } from './shared';
 
 type Overview = {
   range: Range;

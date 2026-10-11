@@ -27,6 +27,8 @@ export type ConnectStatus = {
 
 export interface PaymentProvider {
   mode: 'stripe' | 'mock';
+  // The currency this processor charges and pays out in (its Stripe account's country).
+  currency: 'usd' | 'cad';
 
   ensureCustomer(p: { email: string; username: string; existingId?: string | null }): Promise<string>;
   createSetupIntent(customerId: string): Promise<{ clientSecret: string | null }>;

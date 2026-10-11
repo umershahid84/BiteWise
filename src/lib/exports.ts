@@ -34,6 +34,8 @@ export type Report = {
 const usd = (c: { cents: number }) => money(c.cents);
 export const cellText = (c: Cell, csv: boolean) => (typeof c === 'object' ? (csv ? dollars(c.cents) : usd(c)) : String(c));
 const cents = (n: number) => ({ cents: n });
+// Money reports cover one country: US dollars or Canadian dollars.
+const marketText = (p: URLSearchParams) => (admin.marketOf(p).country === 'CA' ? 'Canada · amounts in CAD' : 'United States · amounts in USD');
 const tz = () => serverEnv.timeZone;
 const when = (iso: string | null | undefined) => (iso ? formatDateTime(iso, tz()) : '');
 const dateOnly = (iso: string | null | undefined) =>
@@ -108,7 +110,7 @@ async function ordersReport(p: URLSearchParams): Promise<Report> {
   return {
     file: `orders-${r.from}-to-${r.to}`,
     title: 'Orders',
-    subtitle: filters(rangeText(r), status && `Status: ${ORDER_STATUS_LABELS[status] ?? status}`, p.get('q') && `Search: “${p.get('q')}”`, `${rows.length} orders`),
+    subtitle: filters(marketText(p), rangeText(r), status && `Status: ${ORDER_STATUS_LABELS[status] ?? status}`, p.get('q') && `Search: “${p.get('q')}”`, `${rows.length} orders`),
     tables: [{
       id: 'orders',
       title: 'Orders',
@@ -133,14 +135,14 @@ async function ordersReport(p: URLSearchParams): Promise<Report> {
   };
 }
 
-async function payoutsReport(): Promise<Report> {
-  const x = await admin.payouts();
+async function payoutsReport(p: URLSearchParams): Promise<Report> {
+  const x = await admin.payouts(p);
   const owed = x.balances.reduce((n, b) => n + Math.max(0, b.balanceCents), 0);
   const paid = x.history.reduce((n, h) => n + h.amount_cents, 0);
   return {
     file: 'payouts',
     title: 'Payouts',
-    subtitle: `${x.balances.length} restaurants · ${x.history.length} payouts`,
+    subtitle: `${marketText(p)} · ${x.balances.length} restaurants · ${x.history.length} payouts`,
     figures: [['Owed to restaurants', money(owed)], ['Paid out (history)', money(paid)], ['Restaurants', String(x.balances.length)], ['Payouts', String(x.history.length)]],
     tables: [
       {
@@ -179,7 +181,7 @@ async function taxReport(p: URLSearchParams): Promise<Report> {
   return {
     file: `sales-tax-${t.range.from}-to-${t.range.to}`,
     title: 'Sales tax',
-    subtitle: `${rangeText(t.range)} · for the Washington excise tax return`,
+    subtitle: `${marketText(p)} · ${rangeText(t.range)} · for the ${t.country === 'CA' ? 'GST/HST and provincial sales tax returns' : 'state sales tax returns'}`,
     figures: [
       ['Sales tax Bite Wise remits', money(t.allTotals.taxCents)], ['On food orders', money(t.totals.taxCents)],
       ['On plan fees', money(t.planTotals.taxCents)], ['Taxable sales and fees', money(t.allTotals.taxableCents)],
@@ -223,7 +225,7 @@ const REPORTS: Record<string, (p: URLSearchParams) => Promise<Report>> = {
   restaurants: restaurantsReport,
   users: usersReport,
   orders: ordersReport,
-  payouts: () => payoutsReport(),
+  payouts: (p) => payoutsReport(p),
   tax: taxReport,
   audit: () => auditReport(),
 };

@@ -1,7 +1,9 @@
 // Display helpers shared by server and client code.
 
-export const money = (cents: number) =>
-  (cents / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+// US dollars show as "$12.50", Canadian dollars as "CA$12.50" (orders are in the restaurant's currency).
+export const money = (cents: number, currency?: string | null) =>
+  (cents / 100).toLocaleString('en-US', { style: 'currency', currency: currency?.toLowerCase() === 'cad' ? 'CAD' : 'USD' });
+export const currencyOf = (country?: string | null) => (country === 'CA' ? 'cad' : 'usd');
 
 // 1035 -> "10.35%", 500 -> "5%"
 export const pct = (bps: number) => `${(bps / 100).toFixed(2).replace(/\.?0+$/, '')}%`;

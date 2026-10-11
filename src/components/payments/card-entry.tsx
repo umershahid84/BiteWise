@@ -9,7 +9,11 @@ import { Field, Input } from '@/components/ui/field';
 // and never reach Bite Wise. In mock mode (no Stripe keys), only brand, last 4 digits and expiry
 // leave the browser.
 
-export type PaymentConfig = { mode: 'stripe' | 'mock'; publishableKey: string };
+// One per country: US cards are saved with the US Stripe account (US dollars), Canadian ones with the Canadian
+// account (Canadian dollars). 'off': that country's Stripe account isn't set up yet.
+export type PaymentConfig = { mode: 'stripe' | 'mock' | 'off'; publishableKey: string };
+export type PaymentConfigs = { US: PaymentConfig; CA: PaymentConfig };
+export const PAYMENTS_OFF = 'Card payments for this country aren\'t available yet. Please try again later.';
 
 export type CardEntryHandle = {
   // A Stripe PaymentMethod id (pm_...) or, in mock mode, { brand, last4, expMonth, expYear }.
@@ -20,8 +24,17 @@ export type CardEntryHandle = {
   confirmSetup(clientSecret: string | null): Promise<unknown>;
 };
 
-let stripePromise: Promise<Stripe | null> | null = null;
-const getStripe = (key: string) => (stripePromise ??= loadStripe(key));
+const stripes = new Map<string, Promise<Stripe | null>>();
+const getStripe = (key: string) => {
+  if (!stripes.has(key)) stripes.set(key, loadStripe(key));
+  return stripes.get(key)!;
+};
+
+function PaymentsOff({ ref }: { ref: React.Ref<CardEntryHandle> }) {
+  const fail = async (): Promise<never> => { throw new Error(PAYMENTS_OFF); };
+  useImperativeHandle(ref, () => ({ getToken: fail, handleAction: fail, confirmSetup: fail }));
+  return <div className="rounded-xl border border-dashed border-line px-3 py-2 text-sm text-muted">{PAYMENTS_OFF}</div>;
+}
 
 function luhn(num: string) {
   let sum = 0;
@@ -82,7 +95,7 @@ function MockCardEntry({ ref }: { ref: React.Ref<CardEntryHandle> }) {
         <Field label="CVC" htmlFor="cc-cvc">
           <Input id="cc-cvc" inputMode="numeric" autoComplete="cc-csc" placeholder="123" maxLength={4} value={cvc} onChange={(e) => setCvc(e.target.value)} />
         </Field>
-        <Field label="ZIP" htmlFor="cc-zip"><Input id="cc-zip" inputMode="numeric" autoComplete="postal-code" placeholder="98101" maxLength={10} /></Field>
+        <Field label="ZIP / Postal" htmlFor="cc-zip"><Input id="cc-zip" autoComplete="postal-code" placeholder="ZIP or postal code" maxLength={10} /></Field>
       </div>
       <div className="rounded-xl border border-dashed border-line px-3 py-2 text-xs text-muted">
         🧪 <b>Test mode</b>: no real charges. Use <code>4242 4242 4242 4242</code>, any future date and any CVC.{' '}
@@ -152,8 +165,9 @@ function useThemeColors() {
 
 export function CardEntry({ config, ref }: { config: PaymentConfig; ref: React.Ref<CardEntryHandle> }) {
   if (config.mode === 'mock') return <MockCardEntry ref={ref} />;
+  if (config.mode === 'off') return <PaymentsOff ref={ref} />;
   return (
-    <Elements stripe={getStripe(config.publishableKey)}>
+    <Elements key={config.publishableKey} stripe={getStripe(config.publishableKey)}>
       <StripeFields ref={ref} />
     </Elements>
   );

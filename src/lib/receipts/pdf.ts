@@ -2,7 +2,9 @@ import 'server-only';
 import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { code128 } from '@/lib/code128';
-import { money, pct } from '@/lib/format';
+import { money as fmtMoney, pct } from '@/lib/format';
+
+const money = (cents: number) => fmtMoney(cents);
 import type { Receipt, Report } from './data';
 import type { PlanInvoice } from './plan-invoice';
 import type { Income } from '@/lib/admin';
@@ -50,6 +52,7 @@ function finish(doc: Doc): Promise<Buffer> {
 
 // Draws the thermal-style receipt in black ink and returns the y position where it ends.
 function drawPosReceipt(doc: Doc, rc: Receipt) {
+  const money = (cents: number) => fmtMoney(cents, rc.currency);
   const L = ROLL_MARGIN;
   const R = ROLL_WIDTH - ROLL_MARGIN;
   const W = R - L;
@@ -208,6 +211,7 @@ function rule(doc: Doc, x1: number, x2: number, y: number) {
 }
 
 export function reportPdf(rep: Report) {
+  const money = (cents: number) => fmtMoney(cents, rep.currency);
   const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `Bite Wise daily report ${rep.date}`, Author: 'Bite Wise' } });
   fonts(doc);
   const L = 40;
@@ -281,6 +285,7 @@ export function reportPdf(rep: Report) {
 // ---------------------------------------------------------------- restaurant plan invoice
 
 export function planInvoicePdf(inv: PlanInvoice) {
+  const money = (cents: number) => fmtMoney(cents, inv.currency);
   const doc = new PDFDocument({ size: 'LETTER', margin: 54, info: { Title: `Bite Wise invoice ${inv.number}`, Author: 'Bite Wise' } });
   fonts(doc);
   const L = 54;

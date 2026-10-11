@@ -9,8 +9,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState, Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { OFFER_REASONS, offerStatus, type OfferReason } from '@/lib/constants';
-import { money } from '@/lib/format';
-import { run, useAdmin, LoadError } from './shared';
+import { run, useAdmin, LoadError, money } from './shared';
 
 type Offer = {
   id: number; title: string; reason: OfferReason; discount_pct: number; price_cents: number; original_price_cents: number; quantity_available: number;

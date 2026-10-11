@@ -7,14 +7,27 @@ import { FileSpreadsheet, FileText } from 'lucide-react';
 import { sendToLogin } from '@/components/app/session-watch';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { money as fmtMoney } from '@/lib/format';
 
 const tz = 'America/Los_Angeles';
 export const todayPT = () => new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
 export const daysAgo = (n: number) => new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date(Date.now() - n * 86400000));
 export type Range = { from: string; to: string };
 
+// The money tabs show one country at a time: the United States in US dollars or Canada in Canadian dollars (the
+// switch at the top of the console). Every request and download carries it as ?country=.
+export type Market = 'US' | 'CA';
+let market: Market = 'US';
+export const currentMarket = () => market;
+export const setMarket = (m: Market) => { market = m; };
+export const MarketContext = createContext<Market>('US');
+export const useMarket = () => useContext(MarketContext);
+// Amounts in the console's currency: "$1,234.50" or "CA$1,234.50".
+export const money = (cents: number) => fmtMoney(cents, market === 'CA' ? 'cad' : 'usd');
+
 export async function adminGet<T>(resource: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
-  const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
+  const all: Record<string, string | number | undefined> = { country: market, ...params };
+  const qs = new URLSearchParams(Object.entries(all).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
   const res = await fetch(`/api/admin/${resource}?${qs}`);
   const data = await res.json().catch(() => ({ error: `The server didn't answer properly (error ${res.status}). Please try again in a minute.` }));
   if (res.status === 401) sendToLogin(); // the session ended while the console was open
@@ -23,7 +36,8 @@ export async function adminGet<T>(resource: string, params: Record<string, strin
 }
 
 export function useAdmin<T>(key: QueryKey, resource: string, params: Record<string, string | number | undefined> = {}, o: { refetchInterval?: number } = {}) {
-  return useQuery({ queryKey: ['admin', ...key], queryFn: () => adminGet<T>(resource, params), refetchInterval: o.refetchInterval });
+  const m = useMarket();
+  return useQuery({ queryKey: ['admin', ...key, m], queryFn: () => adminGet<T>(resource, params), refetchInterval: o.refetchInterval });
 }
 
 // Shown instead of a tab's content when its data couldn't be loaded, so a tab never just spins.
@@ -84,7 +98,7 @@ export function DownloadIcons({ csv, pdf, what }: { csv?: string; pdf?: string; 
 
 // Link to a download from /api/admin/export/<kind> with the tab's current filters.
 export function exportHref(kind: string, params: Record<string, string | number | undefined>, format: 'csv' | 'pdf', section?: string) {
-  const all = { ...params, format, section };
+  const all = { country: market, ...params, format, section };
   const qs = new URLSearchParams(Object.entries(all).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
   return `/api/admin/export/${kind}?${qs}`;
 }

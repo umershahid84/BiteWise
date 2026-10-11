@@ -1,10 +1,27 @@
-import { describe, expect, it } from 'vitest';
-import { geocodeAddress } from '@/lib/geocode';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { geocodeAddress, geocodePostal } from '@/lib/geocode';
 import { displayPhone, formatPhoneInput } from '@/lib/phone';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 const seattle = { lat: 47.61, lng: -122.33 };
 const address = { address: '1410 2nd Ave', city: 'Seattle', zip: '98101' };
+
+// These tests answer the lookups themselves (no internet), so lookups are on here.
+beforeAll(() => {
+  delete process.env.GEOCODING;
+});
+
+describe('postal code lookup', () => {
+  it('finds a Canadian postal code, falling back to its area (first three characters)', async () => {
+    const urls: string[] = [];
+    const fetcher = (async (url: string) => {
+      urls.push(url);
+      return json(url.includes('postalcode=M5V+3L9') ? [] : [{ lat: '43.6426', lon: '-79.3871' }]);
+    }) as unknown as typeof fetch;
+    expect(await geocodePostal('CA', 'M5V 3L9', { fetcher })).toEqual({ lat: 43.6426, lng: -79.3871 });
+    expect(urls[1]).toContain('postalcode=M5V&countrycodes=ca');
+  });
+});
 
 describe('address lookup', () => {
   it('uses the US Census geocoder first', async () => {

@@ -13,10 +13,11 @@ import { Field, Input, Select } from '@/components/ui/field';
 import { Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { money } from '@/lib/format';
+import { currencyOf, money } from '@/lib/format';
 import { day, run, TableHead, useAccess, useAdmin, LoadError } from './shared';
 
 type User = {
+  country: 'US' | 'CA';
   id: string; email: string; username: string; role: string; status: 'active' | 'suspended' | 'banned' | 'deleted'; suspendedUntil: string | null; createdAt: string; orders: number; spentCents: number; noShowStreak: number; noShowProbation: boolean;
   noShows: number; creditCents: number; termsAcceptedAt: string | null; emailConfirmed: boolean; welcomeEmailSentAt: string | null;
 };
@@ -63,13 +64,13 @@ export function UsersPanel({ adminId }: { adminId: string }) {
                       {u.role !== 'staff' && !u.emailConfirmed && <Badge tone="amber">Email not confirmed</Badge>}
                       {u.role === 'customer' && u.emailConfirmed && <div className="text-xs text-muted">{u.welcomeEmailSentAt ? `Welcome email sent ${day(u.welcomeEmailSentAt)}` : 'Welcome email not sent'}</div>}
                     </td>
-                    <td>{u.orders}</td><td>{money(u.spentCents)}</td>
+                    <td>{u.orders}</td><td>{money(u.spentCents, currencyOf(u.country))}</td>
                     <td>
                       {u.noShows}
                       {u.noShowStreak > 0 && u.status === 'active' && <div className="text-xs text-accent-ink">{u.noShowStreak} in a row</div>}
                       {u.noShowProbation && u.status !== 'banned' && <div className="text-xs text-danger" title="Suspended before for missed pickups: the next one bans the account">final warning</div>}
                     </td>
-                    <td className="text-accent-ink">{u.creditCents ? money(u.creditCents) : '–'}</td>
+                    <td className="text-accent-ink">{u.creditCents ? money(u.creditCents, currencyOf(u.country)) : '–'}</td>
                     <td className="text-xs">{day(u.termsAcceptedAt) || '–'}</td>
                     <td>
                       <StatusBadge status={u.status} />

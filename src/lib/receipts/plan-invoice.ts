@@ -20,6 +20,7 @@ export function planInvoice(x: Payment, restaurant: Restaurant) {
   return {
     id: x.id,
     number: x.invoice_number ?? '',
+    currency: x.currency,
     dateText: day(x.created_at),
     restaurant,
     from: serverEnv.legal,

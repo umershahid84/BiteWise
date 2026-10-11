@@ -46,7 +46,8 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
       password: get('password'),
       country,
       region: role === 'restaurant' ? get('r-state') : get('region'),
-      city: role === 'restaurant' ? get('r-city') : get('city'),
+      city: role === 'restaurant' ? get('r-city') : '',
+      postal: role === 'restaurant' ? '' : get('postal'),
       restaurant: role === 'restaurant'
         ? { name: get('r-name'), address: get('r-address'), city: get('r-city'), state: get('r-state'), zip: get('r-zip'), country, phone: get('r-phone'), cuisine: get('r-cuisine') }
         : undefined,
@@ -115,10 +116,19 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
           <CountrySelect id="country" value={country} onChange={(e) => setCountry(e.target.value as Country)} />
         </Field>
         {role === 'customer' && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={c.regionLabel} htmlFor="region"><StateSelect key={country} id="region" name="region" country={country} defaultValue="" /></Field>
-            <Field label="City" htmlFor="city"><Input id="city" name="city" autoComplete="address-level2" /></Field>
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={c.regionLabel} htmlFor="region"><StateSelect key={country} id="region" name="region" country={country} defaultValue="" /></Field>
+              <Field label={c.postalLabel} htmlFor="postal">
+                <Input
+                  key={country} id="postal" name="postal" autoComplete="postal-code" required
+                  inputMode={country === 'US' ? 'numeric' : 'text'} maxLength={country === 'US' ? 10 : 7}
+                  placeholder={country === 'US' ? '98101' : 'A1A 1A1'} className={country === 'CA' ? 'uppercase' : undefined}
+                />
+              </Field>
+            </div>
+            <p className="-mt-1 text-xs text-muted">We show the deals closest to your {c.postalLabel} first. You can change it any time in your account.</p>
+          </>
         )}
         {role === 'restaurant' && (
           <>

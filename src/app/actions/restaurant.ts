@@ -16,7 +16,6 @@ import { storePhoto } from '@/lib/photos';
 import { refreshRestaurantTax } from '@/lib/restaurant-tax';
 import { createStaff, listStaff, removeStaff, updateStaff } from '@/lib/staff';
 import * as subscriptions from '@/lib/subscriptions';
-import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
 import { checkAddress, countrySchema, menuItemSchema, parse, passwordSchema, restaurantProfileSchema, usernameSchema } from '@/lib/validate';
 
@@ -136,7 +135,7 @@ export async function startStripeOnboarding() {
   return action(async () => {
     const { viewer, restaurant } = await requireRestaurant();
     const url = await orders.connectOnboardingLink(restaurant.id, viewer.email, restaurant.name, publicEnv.siteUrl);
-    if (payments().mode === 'mock') await orders.refreshConnectStatus(restaurant.id);
+    if (payments(restaurant.country).mode === 'mock') await orders.refreshConnectStatus(restaurant.id);
     return { url };
   });
 }
@@ -153,12 +152,13 @@ export async function stripeDashboardLink() {
   return action(async () => {
     const { restaurant } = await requireRestaurant();
     const supabase = await supabaseServer();
-    if (payments().mode === 'mock') {
+    const pay = payments(restaurant.country);
+    if (pay.mode === 'mock') {
       throw new AppError(409, 'Payouts are in test mode on Bite Wise right now, so there is no real Stripe account or dashboard yet. Your earnings are recorded and will be paid once Bite Wise switches on live payments.');
     }
     const acct = maybe(await supabase.from('restaurant_payment_accounts').select('stripe_account_id').eq('restaurant_id', restaurant.id).maybeSingle());
     if (!acct?.stripe_account_id || isTestStripeAccount(acct.stripe_account_id)) throw new AppError(409, 'Set up payouts with Stripe first.');
-    const url = await payments().dashboardLink(acct.stripe_account_id);
+    const url = await pay.dashboardLink(acct.stripe_account_id);
     if (!url) throw new AppError(409, 'Finish Stripe onboarding to open your dashboard.');
     return { url };
   });
@@ -204,11 +204,9 @@ export async function getPlan() {
 // With Stripe, the plan's card is confirmed in the browser first (SetupIntent), so renewals can charge it later.
 export async function createPlanSetupIntent() {
   return action(async () => {
-    const { viewer } = await requireRestaurant();
-    const profile = maybe(await supabaseAdmin().from('profiles').select('stripe_customer_id').eq('id', viewer.id).maybeSingle());
-    const customerId = await payments().ensureCustomer({ email: viewer.email, username: viewer.username, existingId: profile?.stripe_customer_id });
-    if (customerId !== profile?.stripe_customer_id) await supabaseAdmin().from('profiles').update({ stripe_customer_id: customerId }).eq('id', viewer.id);
-    return payments().createSetupIntent(customerId);
+    const { viewer, restaurant } = await requireRestaurant();
+    // Plan fees go through the Stripe account of the restaurant's country, in its currency.
+    return payments(restaurant.country).createSetupIntent(await orders.ensureCustomer(viewer.id, restaurant.country));
   });
 }
 

@@ -13,7 +13,7 @@
 import type { Role } from '@/lib/constants';
 import type { Country } from '@/lib/regions';
 
-export const LEGAL_VERSION = '2026-10-18.1';
+export const LEGAL_VERSION = '2026-10-19.1';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
@@ -87,7 +87,8 @@ your order, it is yours as is (Section 6).</p>
 <h2>4. Ordering, pricing and payment</h2>
 <p>4.1 <b>Prices.</b> Before you place an order, we show you the item's original price, the Restaurant's discount, the discounted
 price, a Bite Wise service fee (currently ${c.serviceFeePct}% of the food subtotal), applicable sales tax, and the total.
-${t(j, 'Prices are in U.S. dollars.', 'Prices are in the currency shown at checkout.')}</p>
+Orders are charged in the currency of the Restaurant's country: U.S. dollars at Restaurants in the United States and Canadian
+dollars at Restaurants in Canada. If your card is in another currency, your card issuer may charge its own conversion fees.</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold
 on your debit or credit card for the order total. <b>Your card is charged only when the Restaurant confirms pickup by entering your
 PIN.</b> If you cancel an order or do not pick it up, the hold is released except for the service fee, which is charged as described
@@ -173,6 +174,8 @@ to your account.</p>
   your card, and the card portion must be at least $0.50.</li>
   <li><b>Unused orders:</b> credit applied to an order that is cancelled, declined or not picked up is returned to your balance, less any
   part of the non-refundable service fee it paid (Section 4.6).</li>
+  <li><b>Currency:</b> Platform Credit is in the currency of your country of residence (U.S. dollars in the United States, Canadian
+  dollars in Canada) and can be used only at Restaurants in that country.</li>
   <li><b>Restrictions:</b> Platform Credit has no cash value, cannot be purchased, reloaded, sold or transferred, and cannot be redeemed
   for cash except where required by law.</li>
   <li><b>Expiry:</b> it does not expire while your account is open and in good standing. If we close your account for fraud or a serious
@@ -387,7 +390,7 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   invoice that shows the plan price, a Pioneer Members Discount of the same amount, and a total of $0.00; no card is needed. Pioneer
   status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
-  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). ${t(j, 'Prices are in US dollars and exclude taxes.', 'Prices are in the currency shown in the Partner Portal and exclude taxes.')}</li>
+  (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). ${t(j, 'Prices are in U.S. dollars and exclude taxes.', 'Prices are in Canadian dollars and exclude taxes.')} Orders at the Restaurant, plan fees and payouts are in the currency of the Restaurant's country.</li>
   <li><b>Sales tax.</b> ${t(j, `Where your state taxes software subscriptions, sales tax is added to every plan payment at the combined
   state and local rate for your restaurant's location, and is shown separately on each invoice. Bite Wise collects it and remits it to
   the state tax authority.`, `Where Bite Wise is registered to collect it, the GST/HST (and the QST in Quebec, or provincial sales tax

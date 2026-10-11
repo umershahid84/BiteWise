@@ -8,6 +8,7 @@ import { dayKey, dayRange, todayIn } from '@/lib/receipts/time';
 import * as feeChanges from '@/lib/fee-changes';
 import { feeTaxCents, nonRefundableCents, refundableTotalCents } from '@/lib/pricing';
 import { prices } from '@/lib/subscriptions';
+import type { Country } from '@/lib/regions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Owner/admin console data. Callers must check that the user is an admin first (see requireActor('admin')).
@@ -59,30 +60,37 @@ export function range(params: URLSearchParams, days = 30) {
   return { from, to, start: dayRange(from, tz()).start, end: dayRange(to, tz()).end };
 }
 
+// The money reports show one country at a time (?country=US or CA): US dollars and Canadian dollars are never added
+// together. Orders, plan payments and payouts carry their currency; restaurants and customers their country.
+type Money = { country: Country; currency: 'usd' | 'cad' };
+export const marketOf = (params: URLSearchParams): Money => (params.get('country') === 'CA' ? { country: 'CA', currency: 'cad' } : { country: 'US', currency: 'usd' });
+
 // Orders not picked up (missed, or cancelled by the customer) whose service fee was kept, by the day they closed.
 type Kept = Pick<Order, 'restaurant_id' | 'closed_at' | 'kept_fee_cents' | 'kept_tax_cents' | 'tax_rate_bps'>;
-const keptBetween = (start: string, end: string) =>
-  all<Kept>((a, b) => db().from('orders').select('restaurant_id, closed_at, kept_fee_cents, kept_tax_cents, tax_rate_bps')
+const keptBetween = (start: string, end: string, m: Money) =>
+  all<Kept>((a, b) => db().from('orders').select('restaurant_id, closed_at, kept_fee_cents, kept_tax_cents, tax_rate_bps').eq('currency', m.currency)
     .in('status', ['cancelled', 'expired']).gt('kept_fee_cents', 0).gte('closed_at', start).lt('closed_at', end).range(a, b));
 
-const pickedUpBetween = (start: string, end: string) =>
-  all<Order>((a, b) => db().from('orders').select('*').eq('status', 'picked_up').gte('picked_up_at', start).lt('picked_up_at', end).range(a, b));
+const pickedUpBetween = (start: string, end: string, m: Money) =>
+  all<Order>((a, b) => db().from('orders').select('*').eq('currency', m.currency).eq('status', 'picked_up').gte('picked_up_at', start).lt('picked_up_at', end).range(a, b));
 
 // ---------------------------------------------------------------- overview
 
 export async function overview(params: URLSearchParams) {
   const r = range(params);
+  const m = marketOf(params);
   const [sold, placed, restaurants, customers, liveOffers, awaiting, balances, credit, kept] = await Promise.all([
-    pickedUpBetween(r.start, r.end),
-    all<{ status: Order['status'] }>((a, b) => db().from('orders').select('status').gte('created_at', r.start).lt('created_at', r.end).neq('status', 'failed').range(a, b)),
-    all<{ id: number; name: string; city: string; status: string }>((a, b) => db().from('restaurants').select('id, name, city, status').range(a, b)),
-    db().from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer'),
-    db().from('offers').select('id', { count: 'exact', head: true }).eq('status', 'active').gt('pickup_end', new Date().toISOString()),
-    db().from('orders').select('id', { count: 'exact', head: true }).eq('status', 'reserved'),
-    db().from('restaurant_balances').select('balance_cents'),
-    all<{ amount_cents: number }>((a, b) => db().from('credit_ledger').select('amount_cents').range(a, b)),
-    keptBetween(r.start, r.end),
+    pickedUpBetween(r.start, r.end, m),
+    all<{ status: Order['status'] }>((a, b) => db().from('orders').select('status').eq('currency', m.currency).gte('created_at', r.start).lt('created_at', r.end).neq('status', 'failed').range(a, b)),
+    all<{ id: number; name: string; city: string; status: string }>((a, b) => db().from('restaurants').select('id, name, city, status').eq('country', m.country).range(a, b)),
+    db().from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer').eq('country', m.country),
+    db().from('offers').select('id, restaurants!inner(country)', { count: 'exact', head: true }).eq('restaurants.country', m.country).eq('status', 'active').gt('pickup_end', new Date().toISOString()),
+    db().from('orders').select('id', { count: 'exact', head: true }).eq('currency', m.currency).eq('status', 'reserved'),
+    db().from('restaurant_balances').select('restaurant_id, balance_cents'),
+    all<{ amount_cents: number }>((a, b) => db().from('credit_ledger').select('amount_cents, profiles!credit_ledger_user_id_fkey!inner(country)').eq('profiles.country', m.country).range(a, b)),
+    keptBetween(r.start, r.end, m),
   ]);
+  const here = new Set(restaurants.map((x) => x.id));
   const keptFees = kept.reduce((n, o) => n + o.kept_fee_cents, 0);
   const keptTax = kept.reduce((n, o) => n + o.kept_tax_cents, 0);
   const sum = (f: (o: Order) => number) => sold.reduce((n, o) => n + f(o), 0);
@@ -121,6 +129,7 @@ export async function overview(params: URLSearchParams) {
 
   return {
     range: { from: r.from, to: r.to },
+    ...m,
     totals: {
       gmvCents: sum((o) => o.total_cents - o.refunded_cents) + keptFees + keptTax,
       serviceFeesCents: sum((o) => o.service_fee_cents - feeRefund(o)) + keptFees,
@@ -141,7 +150,7 @@ export async function overview(params: URLSearchParams) {
       restaurants: restaurantCounts,
       activeOffers: liveOffers.count ?? 0,
       awaitingPickup: awaiting.count ?? 0,
-      payoutsOwedCents: (balances.data ?? []).reduce((n, b) => n + Math.max(0, b.balance_cents ?? 0), 0),
+      payoutsOwedCents: (balances.data ?? []).filter((b) => here.has(b.restaurant_id!)).reduce((n, b) => n + Math.max(0, b.balance_cents ?? 0), 0),
       creditOutstandingCents: credit.reduce((n, c) => n + c.amount_cents, 0),
     },
     daily: Object.values(daily),
@@ -227,7 +236,7 @@ export async function users(params: URLSearchParams) {
       const mine = orders.filter((o) => o.user_id === u.id);
       const done = mine.filter((o) => o.status === 'picked_up');
       return {
-        id: u.id, email: u.email, username: u.username, role: u.role, status: u.status, suspendedUntil: u.suspended_until, createdAt: u.created_at,
+        id: u.id, email: u.email, username: u.username, role: u.role, status: u.status, country: u.country === 'CA' ? 'CA' : 'US', suspendedUntil: u.suspended_until, createdAt: u.created_at,
         orders: done.length, spentCents: done.reduce((n, o) => n + o.total_cents - o.refunded_cents, 0), noShows: mine.length - done.length,
         noShowStreak: u.no_show_strikes, noShowProbation: u.no_show_probation,
         creditCents: credit.filter((c) => c.user_id === u.id).reduce((n, c) => n + c.amount_cents, 0),
@@ -276,8 +285,9 @@ export type AdminOrder = ReturnType<typeof presentOrder>;
 
 async function ordersInRange(params: URLSearchParams) {
   const r = range(params, 30);
+  const m = marketOf(params);
   const rows = await all<Order & { restaurants: { name: string } | null; profiles: { email: string } | null }>((a, b) =>
-    db().from('orders').select('*, restaurants(name), profiles(email)').gte('created_at', r.start).lt('created_at', r.end)
+    db().from('orders').select('*, restaurants(name), profiles(email)').eq('currency', m.currency).gte('created_at', r.start).lt('created_at', r.end)
       .neq('status', 'failed').order('created_at', { ascending: false }).range(a, b),
   );
   return { r, rows };
@@ -307,27 +317,29 @@ export async function orderRefunds(orderId: number) {
 
 // ---------------------------------------------------------------- offers
 
-export async function liveOffers() {
+export async function liveOffers(params: URLSearchParams) {
+  const m = marketOf(params);
   return must(
-    await db().from('offers').select('*, restaurants(name, city, status)').neq('status', 'ended').gt('pickup_end', new Date().toISOString()).order('pickup_end'),
+    await db().from('offers').select('*, restaurants!inner(name, city, status, country)').eq('restaurants.country', m.country).neq('status', 'ended').gt('pickup_end', new Date().toISOString()).order('pickup_end'),
   );
 }
 
 // ---------------------------------------------------------------- payouts
 
-export async function payouts() {
+export async function payouts(params: URLSearchParams) {
+  const m = marketOf(params);
   const [balances, accounts, owners, history] = await Promise.all([
     must(await db().from('restaurant_balances').select('*').order('name')),
     must(await db().from('restaurant_payment_accounts').select('*')),
-    all<{ id: number; owner_id: string }>((a, b) => db().from('restaurants').select('id, owner_id').range(a, b)),
-    must(await db().from('payouts').select('*, restaurants(name)').order('paid_at', { ascending: false }).limit(5000)),
+    all<{ id: number; owner_id: string }>((a, b) => db().from('restaurants').select('id, owner_id').eq('country', m.country).range(a, b)),
+    must(await db().from('payouts').select('*, restaurants(name)').eq('currency', m.currency).order('paid_at', { ascending: false }).limit(5000)),
   ]);
   const emails = new Map(must(await db().from('profiles').select('id, email').eq('role', 'restaurant')).map((p) => [p.id, p.email]));
   const ownerOf = new Map(owners.map((o) => [o.id, o.owner_id]));
   const acct = new Map(accounts.map((a) => [a.restaurant_id, a]));
   return {
     balances: balances
-      .filter((b) => (b.earned_cents ?? 0) || (b.paid_cents ?? 0))
+      .filter((b) => ownerOf.has(b.restaurant_id!) && ((b.earned_cents ?? 0) || (b.paid_cents ?? 0)))
       .map((b) => {
         const a = acct.get(b.restaurant_id!);
         return {
@@ -337,6 +349,8 @@ export async function payouts() {
         };
       }),
     history,
+    ...m,
+    paymentMode: paymentMode(m.country),
   };
 }
 
@@ -346,11 +360,12 @@ export async function payouts() {
 // location (for the excise tax return). Tax on food that was paid to the restaurant (which remits it) is only totalled.
 export async function tax(params: URLSearchParams) {
   const r = range(params, 30);
+  const m = marketOf(params);
   const [sold, rest, plans, kept] = await Promise.all([
-    pickedUpBetween(r.start, r.end),
+    pickedUpBetween(r.start, r.end, m),
     all<{ id: number; city: string; zip: string }>((a, b) => db().from('restaurants').select('id, city, zip').range(a, b)),
-    paidPlansBetween(r.start, r.end),
-    keptBetween(r.start, r.end),
+    paidPlansBetween(r.start, r.end, m),
+    keptBetween(r.start, r.end, m),
   ]);
   const loc = new Map(rest.map((x) => [x.id, x]));
   const groups = new Map<string, { city: string; zip: string; rateBps: number; orders: number; taxableCents: number; taxCents: number }>();
@@ -400,6 +415,7 @@ export async function tax(params: URLSearchParams) {
   const fees = total(planRows);
   return {
     range: { from: r.from, to: r.to },
+    ...m,
     rows,
     planRows,
     totals: food,
@@ -410,20 +426,23 @@ export async function tax(params: URLSearchParams) {
 }
 
 type PlanPayment = Database['public']['Tables']['subscription_payments']['Row'];
-const paidPlansBetween = (start: string, end: string) =>
-  all<PlanPayment>((a, b) => db().from('subscription_payments').select('*').eq('status', 'paid').gte('created_at', start).lt('created_at', end).range(a, b));
+const paidPlansBetween = (start: string, end: string, m: Money) =>
+  all<PlanPayment>((a, b) => db().from('subscription_payments').select('*').eq('currency', m.currency).eq('status', 'paid').gte('created_at', start).lt('created_at', end).range(a, b));
 
 // ---------------------------------------------------------------- restaurant plans
 
 // The Plans tab: prices, a summary and every restaurant's plan (approved restaurants, plus any with a plan).
-export async function plans() {
-  const [p, rows, subs, owners, paid] = await Promise.all([
+export async function plans(params: URLSearchParams) {
+  const m = marketOf(params);
+  const [p, rows, allSubs, owners, paid] = await Promise.all([
     prices(),
-    all<{ id: number; name: string; city: string; status: string; owner_id: string; created_at: string }>((a, b) => db().from('restaurants').select('id, name, city, status, owner_id, created_at').range(a, b)),
+    all<{ id: number; name: string; city: string; status: string; owner_id: string; created_at: string }>((a, b) => db().from('restaurants').select('id, name, city, status, owner_id, created_at').eq('country', m.country).range(a, b)),
     all<Database['public']['Tables']['restaurant_subscriptions']['Row']>((a, b) => db().from('restaurant_subscriptions').select('*').range(a, b)),
     all<{ id: string; email: string }>((a, b) => db().from('profiles').select('id, email').eq('role', 'restaurant').range(a, b)),
-    all<{ restaurant_id: number; amount_cents: number; tax_cents: number; created_at: string }>((a, b) => db().from('subscription_payments').select('restaurant_id, amount_cents, tax_cents, created_at').eq('status', 'paid').range(a, b)),
+    all<{ restaurant_id: number; amount_cents: number; tax_cents: number; created_at: string }>((a, b) => db().from('subscription_payments').select('restaurant_id, amount_cents, tax_cents, created_at').eq('currency', m.currency).eq('status', 'paid').range(a, b)),
   ]);
+  const here = new Set(rows.map((r) => r.id));
+  const subs = allSubs.filter((x) => here.has(x.restaurant_id));
   const sub = new Map(subs.map((x) => [x.restaurant_id, x]));
   const email = new Map(owners.map((o) => [o.id, o.email]));
   const yearAgo = Date.now() - 365 * 86_400_000;
@@ -446,6 +465,7 @@ export async function plans() {
   const active = subs.filter((x) => !isPioneer(x) && x.status === 'active');
   const [templates, pending, changes, audience] = await Promise.all([feeChanges.listTemplates(), feeChanges.pendingChange(), feeChanges.history(), feeChanges.recipientCounts()]);
   return {
+    ...m,
     prices: p,
     templates,
     pendingChange: pending && { ...pending, effectiveLabel: feeChanges.effectiveLabel(pending.effective_at) },
@@ -509,6 +529,7 @@ const emptyLine = (): IncomeLine => ({
 export type Income = Awaited<ReturnType<typeof income>>;
 export async function income(params: URLSearchParams) {
   const r = range(params, 30);
+  const m = marketOf(params);
   const by: IncomeBy = (['day', 'month', 'year'] as const).find((b) => b === params.get('by')) ?? 'day';
   const today = todayIn(tz());
   // One load covers the range and this year (for the today / this month / this year cards).
@@ -516,12 +537,13 @@ export async function income(params: URLSearchParams) {
   const start = r.start < yearStart ? r.start : yearStart;
   const end = r.end > dayRange(today, tz()).end ? r.end : dayRange(today, tz()).end;
   const [sold, plans, creditRefunds, goodwill, rest, kept] = await Promise.all([
-    pickedUpBetween(start, end),
-    paidPlansBetween(start, end),
-    all<{ amount_cents: number; created_at: string; order_id: number }>((a, b) => db().from('refunds').select('amount_cents, created_at, order_id').eq('method', 'credit').gte('created_at', start).lt('created_at', end).range(a, b)),
-    all<{ amount_cents: number; created_at: string }>((a, b) => db().from('credit_ledger').select('amount_cents, created_at').in('kind', ['goodwill', 'adjustment']).gte('created_at', start).lt('created_at', end).range(a, b)),
+    pickedUpBetween(start, end, m),
+    paidPlansBetween(start, end, m),
+    all<{ amount_cents: number; created_at: string; order_id: number }>((a, b) => db().from('refunds').select('amount_cents, created_at, order_id, orders!inner(currency)').eq('orders.currency', m.currency).eq('method', 'credit').gte('created_at', start).lt('created_at', end).range(a, b)),
+    // Goodwill credit is in the customer's currency (their country).
+    all<{ amount_cents: number; created_at: string }>((a, b) => db().from('credit_ledger').select('amount_cents, created_at, profiles!credit_ledger_user_id_fkey!inner(country)').eq('profiles.country', m.country).in('kind', ['goodwill', 'adjustment']).gte('created_at', start).lt('created_at', end).range(a, b)),
     all<{ id: number; name: string; city: string }>((a, b) => db().from('restaurants').select('id, name, city').range(a, b)),
-    keptBetween(start, end),
+    keptBetween(start, end, m),
   ]);
 
   // Every event with its Pacific day and what it adds.
@@ -586,6 +608,7 @@ export async function income(params: URLSearchParams) {
   const names = new Map(rest.map((x) => [x.id, x]));
   return {
     range: { from: r.from, to: r.to },
+    ...m,
     by,
     totals: sumWhere(inRange),
     quick: {

@@ -18,7 +18,8 @@ import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
 import { checkAddress, parse, passwordSchema, signupSchema } from '@/lib/validate';
-import { countryInfo, validRegion } from '@/lib/regions';
+import { countryInfo, normalizePostal, validRegion } from '@/lib/regions';
+import { saveHomeArea } from '@/lib/home-area';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 
@@ -40,8 +41,9 @@ function checkSignup(input: unknown) {
     return { ...data, restaurant, country: restaurant.country, region: restaurant.state, city: restaurant.city };
   }
   if (!validRegion(data.country, data.region)) throw new AppError(400, `Choose your ${countryInfo(data.country).regionLabel.toLowerCase()}.`);
-  if (data.city.length < 2) throw new AppError(400, 'Enter your city.');
-  return data;
+  const postal = normalizePostal(data.country, data.postal);
+  if (!postal) throw new AppError(400, data.country === 'CA' ? 'Enter your postal code, like A1A 1A1.' : 'Enter your 5-digit ZIP code.');
+  return { ...data, postal };
 }
 
 // The email must be a real, permanent address (see src/lib/email-domain.ts), and not already used: banned accounts
@@ -147,6 +149,7 @@ export async function signUp(input: unknown) {
       });
       if (error) throw signupError(error);
       if (data.role === 'restaurant') await lookUpTax(link.user.id);
+      else await saveHomeArea(link.user.id, data.country, data.postal);
       await sendConfirmation(data.email, link.properties.hashed_token, link.user.user_metadata);
       return { needsConfirmation: true, next: homeFor(data.role) };
     }
@@ -159,6 +162,7 @@ export async function signUp(input: unknown) {
     });
     if (error) throw signupError(error);
     if (data.role === 'restaurant' && res.user) await lookUpTax(res.user.id);
+    if (data.role === 'customer' && res.user) await saveHomeArea(res.user.id, data.country, data.postal);
     // With email confirmation off, the email counts as confirmed at once: send the restaurant's onboarding email now.
     if (res.session && data.role === 'customer' && res.user) await sendCustomerWelcome(res.user.id).catch((err) => console.error('customer welcome email:', err));
     if (res.session && data.role === 'restaurant' && res.user) {

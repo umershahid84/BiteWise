@@ -15,7 +15,8 @@ export type Viewer = {
   role: Role;
   // United States or Canada: decides the legal documents and tax rules that apply.
   country: Country;
-  restaurant: { id: number; name: string; status: Database['public']['Enums']['restaurant_status'] } | null;
+  // The restaurant's country decides its Stripe account and currency (US dollars or Canadian dollars).
+  restaurant: { id: number; name: string; status: Database['public']['Enums']['restaurant_status']; country: Country } | null;
   // Admin employees ('support') allowed to give goodwill platform credit (always true for admins). All sales are final, so
   // there are no refunds; the only refund path (one a law requires) is for full admins.
   canRefund: boolean;
@@ -37,16 +38,17 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
   const [restaurant, credit, pending, staff] = await Promise.all([
     profile.role === 'restaurant'
-      ? supabase.from('restaurants').select('id, name, status').eq('owner_id', profile.id).maybeSingle()
+      ? supabase.from('restaurants').select('id, name, status, country').eq('owner_id', profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
     profile.role === 'customer' ? supabase.rpc('my_credit_balance') : Promise.resolve({ data: 0 }),
     profile.role === 'admin' || profile.role === 'support' || profile.role === 'staff' ? Promise.resolve({ data: [] }) : supabase.rpc('pending_terms'),
     profile.role === 'staff'
-      ? supabase.from('restaurant_staff').select('full_name, title, restaurants(id, name, status)').eq('user_id', profile.id).maybeSingle()
+      ? supabase.from('restaurant_staff').select('full_name, title, restaurants(id, name, status, country)').eq('user_id', profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
   // Staff of a banned or deleted restaurant can't sign in.
   const staffOf = staff.data?.restaurants;
+  const shop = restaurant.data ?? staffOf ?? null;
   if (profile.role === 'staff' && (!staffOf || staffOf.status === 'banned' || staffOf.status === 'deleted')) return null;
 
   return {
@@ -55,7 +57,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     username: profile.username,
     role: profile.role,
     country: profile.country === 'CA' ? 'CA' : 'US',
-    restaurant: restaurant.data ?? staffOf ?? null,
+    restaurant: shop ? { ...shop, country: shop.country === 'CA' ? 'CA' : 'US' } : null,
     canRefund: profile.role === 'admin' || (profile.role === 'support' && profile.can_refund),
     staff: staff.data ? { fullName: staff.data.full_name, title: staff.data.title } : null,
     creditCents: Number(credit.data ?? 0),

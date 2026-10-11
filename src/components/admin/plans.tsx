@@ -14,9 +14,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/field';
 import { Kpi, Spinner, Table } from '@/components/ui/misc';
 import { PagerBar, PagerFooter, usePager } from '@/components/ui/pager';
-import { money } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { day, run, useAdmin, LoadError } from './shared';
+import { day, run, useAdmin, LoadError, money } from './shared';
 
 type Row = {
   restaurantId: number; name: string; city: string; restaurantStatus: string; ownerEmail: string;

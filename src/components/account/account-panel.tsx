@@ -6,16 +6,18 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreditCard, Gift, Plus } from 'lucide-react';
 import { toast } from 'sonner';
-import { addCard, createCardSetupIntent, removeCard, setDefaultCard } from '@/app/actions/customer';
-import { CardEntry, cardText, type CardEntryHandle, type PaymentConfig } from '@/components/payments/card-entry';
+import { addCard, createCardSetupIntent, removeCard, setDefaultCard, updateHomeArea } from '@/app/actions/customer';
+import { CardEntry, cardText, type CardEntryHandle, type PaymentConfigs } from '@/components/payments/card-entry';
 import { ErrorText } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/field';
+import { Checkbox, Field, Input } from '@/components/ui/field';
+import { CountrySelect } from '@/components/ui/state-select';
 import { Table } from '@/components/ui/misc';
 import { fmtDateTime, money } from '@/lib/format';
+import { countryInfo, type Country } from '@/lib/regions';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 const KIND: Record<string, string> = {
@@ -26,7 +28,9 @@ const KIND: Record<string, string> = {
   adjustment: 'Adjustment',
 };
 
-export function AccountPanel({ username, email, payment }: { username: string; email: string; payment: PaymentConfig }) {
+export function AccountPanel({ username, email, country, postalCode, payments }: {
+  username: string; email: string; country: Country; postalCode: string; payments: PaymentConfigs;
+}) {
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -56,6 +60,7 @@ export function AccountPanel({ username, email, payment }: { username: string; e
           <div><span className="text-muted">User name:</span> <b>{username}</b></div>
           <div><span className="text-muted">Email:</span> <b>{email}</b></div>
         </div>
+        <HomeArea country={country} postalCode={postalCode} />
       </Card>
 
       <Card id="credit" className="scroll-mt-24">
@@ -104,7 +109,9 @@ export function AccountPanel({ username, email, payment }: { username: string; e
                 <span className="rounded-md bg-surface-2 px-2 py-1 text-xs font-bold uppercase">{c.brand}</span>
                 <div>
                   <b>{cardText(c)}</b>
-                  <div className="text-xs text-muted">Expires {String(c.exp_month).padStart(2, '0')}/{c.exp_year}</div>
+                  <div className="text-xs text-muted">
+                    Expires {String(c.exp_month).padStart(2, '0')}/{c.exp_year} · for {c.country === 'CA' ? 'restaurants in Canada (CA$)' : 'restaurants in the US (US$)'}
+                  </div>
                 </div>
                 <span className="flex-1" />
                 {c.is_default ? <Badge tone="green">Default</Badge> : (
@@ -121,7 +128,8 @@ export function AccountPanel({ username, email, payment }: { username: string; e
 
       <AddCardDialog
         open={adding}
-        payment={payment}
+        payments={payments}
+        country={country}
         onClose={() => setAdding(false)}
         onSaved={() => {
           setAdding(false);
@@ -134,8 +142,13 @@ export function AccountPanel({ username, email, payment }: { username: string; e
   );
 }
 
-function AddCardDialog({ open, payment, onClose, onSaved }: { open: boolean; payment: PaymentConfig; onClose: () => void; onSaved: () => void }) {
+// Cards are saved for one country: the US Stripe account charges in US dollars, the Canadian one in Canadian dollars.
+function AddCardDialog({ open, payments, country: home, onClose, onSaved }: {
+  open: boolean; payments: PaymentConfigs; country: Country; onClose: () => void; onSaved: () => void;
+}) {
   const ref = useRef<CardEntryHandle>(null);
+  const [country, setCountry] = useState<Country>(home);
+  const payment = payments[country];
   const [makeDefault, setMakeDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -146,12 +159,12 @@ function AddCardDialog({ open, payment, onClose, onSaved }: { open: boolean; pay
       // With Stripe the card is confirmed through a SetupIntent so it can be charged later.
       let secret: string | null = null;
       if (payment.mode === 'stripe') {
-        const setup = await createCardSetupIntent();
+        const setup = await createCardSetupIntent(country);
         if (!setup.ok) throw new Error(setup.error);
         secret = setup.data.clientSecret;
       }
       const token = await ref.current!.confirmSetup(secret);
-      const res = await addCard(token, makeDefault);
+      const res = await addCard(token, makeDefault, country);
       if (!res.ok) throw new Error(res.error);
       onSaved();
     } catch (err) {
@@ -164,12 +177,50 @@ function AddCardDialog({ open, payment, onClose, onSaved }: { open: boolean; pay
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       {open && (
         <DialogContent title="Add a card">
-          <CardEntry config={payment} ref={ref} />
+          <Field label="Use this card at restaurants in" htmlFor="card-country" hint="Orders are paid in the restaurant's currency: US dollars in the US, Canadian dollars in Canada.">
+            <CountrySelect id="card-country" value={country} onChange={(e) => setCountry(e.target.value as Country)} />
+          </Field>
+          <CardEntry key={country} config={payment} ref={ref} />
           <Checkbox className="my-3" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} label="Make this my default card" />
           <ErrorText error={error} />
           <Button variant="green" block disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save card'}</Button>
         </DialogContent>
       )}
     </Dialog>
+  );
+}
+
+// The customer's ZIP code (US) or postal code (Canada): the deals page opens around it, nearest deals first.
+function HomeArea({ country, postalCode }: { country: Country; postalCode: string }) {
+  const router = useRouter();
+  const label = countryInfo(country).postalLabel;
+  const [value, setValue] = useState(postalCode);
+  const [busy, setBusy] = useState(false);
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const res = await updateHomeArea(value);
+    setBusy(false);
+    if (!res.ok) return toast.error(res.error);
+    setValue(res.data.postalCode);
+    try {
+      sessionStorage.removeItem('bw-origin'); // the deals page starts again from the new area
+    } catch {
+      // storage unavailable
+    }
+    toast.success(res.data.located ? `${label} saved: deals near ${res.data.postalCode} show first.` : `${label} saved.`);
+    router.refresh();
+  };
+  return (
+    <form onSubmit={save} className="mt-4 flex flex-wrap items-start gap-3">
+      <Field label={`Your ${label}`} htmlFor="home-postal" hint="Deals closest to it show first when you log in." className="m-0">
+        <Input
+          id="home-postal" value={value} onChange={(e) => setValue(e.target.value)} autoComplete="postal-code" required
+          inputMode={country === 'US' ? 'numeric' : 'text'} maxLength={country === 'US' ? 10 : 7} placeholder={country === 'US' ? '98101' : 'A1A 1A1'}
+          className={country === 'CA' ? 'w-40 uppercase' : 'w-40'}
+        />
+      </Field>
+      <Button type="submit" size="sm" variant="ghost" className="mt-7" disabled={busy || !value.trim()}>{busy ? 'Saving…' : 'Save'}</Button>
+    </form>
   );
 }

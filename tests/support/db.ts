@@ -60,8 +60,9 @@ export async function signUp(role: 'customer' | 'restaurant', extra: Record<stri
 }
 
 // A restaurant that is approved, on a plan, connected to (mock) Stripe, with one menu item and one live offer.
-export async function restaurantWithOffer({ quantity = 3, price = 1000, discount = 50, connected = true } = {}) {
-  const owner = await signUp('restaurant');
+// canada: a restaurant in Toronto (Canadian terms, Canadian dollars).
+export async function restaurantWithOffer({ quantity = 3, price = 1000, discount = 50, connected = true, canada = false } = {}) {
+  const owner = await signUp('restaurant', canada ? CANADA : {});
   const db = admin();
   const r = (await db.from('restaurants').select('*').eq('owner_id', owner.id).single()).data!;
   await db.from('restaurants').update({ status: 'approved' }).eq('id', r.id);
@@ -80,5 +81,12 @@ export async function restaurantWithOffer({ quantity = 3, price = 1000, discount
   if (offer.error) throw new Error(offer.error.message);
   return { owner, restaurant: r, item, offer: offer.data };
 }
+
+export const CANADA = {
+  country: 'CA', region: 'ON', city: 'Toronto',
+  accepted_terms: { 'restaurant-agreement-ca': LEGAL_VERSION, 'privacy-ca': LEGAL_VERSION },
+  restaurant: { name: 'Test Kitchen Toronto', address: '290 Bremner Blvd', city: 'Toronto', state: 'ON', zip: 'M5V 3L9', country: 'CA' },
+};
+export const CANADIAN_CUSTOMER = { country: 'CA', region: 'ON', accepted_terms: { 'customer-terms-ca': LEGAL_VERSION, 'privacy-ca': LEGAL_VERSION } };
 
 export const visa = { token: { brand: 'visa', last4: '4242', expMonth: 12, expYear: 2030 }, save: false };

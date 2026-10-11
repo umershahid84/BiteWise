@@ -64,3 +64,23 @@ export async function geocodeAddress(a: Address, o: { near?: Point | null; fetch
   }
   return null;
 }
+
+// The middle of a ZIP code (US) or postal code (Canada), for a customer's home area: deals near it show first.
+// Canadian codes the map data doesn't know street by street fall back to their first three characters (the area).
+export async function geocodePostal(country: 'US' | 'CA', postal: string, o: { fetcher?: Fetch } = {}): Promise<Point | null> {
+  if (process.env.GEOCODING === 'off' || !postal.trim()) return null;
+  const fetcher = o.fetcher ?? fetch;
+  const tries = country === 'CA' ? [postal, postal.slice(0, 3)] : [postal.slice(0, 5)];
+  for (const code of tries) {
+    try {
+      const q = new URLSearchParams({ postalcode: code, countrycodes: country.toLowerCase(), format: 'jsonv2', limit: '1' });
+      const data = await getJson(fetcher, `https://nominatim.openstreetmap.org/search?${q}`);
+      const r = Array.isArray(data) ? data[0] : null;
+      const p = r ? { lat: Number(r.lat), lng: Number(r.lon) } : null;
+      if (p && valid(p)) return { lat: Math.round(p.lat * 1e4) / 1e4, lng: Math.round(p.lng * 1e4) / 1e4 };
+    } catch (err) {
+      console.warn(`postal code lookup failed for "${code}":`, err instanceof Error ? err.message : err);
+    }
+  }
+  return null;
+}

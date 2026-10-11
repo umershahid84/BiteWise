@@ -62,7 +62,9 @@ We'll email you once you're approved.`,
   };
 }
 
-const usd = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+// "$12.50" in US dollars; "CA$12.50" for restaurants and orders in Canada.
+const usd = (cents: number, currency?: string | null) => `${currency === 'cad' ? 'CA$' : '$'}${(cents / 100).toFixed(2)}`;
+const amounts = (currency?: string | null) => (cents: number) => usd(cents, currency);
 const date = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: serverEnv.timeZone });
 
 // The restaurant's plan, for the welcome email: a Pioneer Member number, or the prices and Pioneer spots left.
@@ -146,8 +148,9 @@ const PLAN_NAMES = { monthly: 'Monthly', annual: 'Annual' } as const;
 export function subscriptionReceiptEmail(o: {
   restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; invoiceNumber: string; cardLabel: string; periodStart?: string;
   periodEnd: string; autoRenew: boolean; renewal: boolean; planUrl: string; listPriceCents?: number; discountCents?: number; discountLabel?: string;
-  invoiceUrl?: string; taxCents?: number; taxRateBps?: number;
+  invoiceUrl?: string; taxCents?: number; taxRateBps?: number; currency?: string;
 }) {
+  const usd = amounts(o.currency);
   const row = (k: string, v: string, strong = false, color?: string) => `<tr><td style="padding:7px 0;color:${color ?? '#64748B'};font:${strong ? '800 15px' : '14px'} ${FONT};">${k}</td><td align="right" style="padding:7px 0;font:${strong ? '800 16px' : '700 14px'} ${FONT};color:${color ?? '#1E293B'};">${v}</td></tr>`;
   const discount = o.discountCents ?? 0;
   const free = o.amountCents === 0 && discount > 0;
@@ -181,14 +184,15 @@ export function subscriptionReceiptEmail(o: {
     }),
     text: `Bite Wise invoice ${o.invoiceNumber} for ${o.restaurant} (${period})
 ${PLAN_NAMES[o.plan]} plan: ${usd(list)}${discount ? `\n${o.discountLabel || 'Discount'}: -${usd(discount)}` : ''}${tax ? `\nSubtotal: ${usd(list - discount)}\n${taxLabel}: ${usd(tax)}` : ''}
-${free ? 'Total due: $0.00 (FREE)' : `Amount paid: ${usd(o.amountCents)} with ${o.cardLabel}`}
+${free ? `Total due: ${usd(0)} (FREE)` : `Amount paid: ${usd(o.amountCents)} with ${o.cardLabel}`}
 ${next}.
 ${o.invoiceUrl ? `Your invoice: ${o.invoiceUrl}\n` : ''}Your plan: ${o.planUrl}`,
   };
 }
 
 // A subscription payment was declined: the account is delinquent and the restaurant can't post until it pays.
-export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; planUrl: string }) {
+export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; planUrl: string; currency?: string }) {
+  const usd = amounts(o.currency);
   return {
     subject: `Your Bite Wise account is delinquent: please renew your plan`,
     html: layout({
@@ -210,7 +214,8 @@ Renew now: ${o.planUrl}`,
 
 // Sent before a plan renews (30 days ahead for annual plans, 7 for monthly by default): the card on file will be
 // charged this amount on this date.
-export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; renewsOn: string; cardLabel: string; planUrl: string }) {
+export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 'annual'; amountCents: number; renewsOn: string; cardLabel: string; planUrl: string; currency?: string }) {
+  const usd = amounts(o.currency);
   const when = date(o.renewsOn);
   const plan = o.plan === 'annual' ? 'annual' : 'monthly';
   return {
@@ -239,8 +244,9 @@ Manage your plan: ${o.planUrl}`,
 
 // Announces a change of subscription fees. The subject and message come from an editable template, already filled in.
 export function feeChangeEmail(o: {
-  subject: string; body: string; effective: string; oldMonthlyCents: number; newMonthlyCents: number; oldAnnualCents: number; newAnnualCents: number; planUrl: string;
+  subject: string; body: string; effective: string; oldMonthlyCents: number; newMonthlyCents: number; oldAnnualCents: number; newAnnualCents: number; planUrl: string; currency?: string;
 }) {
+  const usd = amounts(o.currency);
   const paragraphs = o.body.trim().split(/\n\s*\n/).map((p) => `<p style="margin:0 0 14px;">${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
   const row = (name: string, before: number, after: number) => `<tr>
     <td style="padding:8px 0;font:15px ${FONT};color:#334155;">${name}</td>
@@ -277,6 +283,7 @@ Your plan: ${o.planUrl}`,
 
 // A customer's invoice, sent the moment the order is paid (charged at pickup), with the PDF receipt attached.
 export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
+  const usd = amounts(rc.currency);
   const row = (k: string, v: string, o2: { strong?: boolean; color?: string; sub?: string } = {}) =>
     `<tr><td style="padding:7px 0;font:${o2.strong ? '800 15px' : '14px'} ${FONT};color:${o2.color ?? (o2.strong ? '#1E293B' : '#64748B')};">${k}${o2.sub ? `<div style="font:12px ${FONT};color:#94A3B8;">${o2.sub}</div>` : ''}</td>
       <td align="right" valign="top" style="padding:7px 0;font:${o2.strong ? '800 16px' : '700 14px'} ${FONT};color:${o2.color ?? '#1E293B'};">${v}</td></tr>`;

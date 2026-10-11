@@ -201,13 +201,13 @@ isOneToOne: false
                   ]
                 },"orders": {
                   Row: {
-                    "capture_started_at": string | null,"card_label": string,"card_refunded_cents": number,"closed_at": string | null,"created_at": string,"credit_applied_cents": number,"credited_cents": number,"customer_username": string,"destination_account": string | null,"discount_pct": number,"fee_charge_ref": string | null,"id": number,"image_url": string | null,"item_title": string,"kept_card_cents": number,"kept_fee_cents": number,"kept_tax_cents": number,"needs_fee_charge": boolean,"needs_void": boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref": string | null,"picked_up_at": string | null,"pickup_end": string,"quantity": number,"refund_reason": string,"refunded_at": string | null,"refunded_cents": number,"restaurant_id": number,"restaurant_share_cents": number,"service_fee_bps": number,"service_fee_cents": number,"status": Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction": string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string,"_pickup_json": Json | null,"order_fee_tax": number | null,"order_non_refundable": number | null
+                    "capture_started_at": string | null,"card_label": string,"card_refunded_cents": number,"closed_at": string | null,"created_at": string,"credit_applied_cents": number,"credited_cents": number,"currency": string,"customer_username": string,"destination_account": string | null,"discount_pct": number,"fee_charge_ref": string | null,"id": number,"image_url": string | null,"item_title": string,"kept_card_cents": number,"kept_fee_cents": number,"kept_tax_cents": number,"needs_fee_charge": boolean,"needs_void": boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref": string | null,"picked_up_at": string | null,"pickup_end": string,"quantity": number,"refund_reason": string,"refunded_at": string | null,"refunded_cents": number,"restaurant_id": number,"restaurant_share_cents": number,"service_fee_bps": number,"service_fee_cents": number,"status": Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction": string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string,"_pickup_json": Json | null,"order_fee_tax": number | null,"order_non_refundable": number | null
                   }
                   Insert: {
-                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"customer_username": string,"destination_account"?: string | null,"discount_pct": number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title": string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end": string,"quantity": number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id": number,"restaurant_share_cents"?: number,"service_fee_bps": number,"service_fee_cents": number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction"?: string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string
+                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"currency"?: string,"customer_username": string,"destination_account"?: string | null,"discount_pct": number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title": string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end": string,"quantity": number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id": number,"restaurant_share_cents"?: number,"service_fee_bps": number,"service_fee_cents": number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction"?: string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string
                   }
                   Update: {
-                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"customer_username"?: string,"destination_account"?: string | null,"discount_pct"?: number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title"?: string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id"?: number,"original_unit_price_cents"?: number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end"?: string,"quantity"?: number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id"?: number,"restaurant_share_cents"?: number,"service_fee_bps"?: number,"service_fee_cents"?: number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents"?: number,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"total_cents"?: number,"unit_price_cents"?: number,"user_id"?: string
+                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"currency"?: string,"customer_username"?: string,"destination_account"?: string | null,"discount_pct"?: number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title"?: string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id"?: number,"original_unit_price_cents"?: number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end"?: string,"quantity"?: number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id"?: number,"restaurant_share_cents"?: number,"service_fee_bps"?: number,"service_fee_cents"?: number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents"?: number,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"total_cents"?: number,"unit_price_cents"?: number,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -238,13 +238,13 @@ isOneToOne: false
                   ]
                 },"payment_methods": {
                   Row: {
-                    "brand": string,"created_at": string,"exp_month": number,"exp_year": number,"id": number,"is_default": boolean,"last4": string,"provider_ref": string,"user_id": string
+                    "brand": string,"country": string,"created_at": string,"exp_month": number,"exp_year": number,"id": number,"is_default": boolean,"last4": string,"provider_ref": string,"user_id": string
                   }
                   Insert: {
-                    "brand": string,"created_at"?: string,"exp_month": number,"exp_year": number,"id"?: number,"is_default"?: boolean,"last4": string,"provider_ref": string,"user_id": string
+                    "brand": string,"country"?: string,"created_at"?: string,"exp_month": number,"exp_year": number,"id"?: number,"is_default"?: boolean,"last4": string,"provider_ref": string,"user_id": string
                   }
                   Update: {
-                    "brand"?: string,"created_at"?: string,"exp_month"?: number,"exp_year"?: number,"id"?: number,"is_default"?: boolean,"last4"?: string,"provider_ref"?: string,"user_id"?: string
+                    "brand"?: string,"country"?: string,"created_at"?: string,"exp_month"?: number,"exp_year"?: number,"id"?: number,"is_default"?: boolean,"last4"?: string,"provider_ref"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -257,13 +257,13 @@ isOneToOne: false
                   ]
                 },"payouts": {
                   Row: {
-                    "amount_cents": number,"bank_details": string,"created_by": string | null,"id": number,"invoice_number": string | null,"kind": Database["public"]['Enums']["payout_kind"],"note": string,"order_id": number | null,"paid_at": string,"restaurant_id": number,"transaction_id": string
+                    "amount_cents": number,"bank_details": string,"created_by": string | null,"currency": string,"id": number,"invoice_number": string | null,"kind": Database["public"]['Enums']["payout_kind"],"note": string,"order_id": number | null,"paid_at": string,"restaurant_id": number,"transaction_id": string
                   }
                   Insert: {
-                    "amount_cents": number,"bank_details"?: string,"created_by"?: string | null,"id"?: number,"invoice_number"?: string | null,"kind": Database["public"]['Enums']["payout_kind"],"note"?: string,"order_id"?: number | null,"paid_at"?: string,"restaurant_id": number,"transaction_id"?: string
+                    "amount_cents": number,"bank_details"?: string,"created_by"?: string | null,"currency"?: string,"id"?: number,"invoice_number"?: string | null,"kind": Database["public"]['Enums']["payout_kind"],"note"?: string,"order_id"?: number | null,"paid_at"?: string,"restaurant_id": number,"transaction_id"?: string
                   }
                   Update: {
-                    "amount_cents"?: number,"bank_details"?: string,"created_by"?: string | null,"id"?: number,"invoice_number"?: string | null,"kind"?: Database["public"]['Enums']["payout_kind"],"note"?: string,"order_id"?: number | null,"paid_at"?: string,"restaurant_id"?: number,"transaction_id"?: string
+                    "amount_cents"?: number,"bank_details"?: string,"created_by"?: string | null,"currency"?: string,"id"?: number,"invoice_number"?: string | null,"kind"?: Database["public"]['Enums']["payout_kind"],"note"?: string,"order_id"?: number | null,"paid_at"?: string,"restaurant_id"?: number,"transaction_id"?: string
                   }
                   Relationships: [
                     {
@@ -319,13 +319,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "can_refund": boolean,"city": string,"country": string,"created_at": string,"email": string,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"region": string,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
+                    "can_refund": boolean,"city": string,"country": string,"created_at": string,"email": string,"home_lat": number | null,"home_lng": number | null,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"postal_code": string,"region": string,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"stripe_customer_id_ca": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
                   }
                   Insert: {
-                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email": string,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email": string,"home_lat"?: number | null,"home_lng"?: number | null,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"postal_code"?: string,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"stripe_customer_id_ca"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
                   }
                   Update: {
-                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email"?: string,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email"?: string,"home_lat"?: number | null,"home_lng"?: number | null,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"postal_code"?: string,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"stripe_customer_id_ca"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
                   }
                   Relationships: [
                     
@@ -557,13 +557,13 @@ isOneToOne: false
                   ]
                 },"subscription_payments": {
                   Row: {
-                    "amount_cents": number,"card_label": string,"created_at": string,"discount_cents": number,"discount_label": string,"error": string,"id": number,"invoice_number": string | null,"list_price_cents": number | null,"period_end": string | null,"period_start": string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"tax_cents": number,"tax_jurisdiction": string,"tax_rate_bps": number,"transaction_id": string
+                    "amount_cents": number,"card_label": string,"created_at": string,"currency": string,"discount_cents": number,"discount_label": string,"error": string,"id": number,"invoice_number": string | null,"list_price_cents": number | null,"period_end": string | null,"period_start": string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"tax_cents": number,"tax_jurisdiction": string,"tax_rate_bps": number,"transaction_id": string
                   }
                   Insert: {
-                    "amount_cents": number,"card_label"?: string,"created_at"?: string,"discount_cents"?: number,"discount_label"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"list_price_cents"?: number | null,"period_end"?: string | null,"period_start"?: string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"transaction_id"?: string
+                    "amount_cents": number,"card_label"?: string,"created_at"?: string,"currency"?: string,"discount_cents"?: number,"discount_label"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"list_price_cents"?: number | null,"period_end"?: string | null,"period_start"?: string | null,"plan": Database["public"]['Enums']["subscription_plan"],"restaurant_id": number,"status": string,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"transaction_id"?: string
                   }
                   Update: {
-                    "amount_cents"?: number,"card_label"?: string,"created_at"?: string,"discount_cents"?: number,"discount_label"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"list_price_cents"?: number | null,"period_end"?: string | null,"period_start"?: string | null,"plan"?: Database["public"]['Enums']["subscription_plan"],"restaurant_id"?: number,"status"?: string,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"transaction_id"?: string
+                    "amount_cents"?: number,"card_label"?: string,"created_at"?: string,"currency"?: string,"discount_cents"?: number,"discount_label"?: string,"error"?: string,"id"?: number,"invoice_number"?: string | null,"list_price_cents"?: number | null,"period_end"?: string | null,"period_start"?: string | null,"plan"?: Database["public"]['Enums']["subscription_plan"],"restaurant_id"?: number,"status"?: string,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"transaction_id"?: string
                   }
                   Relationships: [
                     {
@@ -719,6 +719,7 @@ isOneToOne: false
 "created_at": string,
 "credit_applied_cents": number,
 "credited_cents": number,
+"currency": string,
 "customer_username": string,
 "destination_account": string | null,
 "discount_pct": number,
@@ -786,6 +787,7 @@ isOneToOne: false
 "created_at": string,
 "credit_applied_cents": number,
 "credited_cents": number,
+"currency": string,
 "customer_username": string,
 "destination_account": string | null,
 "discount_pct": number,
@@ -881,6 +883,7 @@ isOneToOne: false
               "amount_cents": number,
 "bank_details": string,
 "created_by": string | null,
+"currency": string,
 "id": number,
 "invoice_number": string | null,
 "kind": Database["public"]['Enums']["payout_kind"],
@@ -908,6 +911,7 @@ isOneToOne: false
 "created_at": string,
 "credit_applied_cents": number,
 "credited_cents": number,
+"currency": string,
 "customer_username": string,
 "destination_account": string | null,
 "discount_pct": number,
@@ -1045,7 +1049,7 @@ isOneToOne: false
                            },
 "search_offers":
 { Args: { "p_area_text"?: string,"p_dietary"?: string,"p_lat"?: number,"p_lng"?: number,"p_query"?: string,"p_radius_miles"?: number,"p_sort"?: string }; Returns: {
-              "address": string,"city": string,"cuisine": string,"description": string,"dietary": (string)[],"discount_pct": number,"distance_miles": number,"id": number,"image_url": string,"lat": number,"lng": number,"original_price_cents": number,"phone": string,"pickup_end": string,"pickup_start": string,"price_cents": number,"quantity_available": number,"quantity_total": number,"reason": Database["public"]['Enums']["offer_reason"],"restaurant_id": number,"restaurant_name": string,"tax_rate_bps": number,"title": string,"zip": string
+              "address": string,"city": string,"country": string,"cuisine": string,"description": string,"dietary": (string)[],"discount_pct": number,"distance_miles": number,"id": number,"image_url": string,"lat": number,"lng": number,"original_price_cents": number,"phone": string,"pickup_end": string,"pickup_start": string,"price_cents": number,"quantity_available": number,"quantity_total": number,"reason": Database["public"]['Enums']["offer_reason"],"restaurant_id": number,"restaurant_name": string,"tax_rate_bps": number,"title": string,"zip": string
             }[]
                            },
 "set_order_payment":

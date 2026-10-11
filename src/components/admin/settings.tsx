@@ -12,8 +12,12 @@ import { run, useAdmin, LoadError } from './shared';
 
 type S = {
   settings: { serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; planTaxStates: string };
-  paymentMode: 'stripe' | 'mock';
+  paymentMode: Mode;
+  paymentModeCa: Mode;
 };
+type Mode = 'stripe' | 'mock' | 'off';
+const modeBadge = (m: Mode) =>
+  m === 'stripe' ? <Badge tone="green">Stripe (keys configured)</Badge> : m === 'off' ? <Badge tone="red">Not set up: card payments unavailable</Badge> : <Badge tone="amber">Test mode (no real charges)</Badge>;
 
 export function SettingsPanel() {
   const queryClient = useQueryClient();
@@ -57,9 +61,15 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
       <Card>
         <CardTitle>Payments</CardTitle>
         <p className="text-sm text-ink-2">
-          Mode: {data.paymentMode === 'stripe' ? <Badge tone="green">Stripe (live keys configured)</Badge> : <Badge tone="amber">Test mode (no real charges)</Badge>}
+          United States (USD): {modeBadge(data.paymentMode)}
         </p>
-        <p className="text-sm text-muted">Set STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and STRIPE_WEBHOOK_SECRET to take real payments and pay restaurants through Stripe Connect.</p>
+        <p className="text-sm text-ink-2">
+          Canada (CAD): {modeBadge(data.paymentModeCa)}
+        </p>
+        <p className="text-sm text-muted">
+          Each country has its own Stripe account. United States: STRIPE_SECRET_KEY, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY and STRIPE_WEBHOOK_SECRET.
+          Canada: STRIPE_SECRET_KEY_CA, NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY_CA and STRIPE_WEBHOOK_SECRET_CA. With no keys at all, payments run in test mode.
+        </p>
       </Card>
     </div>
   );

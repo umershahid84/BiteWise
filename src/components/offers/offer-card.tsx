@@ -6,7 +6,7 @@ import { Countdown } from '@/components/app/countdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cuisineEmoji, cuisineHue, OFFER_REASONS } from '@/lib/constants';
-import { fmtTime, money } from '@/lib/format';
+import { fmtTime, currencyOf, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { OfferRow } from './types';
 
@@ -53,8 +53,8 @@ export function OfferCard({ offer, onOrder }: { offer: OfferRow; onOrder: () => 
           {offer.dietary.map((d) => <Badge key={d} tone="diet">{d}</Badge>)}
         </div>
         <div className="mt-auto flex items-center gap-2 border-t border-dashed border-line pt-3">
-          <span className="font-heading text-2xl font-extrabold tracking-tight">{money(offer.price_cents)}</span>
-          <span className="text-muted line-through">{money(offer.original_price_cents)}</span>
+          <span className="font-heading text-2xl font-extrabold tracking-tight">{money(offer.price_cents, currencyOf(offer.country))}</span>
+          <span className="text-muted line-through">{money(offer.original_price_cents, currencyOf(offer.country))}</span>
           <span className="flex-1" />
           <Button size="sm" disabled={expired} onClick={onOrder}>{expired ? 'Expired' : 'Order'}</Button>
         </div>

@@ -9,7 +9,7 @@ import { confirmOrderPayment, placeOrder, type OrderConfirmation } from '@/app/a
 import { confetti } from '@/components/app/confetti';
 import { Countdown } from '@/components/app/countdown';
 import { PinTiles } from '@/components/app/pin-tiles';
-import { CardEntry, cardText, type CardEntryHandle, type PaymentConfig } from '@/components/payments/card-entry';
+import { CardEntry, cardText, type CardEntryHandle, type PaymentConfig, type PaymentConfigs } from '@/components/payments/card-entry';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -17,7 +17,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { MIN_CARD_CHARGE_CENTS, OFFER_REASONS } from '@/lib/constants';
-import { fmtTime, money, pct } from '@/lib/format';
+import { currencyOf, fmtTime, money, pct } from '@/lib/format';
+import type { Country } from '@/lib/regions';
 import { distanceMiles } from '@/lib/geo';
 import type { Quote } from '@/lib/pricing';
 import { supabaseBrowser } from '@/lib/supabase/client';
@@ -25,20 +26,30 @@ import { OfferImage } from './offer-card';
 import type { OfferRow, Origin } from './types';
 import { displayPhone } from '@/lib/phone';
 
-export function CheckoutDialog({ offer, origin, payment, onClose }: {
+export function CheckoutDialog({ offer, origin, payments, country, onClose }: {
   offer: OfferRow | null;
   origin: Origin | null;
-  payment: PaymentConfig;
+  // Each country's Stripe account; the order is paid through the restaurant's, in its currency.
+  payments: PaymentConfigs;
+  // The customer's country: Bite Wise credit can be used at restaurants there.
+  country: Country;
   onClose: () => void;
 }) {
   return (
     <Dialog open={!!offer} onOpenChange={(o) => !o && onClose()}>
-      {offer && <CheckoutContent key={offer.id} offer={offer} origin={origin} payment={payment} onClose={onClose} />}
+      {offer && <CheckoutContent key={offer.id} offer={offer} origin={origin} payment={payments[offer.country === 'CA' ? 'CA' : 'US']} homeCountry={country} onClose={onClose} />}
     </Dialog>
   );
 }
 
-function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow; origin: Origin | null; payment: PaymentConfig; onClose: () => void }) {
+function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
+  offer: OfferRow; origin: Origin | null; payment: PaymentConfig; homeCountry: Country; onClose: () => void;
+}) {
+  const offerCountry: Country = offer.country === 'CA' ? 'CA' : 'US';
+  const currency = currencyOf(offerCountry);
+  const m = (cents: number) => money(cents, currency);
+  // Credit is in the customer's own currency, so it only pays at restaurants in their country.
+  const creditUsable = offerCountry === homeCountry;
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -68,12 +79,12 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
     queryFn: async () => Number((await supabase.rpc('my_credit_balance')).data ?? 0),
   });
   const cards = useQuery({
-    queryKey: ['cards'],
-    queryFn: async () => (await supabase.from('payment_methods').select('*').order('is_default', { ascending: false }).order('created_at', { ascending: false })).data ?? [],
+    queryKey: ['cards', offerCountry],
+    queryFn: async () => (await supabase.from('payment_methods').select('*').eq('country', offerCountry).order('is_default', { ascending: false }).order('created_at', { ascending: false })).data ?? [],
   });
 
   const total = quote.data?.totalCents ?? 0;
-  const balance = credit.data ?? 0;
+  const balance = creditUsable ? (credit.data ?? 0) : 0;
   const creditCents = useMemo(() => {
     if (!balance || !useCredit) return 0;
     const typed = creditInput === null ? Math.min(balance, total) : Math.round(Number(creditInput.replace(/[$,]/g, '')) * 100) || 0;
@@ -87,7 +98,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
     setError(null);
     try {
       if (cardCents > 0 && cardCents < MIN_CARD_CHARGE_CENTS) {
-        throw new Error('The amount left for your card must be at least $0.50. Apply a little more or less credit.');
+        throw new Error(`The amount left for your card must be at least ${m(MIN_CARD_CHARGE_CENTS)}. Apply a little more or less credit.`);
       }
       const needsCard = cardCents > 0; // no card when credit covers the whole total
       const input = {
@@ -122,7 +133,7 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
     }
   };
 
-  if (done) return <Confirmation order={done} onClose={onClose} />;
+  if (done) return <Confirmation order={done} currency={currency} onClose={onClose} />;
 
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${offer.restaurant_name}, ${offer.address}, ${offer.city}, WA ${offer.zip}`)}`;
   const away = origin && offer.lat != null ? distanceMiles(origin.lat, origin.lng, offer.lat, offer.lng) : null;
@@ -173,15 +184,15 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
         {q ? (
           <table className="w-full [&_td]:py-1 [&_td:last-child]:text-right [&_td:last-child]:tabular-nums">
             <tbody>
-              <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{money(q.originalUnitCents)}</span> {money(q.unitPriceCents)}</td><td>{money(q.subtotalCents)}</td></tr>
-              <tr><td colSpan={2} className="text-primary-ink">You save {money(q.savingsCents)} ({q.discountPct}% off)</td></tr>
-              <tr><td>Service fee ({pct(q.serviceFeeBps)}) <span className="text-xs text-muted">· non-refundable</span></td><td>{money(q.serviceFeeCents)}</td></tr>
-              <tr><td>Sales tax ({pct(q.taxRateBps)})</td><td>{money(q.taxCents)}</td></tr>
-              <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{money(q.totalCents)}</td></tr>
+              <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{m(q.originalUnitCents)}</span> {m(q.unitPriceCents)}</td><td>{m(q.subtotalCents)}</td></tr>
+              <tr><td colSpan={2} className="text-primary-ink">You save {m(q.savingsCents)} ({q.discountPct}% off)</td></tr>
+              <tr><td>Service fee ({pct(q.serviceFeeBps)}) <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>
+              <tr><td>Sales tax ({pct(q.taxRateBps)})</td><td>{m(q.taxCents)}</td></tr>
+              <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{m(q.totalCents)}</td></tr>
               {creditCents > 0 && (
                 <>
-                  <tr className="text-primary-ink"><td>Bite Wise credit applied</td><td>−{money(creditCents)}</td></tr>
-                  <tr className="font-bold"><td>{cardCents ? 'Card (charged at pickup)' : 'Due'}</td><td>{money(cardCents)}</td></tr>
+                  <tr className="text-primary-ink"><td>Bite Wise credit applied</td><td>−{m(creditCents)}</td></tr>
+                  <tr className="font-bold"><td>{cardCents ? 'Card (charged at pickup)' : 'Due'}</td><td>{m(cardCents)}</td></tr>
                 </>
               )}
             </tbody>
@@ -194,12 +205,12 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
       <SectionLabel>Payment</SectionLabel>
       {balance > 0 && (
         <div className="mb-3 rounded-xl border border-accent/30 bg-accent-soft/50 p-3">
-          <Checkbox checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} label={<>Use my Bite Wise credit · <b>{money(balance)}</b> available</>} />
+          <Checkbox checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} label={<>Use my Bite Wise credit · <b>{m(balance)}</b> available</>} />
           {useCredit && (
             <div className="mt-2 flex items-center gap-2 text-sm">
               <span className="text-muted">Apply $</span>
               <Input className="h-9 w-28" inputMode="decimal" value={creditInput ?? (Math.min(balance, total) / 100).toFixed(2)} onChange={(e) => setCreditInput(e.target.value)} />
-              <span className="text-xs text-muted">up to {money(Math.min(balance, total))}</span>
+              <span className="text-xs text-muted">up to {m(Math.min(balance, total))}</span>
             </div>
           )}
         </div>
@@ -228,13 +239,14 @@ function CheckoutContent({ offer, origin, payment, onClose }: { offer: OfferRow;
       </p>
       <ErrorText error={error ?? quote.error?.message} />
       <Button block disabled={busy || !q} onClick={place}>
-        {busy ? 'Placing order…' : cardCents ? `Place order · ${money(cardCents)}${creditCents ? ' + credit' : ''}` : 'Place order · paid with credit'}
+        {busy ? 'Placing order…' : cardCents ? `Place order · ${m(cardCents)}${creditCents ? ' + credit' : ''}` : 'Place order · paid with credit'}
       </Button>
     </DialogContent>
   );
 }
 
-function Confirmation({ order, onClose }: { order: OrderConfirmation; onClose: () => void }) {
+function Confirmation({ order, currency, onClose }: { order: OrderConfirmation; currency: string; onClose: () => void }) {
+  const m = (cents: number) => money(cents, currency);
   const r = order.restaurant;
   return (
     <DialogContent title="Order confirmed" hideTitle>
@@ -265,7 +277,7 @@ function Confirmation({ order, onClose }: { order: OrderConfirmation; onClose: (
           <br />
           {order.creditAppliedCents >= order.totalCents
             ? <>Paid with your Bite Wise credit.</>
-            : <>💳 {order.cardLabel} will be charged <b>{money(order.totalCents - order.creditAppliedCents)}</b> only when the restaurant enters your PIN.</>}
+            : <>💳 {order.cardLabel} will be charged <b>{m(order.totalCents - order.creditAppliedCents)}</b> only when the restaurant enters your PIN.</>}
         </div>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Link href="/orders" className={buttonVariants()}>View my orders</Link>

@@ -18,7 +18,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { CountrySelect, StateSelect } from '@/components/ui/state-select';
 import { countryInfo, type Country } from '@/lib/regions';
 import { SUSPENSION_DAYS } from '@/lib/constants';
-import { money, pct } from '@/lib/format';
+import { currencyOf, money, pct } from '@/lib/format';
 import { day, run, TableHead, useAccess, useAdmin, LoadError } from './shared';
 import { DaysPicker } from './users';
 
@@ -117,7 +117,7 @@ export function RestaurantsPanel() {
                         <div className="mt-1 text-xs text-muted">{r.welcomeEmailSentAt ? `Welcome email sent ${day(r.welcomeEmailSentAt)}` : <span className="text-accent-ink">Welcome email not sent</span>}</div>
                       )}
                     </td>
-                    <td className="text-sm">{r.activeOffers} live offers<div className="text-xs text-muted">{r.orders} orders · {money(r.foodCents)}</div></td>
+                    <td className="text-sm">{r.activeOffers} live offers<div className="text-xs text-muted">{r.orders} orders · {money(r.foodCents, currencyOf(r.country))}</div></td>
                     <td><PlanBadge plan={r.plan} /></td>
                     <td>
                       <StatusBadge status={r.status} label={r.status === 'pending' ? 'Pending approval' : undefined} />

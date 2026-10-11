@@ -72,10 +72,12 @@ export const restaurantFieldsSchema = z.object({
 export const signupSchema = z.object({
   role: z.enum(['customer', 'restaurant']).default('customer'),
   // Where the person lives (customers) or the restaurant is: decides the terms they accept. Restaurants give the
-  // country and province in their address; customers give country, state or province, and city.
+  // country and province in their address; customers give country, state or province, and their ZIP code (US) or
+  // postal code (Canada), where deals near them are shown first.
   country: countrySchema,
   region: z.string().optional().default('').transform((v) => v.trim().toUpperCase()),
   city: optionalText('City', 60),
+  postal: z.string().optional().default('').transform((v) => v.trim().slice(0, 12)),
   email: emailSchema,
   username: usernameSchema,
   password: passwordSchema,

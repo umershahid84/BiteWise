@@ -79,15 +79,15 @@ export function OrdersList({ userId }: { userId: string }) {
         const card = o.total_cents - o.credit_applied_cents;
         const payment =
           o.status === 'picked_up'
-            ? `${o.credit_applied_cents ? `${money(o.credit_applied_cents)} paid with credit${card ? ` + ${money(card)} charged to ${o.card_label}` : ''}` : `Charged ${money(o.total_cents)} to ${o.card_label}`}${o.refunded_cents ? ` · Refunded ${money(o.refunded_cents)}` : ''}${o.credited_cents ? ` · ${money(o.credited_cents)} refunded as credit` : ''}`
+            ? `${o.credit_applied_cents ? `${money(o.credit_applied_cents, o.currency)} paid with credit${card ? ` + ${money(card, o.currency)} charged to ${o.card_label}` : ''}` : `Charged ${money(o.total_cents, o.currency)} to ${o.card_label}`}${o.refunded_cents ? ` · Refunded ${money(o.refunded_cents, o.currency)}` : ''}${o.credited_cents ? ` · ${money(o.credited_cents, o.currency)} refunded as credit` : ''}`
             : o.status === 'reserved'
               ? o.credit_applied_cents >= o.total_cents
-                ? `Paid with ${money(o.credit_applied_cents)} credit.`
-                : `Hold of ${money(card)} on ${o.card_label}${o.credit_applied_cents ? ` + ${money(o.credit_applied_cents)} credit` : ''}. Charged at pickup.`
+                ? `Paid with ${money(o.credit_applied_cents, o.currency)} credit.`
+                : `Hold of ${money(card, o.currency)} on ${o.card_label}${o.credit_applied_cents ? ` + ${money(o.credit_applied_cents, o.currency)} credit` : ''}. Charged at pickup.`
               : o.status === 'pending_payment'
                 ? 'Waiting for your card to be authorized.'
                 : o.kept_fee_cents + o.kept_tax_cents > 0
-                  ? `Only the non-refundable service fee (${money(o.kept_fee_cents + o.kept_tax_cents)}) was charged; the rest of the hold was released.`
+                  ? `Only the non-refundable service fee (${money(o.kept_fee_cents + o.kept_tax_cents, o.currency)}) was charged; the rest of the hold was released.`
                   : 'Hold released. You were not charged.';
         return (
           <Card key={o.id} className="flex flex-col gap-5 md:flex-row md:items-start">
@@ -104,8 +104,8 @@ export function OrdersList({ userId }: { userId: string }) {
                   <div className="mt-1.5 text-sm">Pick up by <b>{fmtTime(o.pickup_end)}</b> · <Countdown until={o.pickup_end} /></div>
                 )}
                 <div className="mt-2 text-sm">
-                  {o.quantity} × <span className="text-muted line-through">{money(o.original_unit_price_cents)}</span> <b>{money(o.unit_price_cents)}</b>{' '}
-                  <Badge tone="diet">-{o.discount_pct}%</Badge> · Total <b>{money(o.total_cents)}</b>
+                  {o.quantity} × <span className="text-muted line-through">{money(o.original_unit_price_cents, o.currency)}</span> <b>{money(o.unit_price_cents, o.currency)}</b>{' '}
+                  <Badge tone="diet">-{o.discount_pct}%</Badge> · Total <b>{money(o.total_cents, o.currency)}</b>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link href={`/orders/${o.id}/receipt`} className={buttonVariants({ variant: 'ghost', size: 'sm' })}><Receipt /> View receipt</Link>
@@ -123,7 +123,7 @@ export function OrdersList({ userId }: { userId: string }) {
                   size="sm"
                   className="mt-3 bg-white/90"
                   disabled={cancel.isPending}
-                  onClick={() => confirm(`Cancel this order? The food goes back on sale and the hold on your card is released, except the ${money(o.service_fee_cents + feeTaxCents(o))} service fee, which is not refundable.`) && cancel.mutate(o.id)}
+                  onClick={() => confirm(`Cancel this order? The food goes back on sale and the hold on your card is released, except the ${money(o.service_fee_cents + feeTaxCents(o), o.currency)} service fee, which is not refundable.`) && cancel.mutate(o.id)}
                 >
                   Cancel order
                 </Button>
