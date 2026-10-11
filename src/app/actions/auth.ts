@@ -298,7 +298,8 @@ export async function forgotPassword(input: unknown) {
 
 const resetSchema = z.object({
   login: z.string().trim().min(3).max(254),
-  code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code from the email.'),
+  // Supabase sends 6 to 10 digits, depending on the project's "Email OTP length" setting.
+  code: z.string().trim().regex(/^\d{6,10}$/, 'Enter the code from the email (all of its digits).'),
   password: passwordSchema,
   confirm: z.string(),
 }).refine((d) => d.password === d.confirm, { message: 'The two passwords don\'t match.', path: ['confirm'] });

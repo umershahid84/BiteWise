@@ -93,7 +93,7 @@ export async function setTeamPassword(id: string, password: string, o: { tempora
   return p;
 }
 
-// Emails a team member a 6-digit code to choose a new password themselves (the Forgot password flow).
+// Emails a team member a code to choose a new password themselves (the Forgot password flow).
 export async function sendTeamResetCode(id: string) {
   const p = await teamMember(id);
   await requestPasswordReset(p.email);

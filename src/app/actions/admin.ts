@@ -479,7 +479,7 @@ export async function setTeamPasswordAction(input: unknown) {
   });
 }
 
-// Emails a team member a 6-digit code to choose their own new password.
+// Emails a team member a code to choose their own new password.
 export async function sendTeamResetCodeAction(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();

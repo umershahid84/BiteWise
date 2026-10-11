@@ -78,3 +78,14 @@ describe('log-in pages', async () => {
     expect(homeFor('staff')).toBe('/restaurant');
   });
 });
+
+describe('password reset email', () => {
+  it('shows every digit Supabase sends (6 or 8)', async () => {
+    const { passwordResetEmail } = await import('@/lib/email/templates');
+    for (const code of ['123456', '81619168']) {
+      const e = passwordResetEmail({ username: 'sam', code, minutes: 60 });
+      expect(e.subject).toContain(code);
+      expect(e.html).toContain(`Your ${code.length}-digit code`);
+    }
+  });
+});

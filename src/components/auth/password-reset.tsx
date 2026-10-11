@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
 import { AuthTitle } from './auth-card';
 
-// Forgot password: 1) the email address, 2) the 6-digit code from the email with the new password typed twice.
+// Forgot password: 1) the email address, 2) the code from the email with the new password typed twice.
 export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin: string; onDone: (login: string) => void; onCancel: () => void }) {
   const [step, setStep] = useState<'email' | 'code'>('email');
   const [login, setLogin] = useState(initialLogin.includes('@') ? initialLogin : '');
@@ -25,7 +25,7 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
     setError(null);
     setLocked(false);
     setCode('');
-    setNotice(`If an account uses ${login}, we've emailed it a 6-digit code. It can take a minute to arrive; check your spam folder too.`);
+    setNotice(`If an account uses ${login}, we've emailed it a code. It can take a minute to arrive; check your spam folder too.`);
     setStep('code');
   });
   const reset = () => start(async () => {
@@ -42,7 +42,7 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
       <AuthTitle>Reset your password</AuthTitle>
       {step === 'email' ? (
         <form noValidate onSubmit={(e) => { e.preventDefault(); send(); }}>
-          <p className="mt-0 mb-4 text-center text-sm text-muted">Enter the email address of your account. We&apos;ll email you a 6-digit code.</p>
+          <p className="mt-0 mb-4 text-center text-sm text-muted">Enter the email address of your account. We&apos;ll email you a code.</p>
           <ErrorText error={error} />
           <Field label="Email address" htmlFor="reset-email">
             <Input id="reset-email" type="email" autoComplete="email" value={login} onChange={(e) => setLogin(e.target.value)} required autoFocus />
@@ -53,11 +53,11 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
         <form noValidate onSubmit={(e) => { e.preventDefault(); reset(); }}>
           {notice && <Alert tone="info" className="mb-4">{notice}</Alert>}
           <ErrorText error={error} />
-          <Field label="6-digit code" htmlFor="reset-code">
+          <Field label="Code from the email" htmlFor="reset-code">
             <Input
-              id="reset-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus
-              className="text-center font-mono text-2xl tracking-[0.5em]" value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="••••••"
+              id="reset-code" inputMode="numeric" autoComplete="one-time-code" maxLength={10} autoFocus
+              className="text-center font-mono text-2xl tracking-[0.35em]" value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="••••••••"
             />
           </Field>
           <Field label="New password" htmlFor="reset-password" hint="At least 8 characters, with a letter and a number.">

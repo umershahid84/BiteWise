@@ -15,7 +15,7 @@ const { setRestaurantStatus } = await import('@/lib/moderation');
 const { admin, anon, PASSWORD, restaurantWithOffer, signUp, supabaseAvailable, uid } = await import('../support/db');
 
 const available = await supabaseAvailable();
-const codeIn = (e: Email | undefined) => /(\d{6}) is your Bite Wise password reset code/.exec(e?.subject ?? '')?.[1];
+const codeIn = (e: Email | undefined) => /(\d{6,10}) is your Bite Wise password reset code/.exec(e?.subject ?? '')?.[1];
 const login = async (email: string, password: string) => {
   const client = anon();
   const { error } = await client.auth.signInWithPassword({ email, password });
@@ -23,12 +23,12 @@ const login = async (email: string, password: string) => {
 };
 
 describe.skipIf(!available)('accounts', () => {
-  it('resets a forgotten password with the 6-digit code, and locks the code after 5 wrong tries', async () => {
+  it('resets a forgotten password with the emailed code, and locks the code after 5 wrong tries', async () => {
     const user = await signUp('customer');
     sent.length = 0;
     await requestPasswordReset(user.email.toUpperCase());
     const code = codeIn(sent.at(-1));
-    expect(code).toMatch(/^\d{6}$/);
+    expect(code).toMatch(/^\d{6,10}$/);
     expect(sent.at(-1)?.to).toBe(user.email);
     await expect(requestPasswordReset(user.username)).rejects.toThrow(/less than a minute ago/);
     await requestPasswordReset('nobody-here@example.com'); // no account: same answer, no email

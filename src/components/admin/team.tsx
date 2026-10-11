@@ -179,7 +179,7 @@ function EditMember({ member: m, self, onSaved }: { member: Member; self: boolea
   };
   const sendCode = async () => {
     const d = await call('code', () => sendTeamResetCodeAction({ id: m.id }));
-    if (d) toast.success(`We emailed a 6-digit code to ${d.email}. They enter it with "Forgot password" on the admin log-in page.`);
+    if (d) toast.success(`We emailed a code to ${d.email}. They enter it with "Forgot password" on the admin log-in page.`);
   };
   return (
     <DialogContent title={`Edit ${m.username}`} description={self ? 'Your own team account.' : `${m.role === 'admin' ? 'Admin' : 'Employee'} · added ${day(m.createdAt)}`}>
@@ -217,7 +217,7 @@ function EditMember({ member: m, self, onSaved }: { member: Member; self: boolea
       </div>
       <p className="mt-2 mb-0 text-xs text-muted">
         <b>Update password</b> sets the password you typed. <b>Temporary password</b> makes one up; they must change it when they log in. <b>Reset code</b> emails them a
-        6-digit code to choose their own password with &quot;Forgot password&quot;.
+        code to choose their own password with &quot;Forgot password&quot;.
       </p>
       <ErrorText error={error} />
     </DialogContent>

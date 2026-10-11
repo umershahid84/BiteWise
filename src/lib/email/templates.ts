@@ -411,7 +411,7 @@ export function adminAlertEmail(o: { title: string; message: string; customer: s
   };
 }
 
-// Forgot password: the 6-digit code to type on the reset screen.
+// Forgot password: the code to type on the reset screen (as many digits as the Supabase project sends).
 export function passwordResetEmail(o: { username: string; code: string; minutes: number }) {
   const digits = o.code.split('').map((d) => `<td style="padding:0 3px;"><div style="width:42px;height:54px;border-radius:12px;background:#F1F5F9;border:1px solid #E2E8F0;font:800 28px/54px ${FONT};color:#14284B;text-align:center;">${esc(d)}</div></td>`).join('');
   return {
@@ -420,7 +420,7 @@ export function passwordResetEmail(o: { username: string; code: string; minutes:
       preview: `Your code is ${o.code}. It works for ${o.minutes} minutes.`,
       emoji: '🔑',
       title: 'Reset your password',
-      subtitle: 'Your 6-digit code',
+      subtitle: `Your ${o.code.length}-digit code`,
       body: `<p style="margin:0 0 18px;">Hi ${esc(o.username)}, enter this code on the Bite Wise reset screen, then choose your new password:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;"><tr>${digits}</tr></table>
         <p style="margin:0 0 10px;font-size:15px;color:#475569;">The code works for <b>${o.minutes} minutes</b> and only once. Never share it: Bite Wise will never ask you for it.</p>

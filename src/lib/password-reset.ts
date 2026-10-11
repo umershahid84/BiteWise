@@ -8,7 +8,7 @@ import { publicEnv } from '@/lib/env';
 import { AppError, check } from '@/lib/errors';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-// Forgot password: the user types their email (or user name), gets a 6-digit code by email, and types the code with
+// Forgot password: the user types their email (or user name), gets a code by email, and types the code with
 // a new password. Supabase Auth makes and checks the code (a password recovery one-time code, valid for an hour);
 // Bite Wise sends it in its own email. Limits: one code a minute, and 5 wrong tries per code.
 // Staff accounts have no email address of their own: the restaurant owner resets their password.
