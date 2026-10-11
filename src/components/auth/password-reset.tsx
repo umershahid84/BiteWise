@@ -28,14 +28,29 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
     setNotice(`If an account uses ${login}, we've emailed it a code. It can take a minute to arrive; check your spam folder too.`);
     setStep('code');
   });
-  const reset = () => start(async () => {
-    const res = await resetPasswordWithCode({ login, code, password, confirm });
+  // Reads what is really in the boxes (a password manager may fill them without telling the page), and says what's
+  // missing instead of greying the button out.
+  const reset = (form: HTMLFormElement) => {
+    const v = (name: string) => String(new FormData(form).get(name) ?? '');
+    const c = v('code').replace(/\D/g, '');
+    const p = v('password');
+    const p2 = v('confirm');
+    if (c.length < 6) return setError('Enter the code from the email (all of its digits).');
+    if (!p) return setError('Enter your new password.');
+    if (p !== p2) return setError('The two passwords don\'t match.');
+    setError(null);
+    start(() => submitReset(c, p, p2));
+  };
+  const submitReset = async (code: string, password: string, confirm: string) => {
+    const res = await resetPasswordWithCode({ login, code, password, confirm }).catch(() => ({
+      ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.', code: undefined,
+    }));
     if (!res.ok) {
       setLocked(res.code === 'reset_locked');
       return setError(res.error);
     }
     onDone(login);
-  });
+  };
 
   return (
     <>
@@ -50,24 +65,24 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
           <Button block type="submit" disabled={pending || !login.trim()}>{pending ? 'Sending…' : 'Email me a code'}</Button>
         </form>
       ) : (
-        <form noValidate onSubmit={(e) => { e.preventDefault(); reset(); }}>
+        <form noValidate onSubmit={(e) => { e.preventDefault(); reset(e.currentTarget); }}>
           {notice && <Alert tone="info" className="mb-4">{notice}</Alert>}
           <ErrorText error={error} />
           <Field label="Code from the email" htmlFor="reset-code">
             <Input
-              id="reset-code" inputMode="numeric" autoComplete="one-time-code" maxLength={10} autoFocus
+              id="reset-code" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={10} autoFocus
               className="text-center font-mono text-2xl tracking-[0.35em]" value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="••••••••"
             />
           </Field>
           <Field label="New password" htmlFor="reset-password" hint="At least 8 characters, with a letter and a number.">
-            <Input id="reset-password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input id="reset-password" name="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Field label="Re-enter new password" htmlFor="reset-confirm">
-            <Input id="reset-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            <Input id="reset-confirm" name="confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </Field>
           {confirm && password !== confirm && <p className="-mt-2 mb-3 text-sm text-danger">The two passwords don&apos;t match.</p>}
-          <Button block type="submit" disabled={pending || locked || code.length < 6 || !password || !confirm}>
+          <Button block type="submit" disabled={pending || locked}>
             {pending ? 'Please wait…' : 'Set new password'}
           </Button>
           <Button block variant="ghost" className="mt-2" disabled={pending} onClick={send}>Send a new code</Button>
