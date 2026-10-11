@@ -468,7 +468,7 @@ Find deals near you: ${o.dealsUrl}`,
 export function teamWelcomeEmail(o: { username: string; role: 'admin' | 'support'; canRefund: boolean; loginUrl: string }) {
   const what = o.role === 'admin'
     ? 'You have <b>full admin access</b> to the Bite Wise owner console.'
-    : `You can look after customer and restaurant accounts in the Bite Wise owner console: Alerts, Restaurants, Customers, Orders and Live offers${o.canRefund ? ', including refunds and credit' : ''}.`;
+    : `You can look after customer and restaurant accounts in the Bite Wise owner console: Alerts, Restaurants, Customers, Orders and Live offers${o.canRefund ? ', including giving customers platform credit' : ''}.`;
   return {
     subject: `You've been added to the Bite Wise ${o.role === 'admin' ? 'admin' : 'support'} team`,
     html: layout({

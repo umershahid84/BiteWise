@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Field, Input, Select } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner, Table } from '@/components/ui/misc';
 import { fmtDay } from '@/lib/format';
 
@@ -131,10 +132,10 @@ function StaffForm({ member, onDone }: { member?: Member; onDone: () => void }) 
       </div>
       <div className="grid gap-x-3 sm:grid-cols-2">
         <Field label={member ? 'New password' : 'Password'} htmlFor="sf-pass" hint="At least 8 characters, with a letter and a number.">
-          <Input id="sf-pass" type="password" autoComplete="new-password" value={f.password} onChange={set('password')} />
+          <PasswordInput id="sf-pass" autoComplete="new-password" value={f.password} onChange={set('password')} />
         </Field>
         <Field label={member ? 'Re-enter new password' : 'Re-enter password'} htmlFor="sf-confirm">
-          <Input id="sf-confirm" type="password" autoComplete="new-password" value={f.confirm} onChange={set('confirm')} />
+          <PasswordInput id="sf-confirm" autoComplete="new-password" value={f.confirm} onChange={set('confirm')} />
         </Field>
       </div>
       <ErrorText error={error} />

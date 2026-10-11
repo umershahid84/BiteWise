@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Field, Input } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner, Table } from '@/components/ui/misc';
 import { cn } from '@/lib/utils';
 import { day, useAccess, useAdmin, LoadError } from './shared';
@@ -19,7 +20,7 @@ import { day, useAccess, useAdmin, LoadError } from './shared';
 type Member = { id: string; email: string; username: string; role: 'admin' | 'support'; canRefund: boolean; status: string; createdAt: string; lastSignInAt: string | null };
 
 // The admin team (admins only): add admins with full access, or employees who look after accounts, and choose which
-// employees may issue refunds and credit.
+// employees may give customers platform credit (courtesy refunds and goodwill).
 export function TeamPanel() {
   const me = useAccess();
   const queryClient = useQueryClient();
@@ -54,11 +55,11 @@ export function TeamPanel() {
       <ul className="mt-0 mb-4 grid gap-1 pl-5 text-sm text-ink-2">
         <li><b>Admin:</b> full access to everything, including income, payouts, settings and this team.</li>
         <li><b>Employee:</b> sees Alerts, Restaurants, Customers, Orders and Live offers. Can approve, suspend, ban and reactivate accounts, update emails and details,
-          and resend emails. Can&apos;t delete accounts. Issues refunds and credit only if you tick <b>Refunds</b>.</li>
+          and resend emails. Can&apos;t delete accounts. Gives customers courtesy refunds and goodwill as platform credit only if you tick <b>Credit</b>. (All sales are final: nothing is refunded to the card.)</li>
       </ul>
       {isLoading || !data ? <div className="grid place-items-center py-8"><Spinner /></div> : (
         <Table>
-          <thead><tr><th>Member</th><th>Access</th><th>Refunds &amp; credit</th><th>Last log-in</th><th /></tr></thead>
+          <thead><tr><th>Member</th><th>Access</th><th>Platform credit</th><th>Last log-in</th><th /></tr></thead>
           <tbody>
             {data.map((m) => (
               <tr key={m.id}>
@@ -77,7 +78,7 @@ export function TeamPanel() {
                 <td>
                   {m.role === 'admin'
                     ? <span className="text-sm text-muted">Yes (admin)</span>
-                    : <Checkbox checked={m.canRefund} onChange={(e) => change(m, { canRefund: e.target.checked })} label="Refunds" />}
+                    : <Checkbox checked={m.canRefund} onChange={(e) => change(m, { canRefund: e.target.checked })} label="Credit" />}
                 </td>
                 <td className="text-sm">{m.lastSignInAt ? day(m.lastSignInAt) : 'never'}</td>
                 <td className="whitespace-nowrap">
@@ -133,11 +134,11 @@ function AddMember({ onDone }: { onDone: () => void }) {
       <Field label="Email" htmlFor="tm-email"><Input id="tm-email" type="email" value={f.email} onChange={set('email')} /></Field>
       <Field label="User name" htmlFor="tm-user" hint="Letters, numbers, dots or underscores."><Input id="tm-user" value={f.username} onChange={set('username')} autoComplete="off" /></Field>
       <div className="grid gap-x-3 sm:grid-cols-2">
-        <Field label="Password" htmlFor="tm-pass" hint="At least 8 characters, with a letter and a number."><Input id="tm-pass" type="password" autoComplete="new-password" value={f.password} onChange={set('password')} /></Field>
-        <Field label="Re-enter password" htmlFor="tm-confirm"><Input id="tm-confirm" type="password" autoComplete="new-password" value={f.confirm} onChange={set('confirm')} /></Field>
+        <Field label="Password" htmlFor="tm-pass" hint="At least 8 characters, with a letter and a number."><PasswordInput id="tm-pass" autoComplete="new-password" value={f.password} onChange={set('password')} /></Field>
+        <Field label="Re-enter password" htmlFor="tm-confirm"><PasswordInput id="tm-confirm" autoComplete="new-password" value={f.confirm} onChange={set('confirm')} /></Field>
       </div>
       {f.role === 'support' && (
-        <Checkbox className="mb-4" checked={f.canRefund} onChange={(e) => setF({ ...f, canRefund: e.target.checked })} label="Can issue refunds and credit to customers (Orders and Customers tabs)" />
+        <Checkbox className="mb-4" checked={f.canRefund} onChange={(e) => setF({ ...f, canRefund: e.target.checked })} label="Can give customers platform credit: courtesy refunds (Orders) and goodwill (Customers)" />
       )}
       <ErrorText error={error} />
       <Button block disabled={busy} onClick={save}>{busy ? 'Adding…' : f.role === 'admin' ? 'Add admin' : 'Add employee'}</Button>
@@ -203,10 +204,10 @@ function EditMember({ member: m, self, onSaved }: { member: Member; self: boolea
       ) : null}
       <div className="grid gap-x-3 sm:grid-cols-2">
         <Field label="New password" htmlFor="em-pass" hint="At least 8 characters, with a letter and a number.">
-          <Input id="em-pass" type="password" autoComplete="new-password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
+          <PasswordInput id="em-pass" autoComplete="new-password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
         </Field>
         <Field label="Re-enter new password" htmlFor="em-confirm">
-          <Input id="em-confirm" type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
+          <PasswordInput id="em-confirm" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
         </Field>
       </div>
       {!self && <Checkbox checked={pw.email} onChange={(e) => setPw({ ...pw, email: e.target.checked })} label={`Email the new or temporary password to ${m.email}`} />}

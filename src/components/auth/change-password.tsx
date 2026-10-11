@@ -8,7 +8,8 @@ import { changeMyPassword, signOut } from '@/app/actions/auth';
 import { ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Field, Input } from '@/components/ui/field';
+import { Field } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 
 // Choosing a new password for your own account. `forced`: after logging in with a temporary password an admin set
 // (the current password isn't asked for).
@@ -31,14 +32,14 @@ function ChangePasswordForm({ forced, onDone }: { forced: boolean; onDone: () =>
     <form onSubmit={save} noValidate>
       {!forced && (
         <Field label="Current password" htmlFor="cp-current">
-          <Input id="cp-current" type="password" autoComplete="current-password" value={f.current} onChange={set('current')} />
+          <PasswordInput id="cp-current" autoComplete="current-password" value={f.current} onChange={set('current')} />
         </Field>
       )}
       <Field label="New password" htmlFor="cp-new" hint="At least 8 characters, with a letter and a number.">
-        <Input id="cp-new" type="password" autoComplete="new-password" value={f.password} onChange={set('password')} />
+        <PasswordInput id="cp-new" autoComplete="new-password" value={f.password} onChange={set('password')} />
       </Field>
       <Field label="Re-enter new password" htmlFor="cp-confirm">
-        <Input id="cp-confirm" type="password" autoComplete="new-password" value={f.confirm} onChange={set('confirm')} />
+        <PasswordInput id="cp-confirm" autoComplete="new-password" value={f.confirm} onChange={set('confirm')} />
       </Field>
       <ErrorText error={error} />
       <Button block type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save new password'}</Button>

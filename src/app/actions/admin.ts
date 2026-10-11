@@ -121,20 +121,30 @@ export async function adminCancelOrder(input: unknown) {
   });
 }
 
-// Refund by percentage of what's left (food and its tax; the service fee is not refundable) or by amount, to the original payment or as platform credit.
+// All sales are final: food is sold as is and is never refunded in cash or to the card (Customer Terms, Section 6).
+//   * credit: a courtesy / loyalty refund as Bite Wise platform credit, case by case (admins, and employees allowed to
+//     give credit). Paid by Bite Wise; the restaurant keeps its payout.
+//   * original: back to how the customer paid, ONLY when a law requires it (Section 6.5): full admins, confirmed and
+//     with the reason recorded. The restaurant gives up the matching part of its payout.
+// By percentage of what's left (food and its tax; never the service fee) or by amount.
 export async function refundOrder(input: unknown) {
   return action(async () => {
-    const me = await requireAdmin('refund');
     const d = parse(
       z.object({
         id: int('Order', 1, Number.MAX_SAFE_INTEGER),
         percent: int('Percentage', 1, 100).optional(),
         amount: z.union([z.string(), z.number()]).optional(),
         method: z.enum(['original', 'credit']),
+        lawRequires: z.boolean().default(false),
         reason: note('Reason', 3),
       }),
       input,
     );
+    const me = d.method === 'credit' ? await requireAdmin('refund') : await requireAdmin();
+    if (d.method === 'original') {
+      if (!d.lawRequires) throw new AppError(400, 'All sales are final. A refund to the card is only given when a law requires it: confirm that it does, or give platform credit instead.');
+      if (d.reason.length < 10) throw new AppError(400, 'Say which law requires this refund, and why (at least 10 characters).');
+    }
     const o = await orders.getOrder(d.id);
     const refundable = orders.refundableCents(o); // never the service fee
     const amountCents = d.percent !== undefined
@@ -142,8 +152,10 @@ export async function refundOrder(input: unknown) {
       : parse(dollars('Refund amount', 0.01, refundable / 100), d.amount ?? '');
     const res = await orders.refundOrder(d.id, { amountCents, method: d.method, reason: d.reason, adminId: me.id });
     await log(
-      me.id, d.method === 'credit' ? 'order.refund_credit' : 'order.refund', 'order', d.id,
-      `${money(amountCents)} to ${d.method === 'credit' ? 'platform credit' : [res.cardCents && `card ${money(res.cardCents)}`, res.creditCents && `credit ${money(res.creditCents)}`].filter(Boolean).join(' + ')} - ${d.reason}`,
+      me.id, d.method === 'credit' ? 'order.refund_credit' : 'order.legal_refund', 'order', d.id,
+      d.method === 'credit'
+        ? `${money(amountCents)} as courtesy platform credit - ${d.reason}`
+        : `${money(amountCents)} to ${[res.cardCents && `card ${money(res.cardCents)}`, res.creditCents && `credit ${money(res.creditCents)}`].filter(Boolean).join(' + ')} - required by law: ${d.reason}`,
     );
     return { amountCents };
   });

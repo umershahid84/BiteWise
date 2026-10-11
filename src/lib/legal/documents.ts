@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-16.1';
-export const EFFECTIVE = 'October 16, 2026';
+export const LEGAL_VERSION = '2026-10-17.1';
+export const EFFECTIVE = 'October 17, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -57,8 +57,9 @@ allergen.</p>
 prepared in kitchens that handle common allergens, including milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soy and sesame,
 and "wrong order" items may contain ingredients that differ from the regular menu. Do not buy or eat an item if you are unsure it is
 safe for you.</p>
-<p>3.3 Inspect food when you pick it up. If it appears unsafe, spoiled or not as described, do not accept or eat it, and report it to us
-as described in Section 6.</p>
+<p>3.3 <b>Inspect food before you accept it.</b> Check your order at the counter when you pick it up. If it appears unsafe, spoiled or
+not as described, do not accept or eat it, and tell the Restaurant and us at <a href="mailto:${c.email}">${c.email}</a>. Once you accept
+your order, it is yours as is (Section 6).</p>
 <p>3.4 Each Restaurant is responsible for complying with food safety laws, including the Washington State Retail Food Code and local
 health department rules.</p>
 
@@ -85,7 +86,7 @@ order, and <b>it is not refunded, whether or not you pick up your order</b>. In 
   <li>if you <b>cancel</b> an order, or <b>do not pick it up</b> before the discard timer ends (a missed pickup, Section 5.4), you are charged
   the service fee (and any sales tax on it), and the rest of the hold is released; if you paid part of the order with Platform Credit, the
   service fee is charged to your card first and then taken from that credit;</li>
-  <li>a refund on a completed order (Section 6) covers at most the food and its sales tax, never the service fee.</li>
+  <li>completed orders are not refunded at all (Section 6).</li>
 </ul>
 <p>The only exception is an order the Restaurant or Bite Wise cancels or declines (for example, because the food became unavailable or
 unsafe, or the Restaurant's account was closed), or an order whose payment failed: those holds are released in full and you are not
@@ -115,23 +116,25 @@ automatically, and the following steps are taken automatically by the platform, 
   <a href="mailto:${c.email}">${c.email}</a>.</li>
 </ul>
 
-<h2>6. Problems with an order and refunds</h2>
-<p>6.1 If your food was not provided, was materially different from its description, or appeared unsafe, contact us at
-<a href="mailto:${c.email}">${c.email}</a> within 24 hours of pickup with your receipt number and a description (and photos if possible).
-We will review your request with the Restaurant and, where appropriate, refund all or part of the price of the food and its sales tax.
-<b>The service fee is not refundable</b> (Section 4.6). Bite Wise decides the refund method, and will tell you which one it used:</p>
-<ul>
-  <li><b>Original form of payment.</b> The refund goes back to how you paid: to the card you used, and if you paid with Platform Credit,
-  that portion is returned to your credit balance. Card refunds usually appear within 5 to 10 business days, depending on your card
-  issuer.</li>
-  <li><b>Bite Wise Platform Credit.</b> The refund is added to your Platform Credit balance for future orders (see Section 6.4).</li>
-</ul>
-<p>Where applicable law requires a refund to your original form of payment, we will refund it that way.</p>
-<p>6.2 Because surplus food is sold at a discount in the condition described, we cannot offer refunds for matters of taste or
-preference, or for food that matched its description.</p>
-<p>6.3 Nothing in these Terms limits any right you have under the Washington Consumer Protection Act (RCW 19.86) or other laws that
-cannot be waived.</p>
-<p>6.4 <b>Bite Wise Platform Credit.</b> Platform Credit is a promotional and refund balance issued by Bite Wise, at its discretion,
+<h2>6. All sales are final: food is sold as is</h2>
+<p>6.1 <b>Sold as is.</b> Surplus food is food a Restaurant has already prepared and would otherwise throw away. It is sold at a discount,
+<b>as is</b>, in the condition it is in when you pick it up, with no warranty of any kind from the Restaurant or Bite Wise beyond what the
+law requires.</p>
+<p>6.2 <b>No refunds.</b> <b>All sales are final.</b> Once you have picked up an order (the Restaurant has entered your PIN), <b>neither the
+Restaurant nor Bite Wise will refund it</b>, in whole or in part, in cash or to your card. This includes matters of taste, portion,
+temperature, packaging or preparation, and food that differs from the Restaurant's regular menu. The service fee is never refunded
+(Section 4.6).</p>
+<p><b>Courtesy credit.</b> Bite Wise may, on a case-by-case basis and at its sole discretion, give you Bite Wise Platform Credit as a
+courtesy or for your loyalty (Section 6.6). This is a goodwill gesture, not a refund you are entitled to: Bite Wise has no obligation to
+give it, and giving it once does not mean it will be given again.</p>
+<p>6.3 <b>Before you accept it.</b> Because there are no refunds, please check your order at the counter (Section 3.3). If it is not the
+food you ordered, or it appears unsafe or spoiled, do not accept it: the Restaurant can cancel the order through Bite Wise support, and
+then you are not charged (Section 4.6).</p>
+<p>6.4 <b>Report safety problems.</b> If you believe food made you ill or was unsafe, contact your local health department and tell us at
+<a href="mailto:${c.email}">${c.email}</a>, so we can review the Restaurant.</p>
+<p>6.5 <b>Your legal rights.</b> Nothing in these Terms limits any right you have under the Washington Consumer Protection Act (RCW 19.86)
+or other laws that cannot be waived. Where such a law requires a refund, it will be given as the law requires.</p>
+<p>6.6 <b>Bite Wise Platform Credit.</b> Platform Credit is a promotional and courtesy balance issued by Bite Wise, at its discretion,
 to your account.</p>
 <ul>
   <li><b>Where you see it:</b> your balance appears in the site header, on your Account page (with a history of every credit and use),
@@ -301,16 +304,14 @@ automatically from the address in your profile; keep that address accurate.</p>
   <li>Bite Wise remits any sales tax on its own service fee and on your subscription. You remain responsible for all other taxes on
   your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</li>
 </ul>
-<p>5.5 <b>Refunds, Platform Credit and chargebacks.</b> Bite Wise will share a customer's complaint with you and consider your response
-before deciding on a refund. Bite Wise may resolve a complaint in one of two ways:</p>
-<ul>
-  <li><b>(a) Refund to the customer's original form of payment.</b> The refunded share of what you were paid for the order (the food,
-  and its sales tax when it was paid to you) is taken back from you,
-  by reversing the transfer for that order or deducting it from future payouts, and you receive nothing for the refunded portion.
-  Refunds cover only the food and its sales tax; the customer's service fee is not refundable and is never part of a refund.</li>
-  <li><b>(b) Bite Wise Platform Credit.</b> Bite Wise may instead issue the customer Platform Credit. Platform Credit, including goodwill
-  credit, is funded solely by Bite Wise. You keep your full proceeds for the order, and nothing is deducted from your payouts.</li>
-</ul>
+<p>5.5 <b>Sold as is; no refunds; Platform Credit and chargebacks.</b> Food is sold to customers <b>as is</b>, and <b>all sales are
+final</b>: once you have confirmed a pickup with the customer's PIN, neither you nor Bite Wise refunds the order, and your proceeds for
+it are not taken back for a refund (Customer Terms, Section 6). Do not hand over food that is unsafe, spoiled or not what was ordered:
+cancel the order through Bite Wise support instead, so the customer is not charged and you are not paid for it. Where a law that cannot
+be waived requires a refund, Bite Wise will give it, and the refunded share of what you were paid for that order (the food, and its sales
+tax when it was paid to you) is taken back from you by reversing the transfer or deducting it from future payouts. Bite Wise may, at its
+own expense and discretion, give a customer Platform Credit as a courtesy or for loyalty (including for an order you completed); that never
+reduces your proceeds.</p>
 <p>When a customer pays for an order with Platform Credit, in whole or in part, you receive your full proceeds for that order exactly as
 if it had been paid by card. Bite Wise bears the cost of the credit. If a payment is reversed through a chargeback caused by your acts or
 omissions, the corresponding amount is deducted from your future payouts.</p>

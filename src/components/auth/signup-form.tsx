@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { StateSelect } from '@/components/ui/state-select';
 import { Field, Input } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 import { SectionLabel } from '@/components/ui/misc';
 import { AuthTitle } from './auth-card';
 import { CheckEmail } from './check-email';
@@ -101,7 +102,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
           <Input id="username" name="username" autoComplete="username" required />
         </Field>
         <Field label="Password" htmlFor="password" hint="At least 8 characters, with a letter and a number.">
-          <Input id="password" name="password" type="password" autoComplete="new-password" required />
+          <PasswordInput id="password" name="password" autoComplete="new-password" required />
         </Field>
         {role === 'restaurant' && (
           <>

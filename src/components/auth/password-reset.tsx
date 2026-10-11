@@ -5,6 +5,7 @@ import { forgotPassword, resetPasswordWithCode } from '@/app/actions/auth';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 import { AuthTitle } from './auth-card';
 
 // Forgot password: 1) the email address, 2) the code from the email with the new password typed twice.
@@ -76,10 +77,10 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
             />
           </Field>
           <Field label="New password" htmlFor="reset-password" hint="At least 8 characters, with a letter and a number.">
-            <Input id="reset-password" name="password" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput id="reset-password" name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </Field>
           <Field label="Re-enter new password" htmlFor="reset-confirm">
-            <Input id="reset-confirm" name="confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            <PasswordInput id="reset-confirm" name="confirm" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </Field>
           {confirm && password !== confirm && <p className="-mt-2 mb-3 text-sm text-danger">The two passwords don&apos;t match.</p>}
           <Button block type="submit" disabled={pending || locked}>

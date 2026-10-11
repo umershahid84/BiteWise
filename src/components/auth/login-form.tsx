@@ -8,6 +8,7 @@ import { markActive } from '@/components/app/idle-logout';
 import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox, Field, Input } from '@/components/ui/field';
+import { PasswordInput } from '@/components/ui/password-input';
 import { LOGIN_PATH, type Portal } from '@/lib/constants';
 import { AuthTitle } from './auth-card';
 import { PasswordReset } from './password-reset';
@@ -153,7 +154,7 @@ export function LoginForm({ portal, title, next, notice, footer, initialAudience
           <Input id="login" name="login" autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} required />
         </Field>
         <Field label="Password" htmlFor="password">
-          <Input id="password" name="password" type="password" autoComplete="current-password" required />
+          <PasswordInput id="password" name="password" autoComplete="current-password" required />
         </Field>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
           <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)} label="Remember me" />

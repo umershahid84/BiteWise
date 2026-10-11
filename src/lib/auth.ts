@@ -13,7 +13,8 @@ export type Viewer = {
   username: string;
   role: Role;
   restaurant: { id: number; name: string; status: Database['public']['Enums']['restaurant_status'] } | null;
-  // Admin employees ('support') allowed to issue refunds and credit (always true for admins).
+  // Admin employees ('support') allowed to give goodwill platform credit (always true for admins). All sales are final, so
+  // there are no refunds; the only refund path (one a law requires) is for full admins.
   canRefund: boolean;
   // Restaurant staff (managers, supervisors): their restaurant is in `restaurant`.
   staff: { fullName: string; title: string } | null;
@@ -100,7 +101,7 @@ export async function requireAdmin(allow?: 'support' | 'refund'): Promise<Viewer
     if (allow === 'support') return viewer;
     if (allow === 'refund') {
       if (viewer.canRefund) return viewer;
-      throw new AppError(403, 'You don\'t have permission to issue refunds or credit. Ask an admin.');
+      throw new AppError(403, 'You don\'t have permission to give platform credit. Ask an admin.');
     }
     throw new AppError(403, 'Only an admin can do this.');
   }

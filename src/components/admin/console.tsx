@@ -55,8 +55,8 @@ export function AdminConsole({ access }: { access: Access }) {
       </div>
       <p className="-mt-1 mb-5 text-muted">
         {access.role === 'admin'
-          ? 'Everything about Bite Wise in one place: income, alerts, restaurants, customers, orders, refunds, payouts and taxes.'
-          : `Support: alerts, restaurants, customers, orders and live offers${access.canRefund ? ', including refunds and credit' : ''}.`}
+          ? 'Everything about Bite Wise in one place: income, alerts, restaurants, customers, orders, payouts and taxes.'
+          : `Support: alerts, restaurants, customers, orders and live offers${access.canRefund ? ', including platform credit' : ''}.`}
       </p>
       <Tabs value={tab} onValueChange={go}>
         {/* The console has many tabs: on laptop screens and up the bar is as wide as its tabs (wider than the page if needed), so they all fit
