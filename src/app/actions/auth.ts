@@ -92,6 +92,15 @@ async function lookUpTax(ownerId: string) {
   }
 }
 
+// The person accepted the documents shown to them (the app's current text, version LEGAL_VERSION). The database keeps
+// its own version of each document; when it hasn't been updated yet (the hosted database is behind the app), record
+// acceptance under the database's version, so nobody is locked out by a version mismatch.
+async function asDatabaseVersions(accepted: Record<string, string> | undefined) {
+  if (!accepted) return accepted;
+  const { data } = await supabaseAdmin().from('legal_documents').select('id, version').in('id', Object.keys(accepted));
+  return Object.fromEntries(Object.keys(accepted).map((id) => [id, data?.find((d) => d.id === id)?.version ?? accepted[id]]));
+}
+
 export async function signUp(input: unknown) {
   return action(async () => {
     const data = checkSignup(input);
@@ -109,7 +118,7 @@ export async function signUp(input: unknown) {
     const metadata = {
       username: data.username,
       role: data.role,
-      accepted_terms: data.acceptedTerms,
+      accepted_terms: await asDatabaseVersions(data.acceptedTerms),
       restaurant: data.role === 'restaurant' ? data.restaurant : undefined,
       ip,
       user_agent: userAgent,
@@ -280,7 +289,7 @@ export async function acceptUpdatedTerms(accepted: Record<string, string>) {
     if (!viewer) throw new AppError(401, 'Please log in.');
     const { ip, userAgent } = await requestInfo();
     const supabase = await supabaseServer();
-    const err = fromDb((await supabase.rpc('accept_terms', { p_accepted: accepted, p_ip: ip, p_user_agent: userAgent })).error);
+    const err = fromDb((await supabase.rpc('accept_terms', { p_accepted: (await asDatabaseVersions(accepted)) ?? {}, p_ip: ip, p_user_agent: userAgent })).error);
     if (err) throw err;
     return null;
   });
