@@ -1,8 +1,9 @@
 import 'server-only';
 import { cache } from 'react';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { Database } from '@/lib/database.types';
-import { homeFor, LOGIN_PATH, portalFor, type Role } from '@/lib/constants';
+import { LOGIN_PATH, portalFor, type Role } from '@/lib/constants';
 import { AppError, must } from '@/lib/errors';
 import { supabaseServer } from '@/lib/supabase/server';
 
@@ -63,7 +64,12 @@ export async function requirePageViewer(role?: Role | Role[]): Promise<Viewer> {
   const roles = role === undefined ? null : Array.isArray(role) ? role : [role];
   const viewer = await getViewer();
   if (!viewer) redirect(LOGIN_PATH[portalFor(roles?.[0])]);
-  if (roles && !roles.includes(viewer.role)) redirect(homeFor(viewer.role));
+  // Signed in with another kind of account (e.g. a customer is logged in and a restaurant opens its dashboard from an
+  // email): log that account out and ask for the right one (src/app/auth/switch/route.ts).
+  if (roles && !roles.includes(viewer.role)) {
+    const path = (await headers()).get('x-bw-path') ?? '/';
+    redirect(`/auth/switch?next=${encodeURIComponent(path)}`);
+  }
   return viewer;
 }
 

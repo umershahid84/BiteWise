@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { LOGIN_PATH, loginForPath } from '@/lib/constants';
 import { publicEnv } from '@/lib/env';
+import { sessionOnly } from '@/lib/supabase/session-cookie';
 import { themeForPath } from '@/lib/theme';
 
 // Refreshes the Supabase session cookie on every page request and sends signed-out visitors to the log-in page
@@ -15,6 +16,7 @@ export async function proxy(request: NextRequest) {
   // (The log-in and sign-up pages opened on their restaurant side start in the restaurant look.)
   const q = request.nextUrl.searchParams;
   const restaurantSide = q.get('as') === 'restaurant' || q.get('role') === 'restaurant';
+  request.headers.set('x-bw-path', request.nextUrl.pathname + request.nextUrl.search); // for src/lib/auth.ts
   request.headers.set('x-bw-theme', restaurantSide ? 'restaurant' : themeForPath(request.nextUrl.pathname));
   let response = NextResponse.next({ request });
   const supabase = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseKey, {
@@ -23,7 +25,7 @@ export async function proxy(request: NextRequest) {
       setAll(toSet) {
         for (const { name, value } of toSet) request.cookies.set(name, value);
         response = NextResponse.next({ request });
-        for (const { name, value, options } of toSet) response.cookies.set(name, value, options);
+        for (const { name, value, options } of toSet) response.cookies.set(name, value, sessionOnly(options));
       },
     },
   });

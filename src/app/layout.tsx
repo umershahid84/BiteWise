@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { IdleLogout } from '@/components/app/idle-logout';
 import { SessionWatch } from '@/components/app/session-watch';
+import { TabSession } from '@/components/app/tab-session';
+import { supabaseServer } from '@/lib/supabase/server';
 import { Providers } from '@/components/app/providers';
 import { SiteFooter } from '@/components/app/site-footer';
 import { SiteHeader } from '@/components/app/site-header';
@@ -54,6 +56,8 @@ export const viewport: Viewport = { themeColor: '#07110d' };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getViewer();
+  // The sign-in session's id (from the verified token), for logging out when every tab is closed.
+  const sessionId = viewer ? String((await (await supabaseServer()).auth.getClaims()).data?.claims?.session_id ?? '') : '';
   const theme = ((await headers()).get('x-bw-theme') ?? 'customer') as Theme;
   const mode = modeFor(theme, parseModePref((await cookies()).get(MODE_COOKIE)?.value));
   return (
@@ -69,7 +73,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <SiteFooter />
           <ThemeSync />
           {viewer && <IdleLogout />}
-          {viewer && <SessionWatch />}
+          {viewer && <SessionWatch userId={viewer.id} />}
+          {viewer && sessionId && <TabSession sessionId={sessionId} />}
           {viewer && (viewer.role === 'customer' || viewer.role === 'restaurant') && viewer.pendingTerms.length > 0 && <TermsGate role={viewer.role} />}
         </Providers>
       </body>

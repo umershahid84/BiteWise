@@ -170,6 +170,8 @@ export async function signIn(input: unknown) {
       email = data?.email ?? `${login}@invalid.local`;
     }
     const supabase = await supabaseServer();
+    // Whoever was logged in on this browser before (say a customer, when a restaurant logs in) is logged out.
+    if ((await supabase.auth.getClaims()).data?.claims) await supabase.auth.signOut({ scope: 'local' });
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       if (error.status === 429) throw new AppError(429, 'Too many attempts. Please wait a few minutes and try again.');

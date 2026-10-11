@@ -13,7 +13,7 @@ import { AuthTitle } from './auth-card';
 import { PasswordReset } from './password-reset';
 import { RoleSwitch, type Audience } from './role-switch';
 
-export type LoginNotice = 'confirmed' | 'confirmation-failed' | 'idle' | 'session' | null;
+export type LoginNotice = 'confirmed' | 'confirmation-failed' | 'idle' | 'session' | 'switched' | null;
 
 // "Remember me": the user name is kept in this browser, and the browser's own password manager is asked to save the
 // password (Bite Wise never stores passwords itself). Each log-in page remembers its own account.
@@ -47,8 +47,9 @@ const savePassword = async (form: HTMLFormElement) => {
 
 // The main log-in page has a "Log in as a customer / Log in as a restaurant" slider (restaurant owners and their
 // staff use the restaurant side); the admin log-in page has none.
-export function LoginForm({ portal, title, next, notice, footer, initialAudience = 'customer' }: {
+export function LoginForm({ portal, title, next, notice, footer, initialAudience = 'customer', signedInAs = null }: {
   portal: Portal; title: string; next: string | null; notice: LoginNotice; footer?: React.ReactNode; initialAudience?: Audience;
+  signedInAs?: { username: string; home: string } | null;
 }) {
   const [audience, setAudience] = useState<Audience>(initialAudience);
   // What "Remember me" is saved under: each side of the slider remembers its own account.
@@ -98,6 +99,13 @@ export function LoginForm({ portal, title, next, notice, footer, initialAudience
       )}
       {resetDone && <Alert tone="info" className="mb-4"><b>Your password is changed.</b> Log in with your new password.</Alert>}
       {notice === 'confirmed' && <Alert tone="info" className="mb-4"><b>Your email is confirmed.</b> Log in to get started.</Alert>}
+      {notice === 'switched' && <Alert tone="info" className="mb-4">The account that was logged in on this browser has been logged out. Log in with your own account to continue.</Alert>}
+      {signedInAs && (
+        <Alert tone="info" className="mb-4">
+          <b>{signedInAs.username}</b> is logged in on this browser. Logging in below logs them out.{' '}
+          <Link href={signedInAs.home} className="font-semibold">Continue as {signedInAs.username} →</Link>
+        </Alert>
+      )}
       {notice === 'session' && <Alert tone="info" className="mb-4">Your session ended, so you were logged out. Please log in again to continue where you left off.</Alert>}
       {notice === 'idle' && <Alert tone="info" className="mb-4">You were logged out after 10 minutes without activity, to keep your account safe. Please log in again.</Alert>}
       {notice === 'confirmation-failed' && (

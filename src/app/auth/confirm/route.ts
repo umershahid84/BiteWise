@@ -13,8 +13,11 @@ export async function GET(request: NextRequest) {
   const type = url.searchParams.get('type') as EmailOtpType | null;
   if (tokenHash && type) {
     const supabase = await supabaseServer();
+    // Whoever was logged in on this browser (say a customer, when a restaurant clicks its email link) is logged out.
+    await supabase.auth.signOut({ scope: 'local' });
     const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
     if (!error) {
+      await supabase.auth.signOut({ scope: 'local' }); // they log in themselves on the next page
       // A restaurant that just confirmed its email gets "your application is pending" (or, if it's already
       // approved, the welcome email with its kiosk link).
       // A customer gets the congratulations email with the phone app buttons.

@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { getViewer } from '@/lib/auth';
-import { homeFor, portalFor, SIGNUP_PATH, type Portal } from '@/lib/constants';
+import { homeFor, SIGNUP_PATH, type Portal } from '@/lib/constants';
 import { AuthCard } from './auth-card';
 import { LoginForm, type LoginNotice } from './login-form';
 
@@ -22,14 +21,16 @@ const PAGES: Record<Portal, { tag?: string; title: string; footer: React.ReactNo
 
 // The log-in page of one kind of account (src/lib/constants.ts LOGIN_PATH).
 export async function LoginPage({ portal, searchParams }: { portal: Portal; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const { next, confirmed, error, idle, session, as } = await searchParams;
+  const { next, confirmed, error, idle, session, switched, as } = await searchParams;
+  // Someone may already be logged in on this browser (say a customer, while a restaurant wants to log in): the form
+  // still shows, and logging in replaces that account.
   const viewer = await getViewer();
-  if (viewer) redirect(portalFor(viewer.role) === portal ? (safeNext(next) ?? homeFor(viewer.role)) : homeFor(viewer.role));
-  const notice: LoginNotice = confirmed ? 'confirmed' : error === 'confirmation' ? 'confirmation-failed' : idle ? 'idle' : session ? 'session' : null;
+  const notice: LoginNotice = confirmed ? 'confirmed' : error === 'confirmation' ? 'confirmation-failed' : idle ? 'idle' : session ? 'session' : switched ? 'switched' : null;
   const page = PAGES[portal];
   return (
     <AuthCard tag={page.tag}>
       <LoginForm portal={portal} title={page.title} next={safeNext(next)} notice={notice} footer={page.footer}
+        signedInAs={viewer && { username: viewer.username, home: homeFor(viewer.role) }}
         initialAudience={as === 'restaurant' || safeNext(next)?.startsWith('/restaurant') ? 'restaurant' : 'customer'} />
     </AuthCard>
   );
