@@ -67,7 +67,7 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
             <Input id="reset-confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </Field>
           {confirm && password !== confirm && <p className="-mt-2 mb-3 text-sm text-danger">The two passwords don&apos;t match.</p>}
-          <Button block type="submit" disabled={pending || locked || code.length !== 6 || !password || password !== confirm}>
+          <Button block type="submit" disabled={pending || locked || code.length < 6 || !password || !confirm}>
             {pending ? 'Please wait…' : 'Set new password'}
           </Button>
           <Button block variant="ghost" className="mt-2" disabled={pending} onClick={send}>Send a new code</Button>
