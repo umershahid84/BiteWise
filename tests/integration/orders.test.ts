@@ -113,7 +113,7 @@ describe.skipIf(!available)('checkout', () => {
 });
 
 describe.skipIf(!available)('pickup and payouts', () => {
-  it('charges at pickup and pays the restaurant its food subtotal through Stripe Connect', async () => {
+  it('charges at pickup and pays the restaurant its food and the food\'s sales tax through Stripe Connect', async () => {
     const shop = await restaurantWithOffer();
     const c = await signUp('customer');
     const { orderId } = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 0, newCard: visa });
@@ -121,11 +121,12 @@ describe.skipIf(!available)('pickup and payouts', () => {
     expect(done.status).toBe('picked_up');
     const payouts = (await db().from('payouts').select('*').eq('order_id', orderId)).data!;
     expect(payouts).toHaveLength(1);
-    expect(payouts[0]).toMatchObject({ kind: 'transfer', amount_cents: 500 });
+    expect(payouts[0]).toMatchObject({ kind: 'transfer', amount_cents: 552 }); // $5.00 food + $0.52 sales tax; Bite Wise keeps the fee
+    expect((await orders.getOrder(orderId)).restaurant_share_cents).toBe(552);
     expect(payouts[0].invoice_number).toMatch(/^INV-\d{8}-\d{6}$/);
     expect(payouts[0].transaction_id).toMatch(/^tr_mock_/);
     const bal = (await db().from('restaurant_balances').select('*').eq('restaurant_id', shop.restaurant.id).single()).data!;
-    expect(bal).toMatchObject({ earned_cents: 500, paid_cents: 500, balance_cents: 0 });
+    expect(bal).toMatchObject({ earned_cents: 552, paid_cents: 552, balance_cents: 0 });
     // The PIN can't be used twice.
     const again = await shop.owner.client.rpc('restaurant_find_pickup', { p_pin: await pinOf(orderId) });
     expect(again.data).toBeNull();
@@ -138,7 +139,7 @@ describe.skipIf(!available)('pickup and payouts', () => {
     const { orderId } = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 900, newCard: visa });
     await pickUp(shop, orderId);
     const payouts = (await db().from('payouts').select('amount_cents, note').eq('order_id', orderId).order('id')).data!;
-    expect(payouts.reduce((n, p) => n + p.amount_cents, 0)).toBe(1000); // full food subtotal
+    expect(payouts.reduce((n, p) => n + p.amount_cents, 0)).toBe(1104); // the full food subtotal and its sales tax
     expect(payouts.some((p) => p.note.includes('top-up'))).toBe(true);
   });
 
@@ -149,7 +150,7 @@ describe.skipIf(!available)('pickup and payouts', () => {
     expect((await orders.getOrder(orderId)).destination_account).toBeNull();
     await pickUp(shop, orderId);
     const bal = (await db().from('restaurant_balances').select('*').eq('restaurant_id', shop.restaurant.id).single()).data!;
-    expect(bal).toMatchObject({ earned_cents: 500, paid_cents: 0, balance_cents: 500 });
+    expect(bal).toMatchObject({ earned_cents: 552, paid_cents: 0, balance_cents: 552 });
   });
 
   it('rate-limits wrong PINs', async () => {
@@ -180,9 +181,9 @@ describe.skipIf(!available)('refunds', () => {
     const res = await orders.refundOrder(orderId, { amountCents: half, method: 'original', reason: 'cold food', adminId });
     expect(res.cardCents).toBe(half);
     const reversal = (await db().from('payouts').select('*').eq('order_id', orderId).eq('kind', 'reversal')).data!;
-    expect(reversal[0].amount_cents).toBe(-250);
+    expect(reversal[0].amount_cents).toBe(-276); // half of the $5.52 the restaurant was paid
     const bal = (await db().from('restaurant_balances').select('*').eq('restaurant_id', shop.restaurant.id).single()).data!;
-    expect(bal).toMatchObject({ earned_cents: 250, paid_cents: 250, balance_cents: 0 });
+    expect(bal).toMatchObject({ earned_cents: 276, paid_cents: 276, balance_cents: 0 });
   });
 
   it('refunds as platform credit without touching the restaurant', async () => {
@@ -192,7 +193,7 @@ describe.skipIf(!available)('refunds', () => {
     await orders.refundOrder(orderId, { amountCents: o.total_cents - o.service_fee_cents, method: 'credit', reason: 'sorry', adminId });
     expect(await balance(c.id)).toBe(o.total_cents - o.service_fee_cents);
     const bal = (await db().from('restaurant_balances').select('*').eq('restaurant_id', shop.restaurant.id).single()).data!;
-    expect(bal).toMatchObject({ earned_cents: 500, paid_cents: 500 });
+    expect(bal).toMatchObject({ earned_cents: 552, paid_cents: 552 });
     await expect(orders.refundOrder(orderId, { amountCents: 1, method: 'credit', reason: 'again', adminId })).rejects.toThrow('fully refunded');
   });
 });

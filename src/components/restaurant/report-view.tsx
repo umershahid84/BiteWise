@@ -16,7 +16,7 @@ export function ReportView({ report: rep, today }: { report: Report; today: stri
   const s = rep.summary;
   const kpis: [string, string][] = [
     ['Food sales', money(s.foodSalesCents)], ['Orders picked up', String(s.ordersPickedUp)], ['Meals rescued', String(s.mealsRescued)],
-    ['Discounts given', money(s.discountsCents)], ['Sales tax', money(s.salesTaxCents)], ['Total charged', money(s.totalChargedCents)],
+    ['Discounts given', money(s.discountsCents)], ['Sales tax paid to you', money(s.taxPaidToYouCents)], ['Your payout', money(s.payoutCents)],
   ];
   return (
     <main className="container-page py-8">

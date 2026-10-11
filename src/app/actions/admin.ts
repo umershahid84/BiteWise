@@ -180,6 +180,8 @@ export async function updateSettings(input: unknown) {
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
+        // true: restaurants get the sales tax on their food and remit it; false: Bite Wise keeps and remits it.
+        orderTaxToRestaurant: z.boolean().optional(),
         // States where plan fees are taxed, e.g. "WA, NY" (empty: nowhere).
         planTaxStates: z.string().max(200).optional(),
       }),
@@ -192,6 +194,7 @@ export async function updateSettings(input: unknown) {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,
+      ...(d.orderTaxToRestaurant !== undefined ? { order_tax_to_restaurant: d.orderTaxToRestaurant } : {}),
       ...(d.planTaxStates !== undefined ? { plan_tax_states: [...new Set(states)].join(', ') } : {}),
     };
     const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));

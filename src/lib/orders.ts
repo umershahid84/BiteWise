@@ -237,18 +237,19 @@ export async function sweep() {
 
 // ---------------------------------------------------------------- pickup
 
-// Restaurant confirms pickup with the customer's PIN: the card is charged now and the restaurant
-// is paid its food subtotal through Stripe Connect.
+// Restaurant confirms pickup with the customer's PIN: the card is charged now and the restaurant is paid its share
+// through Stripe Connect: the food price, plus the sales tax on it unless Bite Wise remits that tax
+// (orders.restaurant_share_cents, fixed when the order was placed). Bite Wise keeps the service fee.
 export async function completePickup(claimed: { id: number; paymentRef: string | null; destinationAccount: string | null }) {
   const order = await getOrder(claimed.id);
   const cardCents = order.total_cents - order.credit_applied_cents;
-  const share = order.subtotal_cents;
+  const share = order.restaurant_share_cents;
   const destination = claimed.destinationAccount || null;
   let charge: { chargeId: string | null; transferId: string | null } = { chargeId: null, transferId: null };
 
   if (claimed.paymentRef) {
     try {
-      // Destination charge: Bite Wise keeps the service fee and sales tax; Stripe sends the rest.
+      // Destination charge: Bite Wise keeps the service fee (and any sales tax it remits); Stripe sends the rest.
       const applicationFee = destination ? Math.max(0, cardCents - share) : null;
       charge = await payments().capture(claimed.paymentRef, { applicationFeeCents: applicationFee, idempotencyKey: `capture-${order.id}` });
     } catch (err) {

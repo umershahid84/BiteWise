@@ -128,6 +128,10 @@ export async function reportData(restaurantId: number, date: string) {
       discountsCents: sum(sold, (o) => (o.original_unit_price_cents - o.unit_price_cents) * o.quantity),
       foodSalesCents: sum(sold, (o) => o.subtotal_cents),
       salesTaxCents: sum(sold, (o) => o.tax_cents),
+      // What the restaurant is paid for these orders (the food, plus its sales tax when the restaurant remits it), and
+      // the part of that which is sales tax for the restaurant to report and remit.
+      payoutCents: sum(sold, (o) => o.restaurant_share_cents),
+      taxPaidToYouCents: sum(sold, (o) => o.restaurant_share_cents - o.subtotal_cents),
       serviceFeesCents: sum(sold, (o) => o.service_fee_cents),
       totalChargedCents: sum(sold, (o) => o.total_cents),
       awaitingPickup: count('reserved'),
@@ -175,6 +179,8 @@ export function reportCsv(rep: Report) {
     ['Discounts given', dollars(s.discountsCents)],
     ['Food sales', dollars(s.foodSalesCents)],
     ['Sales tax collected', dollars(s.salesTaxCents)],
+    ['Sales tax paid to you (yours to report and remit)', dollars(s.taxPaidToYouCents)],
+    ['Your payout (food sales plus the sales tax paid to you)', dollars(s.payoutCents)],
     ['Bite Wise service fees (paid by customers)', dollars(s.serviceFeesCents)],
     ['Total charged to customers', dollars(s.totalChargedCents)],
     ['Awaiting pickup', s.awaitingPickup],

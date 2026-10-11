@@ -201,13 +201,13 @@ isOneToOne: false
                   ]
                 },"orders": {
                   Row: {
-                    "capture_started_at": string | null,"card_label": string,"card_refunded_cents": number,"closed_at": string | null,"created_at": string,"credit_applied_cents": number,"credited_cents": number,"customer_username": string,"destination_account": string | null,"discount_pct": number,"fee_charge_ref": string | null,"id": number,"image_url": string | null,"item_title": string,"kept_card_cents": number,"kept_fee_cents": number,"kept_tax_cents": number,"needs_fee_charge": boolean,"needs_void": boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref": string | null,"picked_up_at": string | null,"pickup_end": string,"quantity": number,"refund_reason": string,"refunded_at": string | null,"refunded_cents": number,"restaurant_id": number,"service_fee_bps": number,"service_fee_cents": number,"status": Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction": string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string,"_pickup_json": Json | null,"order_fee_tax": number | null,"order_non_refundable": number | null
+                    "capture_started_at": string | null,"card_label": string,"card_refunded_cents": number,"closed_at": string | null,"created_at": string,"credit_applied_cents": number,"credited_cents": number,"customer_username": string,"destination_account": string | null,"discount_pct": number,"fee_charge_ref": string | null,"id": number,"image_url": string | null,"item_title": string,"kept_card_cents": number,"kept_fee_cents": number,"kept_tax_cents": number,"needs_fee_charge": boolean,"needs_void": boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref": string | null,"picked_up_at": string | null,"pickup_end": string,"quantity": number,"refund_reason": string,"refunded_at": string | null,"refunded_cents": number,"restaurant_id": number,"restaurant_share_cents": number,"service_fee_bps": number,"service_fee_cents": number,"status": Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction": string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string,"_pickup_json": Json | null,"order_fee_tax": number | null,"order_non_refundable": number | null
                   }
                   Insert: {
-                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"customer_username": string,"destination_account"?: string | null,"discount_pct": number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title": string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end": string,"quantity": number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id": number,"service_fee_bps": number,"service_fee_cents": number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction"?: string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string
+                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"customer_username": string,"destination_account"?: string | null,"discount_pct": number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title": string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id": number,"original_unit_price_cents": number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end": string,"quantity": number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id": number,"restaurant_share_cents"?: number,"service_fee_bps": number,"service_fee_cents": number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents": number,"tax_cents": number,"tax_jurisdiction"?: string,"tax_rate_bps": number,"total_cents": number,"unit_price_cents": number,"user_id": string
                   }
                   Update: {
-                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"customer_username"?: string,"destination_account"?: string | null,"discount_pct"?: number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title"?: string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id"?: number,"original_unit_price_cents"?: number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end"?: string,"quantity"?: number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id"?: number,"service_fee_bps"?: number,"service_fee_cents"?: number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents"?: number,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"total_cents"?: number,"unit_price_cents"?: number,"user_id"?: string
+                    "capture_started_at"?: string | null,"card_label"?: string,"card_refunded_cents"?: number,"closed_at"?: string | null,"created_at"?: string,"credit_applied_cents"?: number,"credited_cents"?: number,"customer_username"?: string,"destination_account"?: string | null,"discount_pct"?: number,"fee_charge_ref"?: string | null,"id"?: number,"image_url"?: string | null,"item_title"?: string,"kept_card_cents"?: number,"kept_fee_cents"?: number,"kept_tax_cents"?: number,"needs_fee_charge"?: boolean,"needs_void"?: boolean,"offer_id"?: number,"original_unit_price_cents"?: number,"payment_ref"?: string | null,"picked_up_at"?: string | null,"pickup_end"?: string,"quantity"?: number,"refund_reason"?: string,"refunded_at"?: string | null,"refunded_cents"?: number,"restaurant_id"?: number,"restaurant_share_cents"?: number,"service_fee_bps"?: number,"service_fee_cents"?: number,"status"?: Database["public"]['Enums']["order_status"],"subtotal_cents"?: number,"tax_cents"?: number,"tax_jurisdiction"?: string,"tax_rate_bps"?: number,"total_cents"?: number,"unit_price_cents"?: number,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -741,6 +741,7 @@ isOneToOne: false
 "refunded_at": string | null,
 "refunded_cents": number,
 "restaurant_id": number,
+"restaurant_share_cents": number,
 "service_fee_bps": number,
 "service_fee_cents": number,
 "status": Database["public"]['Enums']["order_status"],
@@ -807,6 +808,7 @@ isOneToOne: false
 "refunded_at": string | null,
 "refunded_cents": number,
 "restaurant_id": number,
+"restaurant_share_cents": number,
 "service_fee_bps": number,
 "service_fee_cents": number,
 "status": Database["public"]['Enums']["order_status"],
@@ -927,6 +929,7 @@ isOneToOne: false
 "refunded_at": string | null,
 "refunded_cents": number,
 "restaurant_id": number,
+"restaurant_share_cents": number,
 "service_fee_bps": number,
 "service_fee_cents": number,
 "status": Database["public"]['Enums']["order_status"],

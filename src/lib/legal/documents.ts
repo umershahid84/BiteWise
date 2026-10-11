@@ -8,8 +8,8 @@
 
 import type { Role } from '@/lib/constants';
 
-export const LEGAL_VERSION = '2026-10-15.1';
-export const EFFECTIVE = 'October 15, 2026';
+export const LEGAL_VERSION = '2026-10-16.1';
+export const EFFECTIVE = 'October 16, 2026';
 
 export type Company = {
   entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
@@ -76,8 +76,9 @@ digits and expiry date. You can remove a saved card at any time on your Account 
 <p>4.4 <b>Order confirmation.</b> An order is confirmed when you receive a 4-digit pickup PIN. The Restaurant may decline or cancel an
 order it cannot fulfil (for example, if food is found to be unsuitable), in which case you will not be charged.</p>
 <p>4.5 <b>Taxes.</b> Because you pick your order up at the Restaurant, sales tax is charged at the rate that applies at the
-Restaurant's address (state, county, city and any local taxes), which we calculate automatically. Where Bite Wise is required to do so
-as a marketplace facilitator, Bite Wise collects sales tax on your order and remits it to the state tax authority.</p>
+Restaurant's address (state, county, city and any local taxes), which we calculate automatically. The sales tax on your food is
+passed to the Restaurant, which reports and remits it, except where Bite Wise is required to collect and remit it as a marketplace
+facilitator. Any sales tax on the Bite Wise service fee is remitted by Bite Wise.</p>
 <p>4.6 <b>The service fee is not refundable.</b> The Bite Wise service fee pays for reserving the food for you and processing your
 order, and <b>it is not refunded, whether or not you pick up your order</b>. In particular:</p>
 <ul>
@@ -266,7 +267,8 @@ will cancel through Bite Wise support so the customer's payment hold is released
 <h2>5. Payments, fees and payouts</h2>
 <p>5.1 <b>Customer payments.</b> Bite Wise, through its payment processor Stripe, collects all payments from customers on your
 behalf as your limited payment collection agent. A customer's payment to Bite Wise satisfies the customer's obligation to you.</p>
-<p>5.2 <b>Your proceeds.</b> For each completed order you are entitled to the food subtotal (the discounted price times quantity).
+<p>5.2 <b>Your proceeds.</b> For each completed order you are entitled to the food subtotal (the discounted price times quantity)
+<b>plus the sales tax charged on that food</b>, unless Bite Wise collects and remits that tax under Section 5.4.
 Bite Wise charges Partners <b>no commission</b> on orders. Customers pay a separate Bite Wise service fee (currently ${c.serviceFeePct}% of
 the food subtotal), which Bite Wise keeps and which is <b>not refundable</b> to the customer, whether or not the order is picked up.
 Partners pay the subscription fee in Section 5.6. We will give you at least 30 days'
@@ -287,13 +289,23 @@ includes the Stripe Services Agreement.</p>
   <li><b>Questions:</b> raise any question about a payout within 60 days.</li>
 </ul>
 <p>5.4 <b>Taxes.</b> Sales tax on each order is charged at the rate for your restaurant's address, which Bite Wise looks up
-automatically from the address in your profile; keep that address accurate. Where Bite Wise is a marketplace facilitator under the
-law of your state, Bite Wise will collect and remit sales tax on sales made through the marketplace. You remain responsible for all
-other taxes on your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</p>
+automatically from the address in your profile; keep that address accurate.</p>
+<ul>
+  <li><b>Sales tax on your food is paid to you.</b> It is included in your payout for each completed order, and it is shown on your
+  daily report ("Sales tax paid to you"). <b>You are responsible for reporting and remitting it</b> to your state and local tax
+  authorities.</li>
+  <li><b>Marketplace facilitator.</b> If the law of your state requires Bite Wise to collect and remit sales tax on marketplace sales
+  (for example once Bite Wise's sales in your state pass the legal threshold), Bite Wise will tell you in writing at least 14 days
+  in advance where possible. From then on, Bite Wise keeps the sales tax on new orders and remits it, and your proceeds are the food
+  subtotal only.</li>
+  <li>Bite Wise remits any sales tax on its own service fee and on your subscription. You remain responsible for all other taxes on
+  your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</li>
+</ul>
 <p>5.5 <b>Refunds, Platform Credit and chargebacks.</b> Bite Wise will share a customer's complaint with you and consider your response
 before deciding on a refund. Bite Wise may resolve a complaint in one of two ways:</p>
 <ul>
-  <li><b>(a) Refund to the customer's original form of payment.</b> The refunded share of the food subtotal is taken back from you,
+  <li><b>(a) Refund to the customer's original form of payment.</b> The refunded share of what you were paid for the order (the food,
+  and its sales tax when it was paid to you) is taken back from you,
   by reversing the transfer for that order or deducting it from future payouts, and you receive nothing for the refunded portion.
   Refunds cover only the food and its sales tax; the customer's service fee is not refundable and is never part of a refund.</li>
   <li><b>(b) Bite Wise Platform Credit.</b> Bite Wise may instead issue the customer Platform Credit. Platform Credit, including goodwill

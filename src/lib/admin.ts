@@ -6,7 +6,7 @@ import { AppError, must } from '@/lib/errors';
 import { dollars, toCsv } from '@/lib/receipts/data';
 import { dayKey, dayRange, todayIn } from '@/lib/receipts/time';
 import * as feeChanges from '@/lib/fee-changes';
-import { nonRefundableCents, refundableTotalCents } from '@/lib/pricing';
+import { feeTaxCents, nonRefundableCents, refundableTotalCents } from '@/lib/pricing';
 import { prices } from '@/lib/subscriptions';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
@@ -28,6 +28,11 @@ const foodRefund = (o: Order) => {
 };
 const feeRefund = (o: Order) => Math.max(0, o.refunded_cents - refundableTotalCents(o)); // only on refunds made before the fee was non-refundable
 const taxRefund = (o: Order) => (o.refunded_cents ? o.refunded_cents - foodRefund(o) - feeRefund(o) : 0);
+// Whether the restaurant was paid the sales tax on its food (and reports and remits it itself), and the part of an
+// order's sales tax (after refunds) that Bite Wise keeps and must remit: all of it, or only the tax on the service fee.
+const taxToRestaurant = (o: Order) => o.restaurant_share_cents > o.subtotal_cents;
+const bitewiseTax = (o: Order) => (taxToRestaurant(o) ? feeTaxCents(o) : o.tax_cents - taxRefund(o));
+const restaurantTax = (o: Order) => (taxToRestaurant(o) ? o.tax_cents - taxRefund(o) - feeTaxCents(o) : 0);
 
 // A restaurant can be paid through Stripe: its account is ready, and (with live keys) isn't a test-payments account.
 const liveStripe = (a: { charges_enabled: boolean; stripe_account_id: string | null } | undefined) =>
@@ -337,8 +342,8 @@ export async function payouts() {
 
 // ---------------------------------------------------------------- sales tax
 
-// Retail sales tax collected on completed orders and on restaurant plan fees, by restaurant location (for the WA
-// excise tax return).
+// Retail sales tax Bite Wise collected and must remit, on completed orders and on restaurant plan fees, by restaurant
+// location (for the excise tax return). Tax on food that was paid to the restaurant (which remits it) is only totalled.
 export async function tax(params: URLSearchParams) {
   const r = range(params, 30);
   const [sold, rest, plans, kept] = await Promise.all([
@@ -349,13 +354,18 @@ export async function tax(params: URLSearchParams) {
   ]);
   const loc = new Map(rest.map((x) => [x.id, x]));
   const groups = new Map<string, { city: string; zip: string; rateBps: number; orders: number; taxableCents: number; taxCents: number }>();
+  let paidToRestaurants = 0;
   for (const o of sold) {
+    paidToRestaurants += restaurantTax(o);
+    const mine = bitewiseTax(o);
+    if (taxToRestaurant(o) && !mine) continue;
     const l = loc.get(o.restaurant_id)!;
     const key = `${l.city}|${l.zip}|${o.tax_rate_bps}`;
     const g = groups.get(key) ?? { city: l.city, zip: l.zip, rateBps: o.tax_rate_bps, orders: 0, taxableCents: 0, taxCents: 0 };
     g.orders += 1;
-    g.taxableCents += o.subtotal_cents - foodRefund(o);
-    g.taxCents += o.tax_cents - taxRefund(o);
+    // Bite Wise's taxable sale: the food (when it remits the food's tax), or just the taxed service fee.
+    g.taxableCents += taxToRestaurant(o) ? o.service_fee_cents : o.subtotal_cents - foodRefund(o);
+    g.taxCents += mine;
     groups.set(key, g);
   }
   // Kept service fees are taxable sales only where the fee is taxed.
@@ -395,6 +405,7 @@ export async function tax(params: URLSearchParams) {
     totals: food,
     planTotals: fees,
     allTotals: { taxableCents: food.taxableCents + fees.taxableCents, taxCents: food.taxCents + fees.taxCents },
+    paidToRestaurantsCents: paidToRestaurants,
   };
 }
 
@@ -463,6 +474,7 @@ export async function settings() {
     serviceFeePct: Number(get('service_fee_bps') ?? 500) / 100,
     defaultTaxRatePct: Number(get('default_tax_rate_bps') ?? 1035) / 100,
     requireRestaurantApproval: get('require_restaurant_approval') !== false,
+    orderTaxToRestaurant: get('order_tax_to_restaurant') !== false,
     planTaxStates: String(get('plan_tax_states') ?? 'WA'),
   };
 }
@@ -522,7 +534,7 @@ export async function income(params: URLSearchParams) {
         l.meals += o.quantity;
         l.gmvCents += o.total_cents - o.refunded_cents;
         l.serviceFeesCents += o.service_fee_cents - feeRefund(o);
-        l.orderTaxCents += o.tax_cents - taxRefund(o);
+        l.orderTaxCents += bitewiseTax(o);
       },
     })),
     ...kept.map((o) => ({
@@ -595,7 +607,7 @@ const incomeHead = ['Orders', 'Meals', 'Total charged to customers', 'Service fe
   'Platform credit cost', 'Net income', 'Sales tax on orders', 'Sales tax on plans'];
 const incomeVals = (l: IncomeLine) => [l.orders, l.meals, dollars(l.gmvCents), dollars(l.serviceFeesCents), dollars(l.planFeesCents), l.planInvoices,
   dollars(l.pioneerDiscountsCents), dollars(l.creditCostCents), dollars(l.netCents), dollars(l.orderTaxCents), dollars(l.planTaxCents)];
-export const INCOME_NOTE = 'Net income = service fees (including fees kept on missed and customer-cancelled orders; service fees are not refundable) + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is collected for Washington State and is not income.';
+export const INCOME_NOTE = 'Net income = service fees (including fees kept on missed and customer-cancelled orders; service fees are not refundable) + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is not income: tax on food is paid to restaurants (they remit it) unless Bite Wise remits it; the sales tax columns show what Bite Wise remits.';
 
 // ?section=periods (income per day/month/year), restaurants (income by restaurant) or all (both).
 export async function incomeCsv(params: URLSearchParams) {

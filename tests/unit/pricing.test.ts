@@ -18,7 +18,7 @@ describe('pricing', () => {
   });
 
   it('never refunds the service fee (or the tax on it) and takes the food share back from the restaurant', () => {
-    const o = { subtotal_cents: 1000, service_fee_cents: 50, tax_cents: 104, tax_rate_bps: 1035, total_cents: 1154 };
+    const o = { subtotal_cents: 1000, service_fee_cents: 50, tax_cents: 104, tax_rate_bps: 1035, total_cents: 1154, restaurant_share_cents: 1000 };
     expect(nonRefundableCents(o)).toBe(50);
     expect(refundableTotalCents(o)).toBe(1104);
     expect(restaurantShareOfRefund(1104, o)).toBe(1000);
@@ -26,6 +26,10 @@ describe('pricing', () => {
     const taxedFee = { ...o, tax_cents: 109, total_cents: 1159 }; // 10.35% on $10.50
     expect(feeTaxCents(taxedFee)).toBe(5);
     expect(refundableTotalCents(taxedFee)).toBe(1104);
-    expect(restaurantShareOfRefund(100, { subtotal_cents: 0, service_fee_cents: 0, tax_cents: 0, tax_rate_bps: 0, total_cents: 0 })).toBe(0);
+    expect(restaurantShareOfRefund(100, { subtotal_cents: 0, service_fee_cents: 0, tax_cents: 0, tax_rate_bps: 0, total_cents: 0, restaurant_share_cents: 0 })).toBe(0);
+    // When the restaurant was paid the food and its tax, a refund takes all of it back from the restaurant.
+    const withTax = { ...o, restaurant_share_cents: 1104 };
+    expect(restaurantShareOfRefund(1104, withTax)).toBe(1104);
+    expect(restaurantShareOfRefund(552, withTax)).toBe(552);
   });
 });

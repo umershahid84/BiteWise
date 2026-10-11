@@ -44,7 +44,7 @@ describe.skipIf(!available)('income', () => {
     expect(d('planFeesCents')).toBe(1500);
     expect(d('planTaxCents')).toBe(plan.tax_cents);
     expect(plan.tax_cents).toBeGreaterThan(0);
-    expect(d('orderTaxCents')).toBe(order.tax_cents);
+    expect(d('orderTaxCents')).toBe(0); // the food's sales tax is paid to the restaurant, which remits it
     expect(d('creditCostCents')).toBe(300);
     expect(d('netCents')).toBe(order.service_fee_cents + 1500 - 300);
     // Today, this month and this year include it too.

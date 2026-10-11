@@ -222,7 +222,7 @@ export function reportPdf(rep: Report) {
   const s = rep.summary;
   const cards: [string, string][] = [
     ['Food sales', money(s.foodSalesCents)], ['Orders picked up', String(s.ordersPickedUp)], ['Meals rescued', String(s.mealsRescued)],
-    ['Discounts given', money(s.discountsCents)], ['Sales tax', money(s.salesTaxCents)], ['Total charged', money(s.totalChargedCents)],
+    ['Discounts given', money(s.discountsCents)], ['Sales tax paid to you', money(s.taxPaidToYouCents)], ['Your payout', money(s.payoutCents)],
   ];
   const cw = (W - 5 * 8) / 6;
   cards.forEach(([k, v], i) => {
@@ -516,7 +516,7 @@ export function incomePdf(x: Income, section: 'all' | 'periods' | 'restaurants',
       ['Net income', money(t.netCents), GREEN], [`Service fees · ${t.orders} orders`, money(t.serviceFeesCents)],
       [`Plan fees · ${t.planInvoices} invoices`, money(t.planFeesCents)], ['Platform credit funded', t.creditCostCents ? `−${money(t.creditCostCents)}` : money(0)],
       ['Avg service fee per order', money(t.orders ? Math.round(t.serviceFeesCents / t.orders) : 0)], ['Charged to customers', money(t.gmvCents)],
-      ['Pioneer discounts given', money(t.pioneerDiscountsCents)], ['Sales tax (owed to WA)', money(t.orderTaxCents + t.planTaxCents)],
+      ['Pioneer discounts given', money(t.pioneerDiscountsCents)], ['Sales tax Bite Wise remits', money(t.orderTaxCents + t.planTaxCents)],
     ];
     kpis.forEach(([k, v, c], i) => box(L + (i % 4) * (kw + 8), y + Math.floor(i / 4) * 52, kw, 46, k, v, c));
     y += 110;

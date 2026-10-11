@@ -56,9 +56,9 @@ export const nonRefundableCents = (o: Charged) => o.service_fee_cents + feeTaxCe
 // What a refund can return in all: the food and its sales tax.
 export const refundableTotalCents = (o: Charged) => Math.max(0, o.total_cents - nonRefundableCents(o));
 
-// The restaurant's share of an order is the food subtotal. A refund (which never includes the service fee) takes the
-// same proportion of the food subtotal back from the restaurant; the rest of the refund is the food's sales tax.
-export const restaurantShareOfRefund = (refundCents: number, o: Charged) => {
+// A refund (which never includes the service fee) takes back from the restaurant the same proportion of what it was
+// paid for the order (restaurant_share_cents: the food price, plus the food's sales tax when the restaurant got it).
+export const restaurantShareOfRefund = (refundCents: number, o: Charged & { restaurant_share_cents: number }) => {
   const base = refundableTotalCents(o);
-  return base ? Math.round((refundCents * o.subtotal_cents) / base) : 0;
+  return base ? Math.min(o.restaurant_share_cents, Math.round((refundCents * o.restaurant_share_cents) / base)) : 0;
 };

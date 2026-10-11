@@ -181,8 +181,9 @@ async function taxReport(p: URLSearchParams): Promise<Report> {
     title: 'Sales tax',
     subtitle: `${rangeText(t.range)} · for the Washington excise tax return`,
     figures: [
-      ['All sales tax collected', money(t.allTotals.taxCents)], ['On food orders', money(t.totals.taxCents)],
+      ['Sales tax Bite Wise remits', money(t.allTotals.taxCents)], ['On food orders', money(t.totals.taxCents)],
       ['On plan fees', money(t.planTotals.taxCents)], ['Taxable sales and fees', money(t.allTotals.taxableCents)],
+      ['Tax on food paid to restaurants (they remit it)', money(t.paidToRestaurantsCents)],
     ],
     tables: [
       {
@@ -196,7 +197,7 @@ async function taxReport(p: URLSearchParams): Promise<Report> {
         total: ['Total', '', '', t.planRows.reduce((n, x) => n + x.invoices, 0), cents(t.planTotals.taxableCents), cents(t.planTotals.taxCents)],
       },
     ],
-    note: 'Retail sales tax collected on completed orders (less refunds to the original payment) and on restaurant plan fees, by restaurant location.',
+    note: 'Sales tax Bite Wise collected and must remit, on completed orders (less refunds) and on restaurant plan fees, by restaurant location. Tax on food paid to restaurants is theirs to remit and is not in the tables.',
   };
 }
 
