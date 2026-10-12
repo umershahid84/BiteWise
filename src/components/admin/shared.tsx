@@ -116,6 +116,7 @@ export function TableHead({ title, kind, params = {}, section, what }: {
 }
 
 // Who is using the owner console: a full admin, or an admin employee ('support') who may or may not issue refunds.
-export type Access = { id: string; role: 'admin' | 'support'; canRefund: boolean };
-export const AccessContext = createContext<Access>({ id: '', role: 'support', canRefund: false });
+// country: the location the signed-in admin or employee works in; the console shows only that country.
+export type Access = { id: string; role: 'admin' | 'support'; canRefund: boolean; country: Market };
+export const AccessContext = createContext<Access>({ id: '', role: 'support', canRefund: false, country: 'US' });
 export const useAccess = () => useContext(AccessContext);

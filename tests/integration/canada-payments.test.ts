@@ -73,3 +73,26 @@ describe.skipIf(!available)('home ZIP and postal codes', () => {
     await expect(saveHomeArea(c.id, 'US', 'M5V 3L9')).rejects.toThrow(/ZIP code/);
   });
 });
+
+describe.skipIf(!available)('admin locations', () => {
+  it("shows each location only its own country's restaurants, customers and orders", async () => {
+    const { restaurants, users, orders: adminOrders } = await import('@/lib/admin');
+    const us = await restaurantWithOffer();
+    const ca = await restaurantWithOffer({ canada: true });
+    const caCustomer = await signUp('customer', CANADIAN_CUSTOMER);
+    const caOrder = await orders.checkout(caCustomer.id, { offerId: ca.offer.id, quantity: 1, creditCents: 0, newCard: visa });
+    const at = (country: string) => new URLSearchParams({ country });
+
+    const usShops = (await restaurants(at('US'))).map((r) => r.id);
+    const caShops = (await restaurants(at('CA'))).map((r) => r.id);
+    expect(usShops).toContain(us.restaurant.id);
+    expect(usShops).not.toContain(ca.restaurant.id);
+    expect(caShops).toContain(ca.restaurant.id);
+    expect(caShops).not.toContain(us.restaurant.id);
+
+    expect((await users(at('US'))).map((u) => u.id)).not.toContain(caCustomer.id);
+    expect((await users(at('CA'))).map((u) => u.id)).toContain(caCustomer.id);
+    expect((await adminOrders(at('US'))).orders.map((o) => o.id)).not.toContain(caOrder.orderId);
+    expect((await adminOrders(at('CA'))).orders.map((o) => o.id)).toContain(caOrder.orderId);
+  });
+});

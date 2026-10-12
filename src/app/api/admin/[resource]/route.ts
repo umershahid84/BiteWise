@@ -16,7 +16,7 @@ const RESOURCES: Record<string, (p: URLSearchParams) => Promise<unknown>> = {
   payouts: admin.payouts,
   plans: admin.plans,
   tax: admin.tax,
-  settings: async () => ({ settings: await admin.settings(), paymentMode: paymentMode('US'), paymentModeCa: paymentMode('CA') }),
+  settings: async (p) => ({ settings: await admin.settings(p), paymentMode: paymentMode('US'), paymentModeCa: paymentMode('CA') }),
   audit: () => admin.audit(),
   alerts: admin.alerts,
   income: admin.income,
@@ -35,7 +35,10 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/[resou
       const role = req.nextUrl.searchParams.get('role');
       if (!SUPPORT.has(resource) || (resource === 'users' && (role === 'admin' || role === 'support'))) throw new AppError(403, 'Only an admin can see this.');
     }
-    return NextResponse.json(await load(req.nextUrl.searchParams), { headers: { 'Cache-Control': 'private, no-store' } });
+    // Every admin and employee sees only their own location (United States or Canada).
+    const params = new URLSearchParams(req.nextUrl.searchParams);
+    params.set('country', me.country);
+    return NextResponse.json(await load(params), { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (err) {
     const e = err instanceof AppError ? err : new AppError(500, 'Something went wrong.');
     if (!(err instanceof AppError)) console.error(err);

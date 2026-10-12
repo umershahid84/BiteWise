@@ -178,7 +178,7 @@ export async function restaurants(params: URLSearchParams) {
   const status = params.get('status') ?? '';
   const q = (params.get('q') ?? '').trim().toLowerCase();
   const [rows, owners, offers, sold, accounts, subs] = await Promise.all([
-    all<Database['public']['Tables']['restaurants']['Row']>((a, b) => db().from('restaurants').select('*').order('created_at', { ascending: false }).range(a, b)),
+    all<Database['public']['Tables']['restaurants']['Row']>((a, b) => db().from('restaurants').select('*').eq('country', marketOf(params).country).order('created_at', { ascending: false }).range(a, b)),
     all<{ id: string; email: string; username: string; status: string }>((a, b) => db().from('profiles').select('id, email, username, status').eq('role', 'restaurant').range(a, b)),
     all<{ restaurant_id: number }>((a, b) => db().from('offers').select('restaurant_id').eq('status', 'active').gt('pickup_end', new Date().toISOString()).range(a, b)),
     all<{ restaurant_id: number; subtotal_cents: number }>((a, b) => db().from('orders').select('restaurant_id, subtotal_cents').eq('status', 'picked_up').range(a, b)),
@@ -223,7 +223,12 @@ export async function users(params: URLSearchParams) {
   const role = (['customer', 'restaurant', 'staff', 'admin'].includes(params.get('role') ?? '') ? params.get('role') : 'customer') as Database['public']['Enums']['user_role'];
   const q = (params.get('q') ?? '').trim().toLowerCase();
   const [profiles, orders, credit, terms, confirmed] = await Promise.all([
-    all<Database['public']['Tables']['profiles']['Row']>((a, b) => db().from('profiles').select('*').eq('role', role).neq('status', 'deleted').order('created_at', { ascending: false }).range(a, b)),
+    all<Database['public']['Tables']['profiles']['Row']>((a, b) => {
+      let p = db().from('profiles').select('*').eq('role', role).neq('status', 'deleted');
+      // Customers, owners and staff of the viewer's location; the admin team is listed whole.
+      if (role !== 'admin') p = p.eq('country', marketOf(params).country);
+      return p.order('created_at', { ascending: false }).range(a, b);
+    }),
     all<{ user_id: string; status: string; total_cents: number; refunded_cents: number }>((a, b) => db().from('orders').select('user_id, status, total_cents, refunded_cents').in('status', ['picked_up', 'expired']).range(a, b)),
     all<{ user_id: string; amount_cents: number }>((a, b) => db().from('credit_ledger').select('user_id, amount_cents').range(a, b)),
     all<{ user_id: string; accepted_at: string }>((a, b) => db().from('terms_acceptances').select('user_id, accepted_at').range(a, b)),
@@ -250,11 +255,13 @@ export async function users(params: URLSearchParams) {
 
 // Missed-pickup alerts (src/lib/no-shows.ts). ?all=1 includes single no-shows; by default only suspensions and bans.
 export async function alerts(params: URLSearchParams) {
-  let q = db().from('admin_alerts').select('*, profiles!admin_alerts_user_id_fkey(username, email, status, suspended_until, no_shows_total, no_show_strikes, no_show_probation)')
-    .order('created_at', { ascending: false }).limit(5000);
+  const { country } = marketOf(params);
+  let q = db().from('admin_alerts').select('*, profiles!admin_alerts_user_id_fkey!inner(username, email, status, suspended_until, no_shows_total, no_show_strikes, no_show_probation, country)')
+    .eq('profiles.country', country).order('created_at', { ascending: false }).limit(5000);
   if (params.get('all') !== '1') q = q.neq('kind', 'no_show');
   const rows = must(await q);
-  const unread = (await db().from('admin_alerts').select('id', { count: 'exact', head: true }).neq('kind', 'no_show').is('read_at', null)).count ?? 0;
+  const unread = (await db().from('admin_alerts').select('id, profiles!admin_alerts_user_id_fkey!inner(country)', { count: 'exact', head: true })
+    .eq('profiles.country', country).neq('kind', 'no_show').is('read_at', null)).count ?? 0;
   return {
     unread,
     alerts: rows.map((a) => ({
@@ -487,7 +494,8 @@ export async function plans(params: URLSearchParams) {
 
 // ---------------------------------------------------------------- settings & audit
 
-export async function settings() {
+export async function settings(params: URLSearchParams) {
+  const m = marketOf(params);
   const rows = must(await db().from('settings').select('key, value'));
   const get = (k: string) => rows.find((r) => r.key === k)?.value;
   return {
@@ -497,7 +505,10 @@ export async function settings() {
     defaultTaxRatePct: Number(get('default_tax_rate_bps') ?? 1035) / 100,
     requireRestaurantApproval: get('require_restaurant_approval') !== false,
     orderTaxToRestaurant: get('order_tax_to_restaurant') !== false,
-    planTaxStates: String(get('plan_tax_states') ?? 'WA'),
+    // Sales tax on plan fees in the viewer's location: Washington (US) or Newfoundland and Labrador HST (Canada).
+    platformTaxPct: Number(get(`platform_tax_rate_bps_${m.country.toLowerCase()}`) ?? (m.country === 'CA' ? 1500 : 1035)) / 100,
+    platformTaxLabel: String(get(`platform_tax_label_${m.country.toLowerCase()}`) ?? (m.country === 'CA' ? 'Newfoundland and Labrador HST' : 'Washington (Seattle)')),
+    country: m.country,
   };
 }
 

@@ -15,7 +15,7 @@ import { PlansPanel } from './plans';
 import { ChangePasswordButton } from '@/components/auth/change-password';
 import { RestaurantsPanel } from './restaurants';
 import { SettingsPanel } from './settings';
-import { AccessContext, daysAgo, MarketContext, setMarket, todayPT, type Access, type Market, type Range } from './shared';
+import { AccessContext, daysAgo, MarketContext, setMarket, todayPT, type Access, type Range } from './shared';
 import { TeamPanel } from './team';
 import { TaxPanel } from './tax';
 import { UsersPanel } from './users';
@@ -36,11 +36,9 @@ export function AdminConsole({ access }: { access: Access }) {
   const [tab, setTab] = useState<string>(tabs[0][0]);
   const [range, setRange] = useState<Range>({ from: daysAgo(29), to: todayPT() });
   const unread = useUnreadAlerts();
-  const [market, pickMarket] = useState<Market>('US');
-  const chooseMarket = (m: Market) => {
-    setMarket(m);
-    pickMarket(m);
-  };
+  // The console shows only the signed-in member's location (United States or Canada); the server enforces it too.
+  const market = access.country;
+  setMarket(market);
   useEffect(() => {
     const h = location.hash.slice(1);
     // The URL hash only exists in the browser.
@@ -57,20 +55,9 @@ export function AdminConsole({ access }: { access: Access }) {
     <main className="container-wide py-8">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="m-0 flex-1 text-3xl font-extrabold">Owner console</h1>
-        {/* US dollars and Canadian dollars are never added together: the money tabs show one country at a time. */}
-        <div className="inline-flex rounded-full border border-line bg-surface p-1" role="group" aria-label="Country">
-          {(['US', 'CA'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={market === m}
-              onClick={() => chooseMarket(m)}
-              className={`rounded-full px-3 py-1 text-sm font-bold ${market === m ? 'bg-primary-soft text-primary-ink' : 'text-muted'}`}
-            >
-              {m === 'US' ? 'United States · USD' : 'Canada · CAD'}
-            </button>
-          ))}
-        </div>
+        <span className="rounded-full border border-line bg-surface px-3 py-1 text-sm font-bold text-ink-2" title="Your location: you see and manage only this country. An admin can change it in the Team tab.">
+          {market === 'CA' ? '🇨🇦 Canada · CAD' : '🇺🇸 United States · USD'}
+        </span>
         <ChangePasswordButton />
       </div>
       <p className="-mt-1 mb-5 text-muted">

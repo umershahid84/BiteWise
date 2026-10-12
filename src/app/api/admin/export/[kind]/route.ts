@@ -25,7 +25,9 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/export
   try {
     const me = await requireAdmin('support');
     const { kind } = await ctx.params;
-    const p = req.nextUrl.searchParams;
+    // Only the downloader's location (United States or Canada), whatever the link says.
+    const p = new URLSearchParams(req.nextUrl.searchParams);
+    p.set('country', me.country);
     // Admin employees can download the lists in their tabs (not the admin team's accounts).
     if (me.role !== 'admin' && (!['restaurants', 'users', 'orders'].includes(kind) || p.get('role') === 'admin' || p.get('role') === 'support')) {
       throw new AppError(403, 'Only an admin can download this.');

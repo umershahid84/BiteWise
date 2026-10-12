@@ -14,7 +14,7 @@ import type { Role } from '@/lib/constants';
 import type { Country } from '@/lib/regions';
 import { describeServiceFee, type ServiceFee } from '@/lib/service-fee';
 
-export const LEGAL_VERSION = '2026-10-19.1';
+export const LEGAL_VERSION = '2026-10-20.1';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
@@ -395,11 +395,9 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
   (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). ${t(j, 'Prices are in U.S. dollars and exclude taxes.', 'Prices are in Canadian dollars and exclude taxes.')} Orders at the Restaurant, plan fees and payouts are in the currency of the Restaurant's country.</li>
-  <li><b>Sales tax.</b> ${t(j, `Where your state taxes software subscriptions, sales tax is added to every plan payment at the combined
-  state and local rate for your restaurant's location, and is shown separately on each invoice. Bite Wise collects it and remits it to
-  the state tax authority.`, `Where Bite Wise is registered to collect it, the GST/HST (and the QST in Quebec, or provincial sales tax
-  where it applies to software subscriptions) is added to every plan payment at the rate for your restaurant's province or territory,
-  and is shown separately on each invoice.`)} A Pioneer Member's $0.00 plan has no sales tax.</li>
+  <li><b>Sales tax.</b> ${t(j, `Sales tax is added to every plan payment at the Washington rate for Bite Wise's location, is shown
+  separately on each invoice, and is collected and remitted by Bite Wise.`, `HST is added to every plan payment at the Newfoundland and
+  Labrador rate for Bite Wise's location, is shown separately on each invoice, and is collected and remitted by Bite Wise.`)} A Pioneer Member's $0.00 plan has no sales tax.</li>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
   renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
   is charged the plan price then in effect, plus sales tax. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then

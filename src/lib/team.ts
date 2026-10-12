@@ -14,19 +14,22 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 const db = () => supabaseAdmin();
 export type TeamRole = 'admin' | 'support';
-export type TeamMember = { id: string; email: string; username: string; role: TeamRole; canRefund: boolean; status: string; createdAt: string; lastSignInAt: string | null };
+// Location: the country the member works in. They only see and act on that country's restaurants, customers and orders,
+// and admins' plan-fee sales tax follows it (src/lib/subscriptions.ts).
+export type TeamCountry = 'US' | 'CA';
+export type TeamMember = { id: string; email: string; username: string; role: TeamRole; country: TeamCountry; canRefund: boolean; status: string; createdAt: string; lastSignInAt: string | null };
 
 export async function listTeam(): Promise<TeamMember[]> {
-  const rows = must(await db().from('profiles').select('id, email, username, role, can_refund, status, created_at')
+  const rows = must(await db().from('profiles').select('id, email, username, role, country, can_refund, status, created_at')
     .in('role', ['admin', 'support']).neq('status', 'deleted').order('created_at'));
   const users = await Promise.all(rows.map((r) => db().auth.admin.getUserById(r.id)));
   return rows.map((r, i) => ({
-    id: r.id, email: r.email, username: r.username, role: r.role as TeamRole, canRefund: r.role === 'admin' || r.can_refund,
+    id: r.id, email: r.email, username: r.username, role: r.role as TeamRole, country: r.country === 'CA' ? 'CA' : 'US', canRefund: r.role === 'admin' || r.can_refund,
     status: r.status, createdAt: r.created_at, lastSignInAt: users[i].data.user?.last_sign_in_at ?? null,
   }));
 }
 
-export async function addTeamMember(by: string, o: { email: string; username: string; password: string; role: TeamRole; canRefund: boolean }) {
+export async function addTeamMember(by: string, o: { email: string; username: string; password: string; role: TeamRole; country: TeamCountry; canRefund: boolean }) {
   if ((await db().from('profiles').select('id').eq('email', o.email).maybeSingle()).data) throw new AppError(409, `An account already uses ${o.email}.`);
   if ((await db().from('profiles').select('id').eq('username', o.username).maybeSingle()).data) throw new AppError(409, `The user name ${o.username} is already taken.`);
   const token = randomBytes(32).toString('hex');
@@ -35,6 +38,7 @@ export async function addTeamMember(by: string, o: { email: string; username: st
     email: o.email, password: o.password, email_confirm: true, user_metadata: { username: o.username, team_invite: token },
   });
   if (error || !data.user) throw new AppError(400, error?.message.includes('Database error') ? 'We couldn\'t create this account. Check the user name.' : (error?.message ?? 'Could not create the account.'));
+  check(await db().from('profiles').update({ country: o.country }).eq('id', data.user.id));
   await sendEmail({ to: o.email, ...teamWelcomeEmail({ username: o.username, role: o.role, canRefund: o.role === 'admin' || o.canRefund, loginUrl: `${publicEnv.siteUrl.replace(/\/$/, '')}/admin/login` }) });
   return data.user.id;
 }
@@ -44,14 +48,14 @@ async function adminsLeft(exceptId: string) {
   return count ?? 0;
 }
 
-export async function updateTeamMember(by: string, id: string, o: { role: TeamRole; canRefund: boolean }) {
+export async function updateTeamMember(by: string, id: string, o: { role: TeamRole; canRefund: boolean; country?: TeamCountry }) {
   const p = must(await db().from('profiles').select('role').eq('id', id).single());
   if (p.role !== 'admin' && p.role !== 'support') throw new AppError(404, 'Team member not found.');
   if (p.role === 'admin' && o.role !== 'admin') {
     if (id === by) throw new AppError(400, 'You can\'t remove your own admin access. Ask another admin.');
     if (!(await adminsLeft(id))) throw new AppError(400, 'Bite Wise needs at least one admin.');
   }
-  check(await db().from('profiles').update({ role: o.role, can_refund: o.role === 'admin' || o.canRefund }).eq('id', id));
+  check(await db().from('profiles').update({ role: o.role, can_refund: o.role === 'admin' || o.canRefund, ...(o.country ? { country: o.country } : {}) }).eq('id', id));
 }
 
 // Checks before an admin deletes a team account (moderation.deleteAccount does the deleting).

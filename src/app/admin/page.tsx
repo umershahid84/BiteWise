@@ -9,5 +9,5 @@ export const metadata: Metadata = { title: 'Owner console' };
 
 export default async function AdminPage() {
   const viewer = await requirePageViewer(['admin', 'support']);
-  return <AdminConsole access={{ id: viewer.id, role: viewer.role === 'admin' ? 'admin' : 'support', canRefund: viewer.canRefund }} />;
+  return <AdminConsole access={{ id: viewer.id, role: viewer.role === 'admin' ? 'admin' : 'support', canRefund: viewer.canRefund, country: viewer.country }} />;
 }

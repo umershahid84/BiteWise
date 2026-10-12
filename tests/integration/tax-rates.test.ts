@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as orders from '@/lib/orders';
 import { refreshDueTaxRates, refreshRestaurantTax, setManualTaxRate } from '@/lib/restaurant-tax';
 import * as subs from '@/lib/subscriptions';
-import { admin, restaurantWithOffer, signUp, supabaseAvailable, visa } from '../support/db';
+import { admin, CANADA, restaurantWithOffer, signUp, supabaseAvailable, visa } from '../support/db';
 
 const available = await supabaseAvailable();
 const DOR = '<response rate="0.1025" code="0"><rate name="TACOMA" staterate="0.065" localrate="0.0375" /></response>';
@@ -60,27 +60,18 @@ describe.skipIf(!available)('automatic sales tax', () => {
     expect(o).toEqual({ tax_rate_bps: 800, tax_cents: 80, subtotal_cents: 1000, tax_jurisdiction: 'Testville, WA (WA Department of Revenue)' });
   });
 
-  it('taxes plan fees only in the states set by the admin', async () => {
+  it("taxes plan fees at Bite Wise's location: Washington in the US, Newfoundland and Labrador HST in Canada", async () => {
     const db = admin();
-    const old = (await db.from('settings').select('value').eq('key', 'plan_tax_states').single()).data!.value;
-    try {
-      await db.from('settings').update({ value: 'WA, NY' }).eq('key', 'plan_tax_states');
-      const ny = await signUp('restaurant', { restaurant: { name: 'Big Apple Bites', address: '1 Broadway', city: 'New York', state: 'NY', zip: '10004' } });
-      const or = await signUp('restaurant', { restaurant: { name: 'Rose City Eats', address: '1 Main St', city: 'Portland', state: 'OR', zip: '97201' } });
-      for (const [owner, rate] of [[ny, 888], [or, 0]] as const) {
-        const r = await restaurantOf(owner.id);
-        await db.from('restaurants').update({ status: 'approved', tax_rate_bps: rate, tax_jurisdiction: `${r.city}, ${r.state}` }).eq('id', r.id);
-        await subs.subscribe(r.id, { plan: 'monthly', token: card, autoRenew: true });
-      }
-      const pay = async (ownerId: string) => (await db.from('subscription_payments').select('list_price_cents, tax_rate_bps, tax_cents, tax_jurisdiction')
-        .eq('restaurant_id', (await restaurantOf(ownerId)).id).single()).data!;
-      expect(await pay(ny.id)).toEqual({ list_price_cents: 1500, tax_rate_bps: 888, tax_cents: 133, tax_jurisdiction: 'New York, NY' });
-      expect(await pay(or.id)).toEqual({ list_price_cents: 1500, tax_rate_bps: 0, tax_cents: 0, tax_jurisdiction: '' });
-
-      await db.from('settings').update({ value: 'WA' }).eq('key', 'plan_tax_states');
-      expect((await subs.planSummary((await restaurantOf(ny.id)).id)).taxRateBps).toBe(0);
-    } finally {
-      await db.from('settings').update({ value: old }).eq('key', 'plan_tax_states');
+    const ny = await signUp('restaurant', { restaurant: { name: 'Big Apple Bites', address: '1 Broadway', city: 'New York', state: 'NY', zip: '10004' } });
+    const ca = await signUp('restaurant', CANADA);
+    for (const owner of [ny, ca]) {
+      const r = await restaurantOf(owner.id);
+      await db.from('restaurants').update({ status: 'approved', tax_rate_bps: 888 }).eq('id', r.id); // its food rate doesn't matter
+      await subs.subscribe(r.id, { plan: 'monthly', token: card, autoRenew: true });
     }
+    const pay = async (ownerId: string) => (await db.from('subscription_payments').select('list_price_cents, tax_rate_bps, tax_cents, tax_jurisdiction, currency')
+      .eq('restaurant_id', (await restaurantOf(ownerId)).id).single()).data!;
+    expect(await pay(ny.id)).toEqual({ list_price_cents: 1500, tax_rate_bps: 1035, tax_cents: 155, tax_jurisdiction: 'Washington (Seattle)', currency: 'usd' });
+    expect(await pay(ca.id)).toEqual({ list_price_cents: 1500, tax_rate_bps: 1500, tax_cents: 225, tax_jurisdiction: 'Newfoundland and Labrador HST', currency: 'cad' });
   });
 });

@@ -35,6 +35,9 @@ export async function createStaff(restaurantId: number, ownerId: string, o: { fu
     user_metadata: { username: o.username, staff_invite: token },
   });
   if (error || !data.user) throw new AppError(400, error?.message.includes('Database error') ? 'We couldn\'t create this account. Check the user name.' : (error?.message ?? 'Could not create the account.'));
+  // Staff belong to their restaurant's country (the admins of that country look after them).
+  const r = must(await db().from('restaurants').select('country').eq('id', restaurantId).single());
+  check(await db().from('profiles').update({ country: r.country }).eq('id', data.user.id));
   return data.user.id;
 }
 

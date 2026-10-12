@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/misc';
 import { run, useAdmin, LoadError } from './shared';
 
 type S = {
-  settings: { serviceFeeMode: 'percent' | 'fixed'; serviceFeeFixed: number; serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; planTaxStates: string };
+  settings: { serviceFeeMode: 'percent' | 'fixed'; serviceFeeFixed: number; serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; platformTaxPct: number; platformTaxLabel: string; country: 'US' | 'CA' };
   paymentMode: Mode;
   paymentModeCa: Mode;
 };
@@ -35,7 +35,8 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
     defaultTaxRatePct: String(data.settings.defaultTaxRatePct),
     requireRestaurantApproval: data.settings.requireRestaurantApproval,
     orderTaxToRestaurant: data.settings.orderTaxToRestaurant,
-    planTaxStates: data.settings.planTaxStates,
+    platformTaxPct: String(data.settings.platformTaxPct),
+    platformTaxLabel: data.settings.platformTaxLabel,
   });
   return (
     <div className="grid max-w-2xl gap-5">
@@ -61,7 +62,18 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
           </p>
         </fieldset>
         <Field label="Starting sales tax for new restaurants (%)" htmlFor="s-tax" hint="Used only until a new restaurant's rate is looked up from its address (usually straight away). Set a restaurant's rate by hand in the Restaurants tab."><Input id="s-tax" inputMode="decimal" className="max-w-40" value={f.defaultTaxRatePct} onChange={(e) => setF({ ...f, defaultTaxRatePct: e.target.value })} /></Field>
-        <Field label="States where plan fees are taxed" htmlFor="s-plan-tax" hint="Two-letter codes, e.g. WA, NY. Restaurants in these states pay sales tax on their Bite Wise plan, at their location's rate. Add a state once Bite Wise is registered there and your accountant confirms software subscriptions are taxable in it."><Input id="s-plan-tax" className="max-w-72" value={f.planTaxStates} onChange={(e) => setF({ ...f, planTaxStates: e.target.value })} placeholder="WA" /></Field>
+        <Field
+          label={`Sales tax on plan fees (${data.settings.country === 'CA' ? 'Canada' : 'United States'})`} htmlFor="s-plan-tax"
+          hint={data.settings.country === 'CA'
+            ? 'Charged on every Canadian restaurant\'s plan fee, at Bite Wise\'s Newfoundland and Labrador rate (HST 15%).'
+            : 'Charged on every US restaurant\'s plan fee, at the rate of Bite Wise\'s Washington location.'}
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <Input id="s-plan-tax" inputMode="decimal" className="w-24" value={f.platformTaxPct} onChange={(e) => setF({ ...f, platformTaxPct: e.target.value })} />
+            <span className="text-sm text-muted">%</span>
+            <Input aria-label="Tax name" className="max-w-72" value={f.platformTaxLabel} onChange={(e) => setF({ ...f, platformTaxLabel: e.target.value })} />
+          </div>
+        </Field>
         <fieldset className="mb-4 rounded-xl border border-line p-3">
           <legend className="px-1 text-sm font-bold">Sales tax on orders</legend>
           {([

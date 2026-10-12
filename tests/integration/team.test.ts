@@ -16,11 +16,11 @@ describe.skipIf(!available)('admin team', () => {
     const username = `t_${uid()}`;
     const email = `${username}@example.com`;
     sent.length = 0;
-    const id = await addTeamMember(boss.id, { email, username, password: 'teampass1', role: 'support', canRefund: false });
+    const id = await addTeamMember(boss.id, { email, username, password: 'teampass1', role: 'support', country: 'CA', canRefund: false });
     expect((await db.from('profiles').select('role, can_refund').eq('id', id).single()).data).toEqual({ role: 'support', can_refund: false });
     expect(sent.at(-1)).toMatchObject({ to: email });
     expect(sent.at(-1)?.text).not.toContain('teampass1');
-    expect((await listTeam()).find((m) => m.id === id)).toMatchObject({ role: 'support', canRefund: false, username });
+    expect((await listTeam()).find((m) => m.id === id)).toMatchObject({ role: 'support', country: 'CA', canRefund: false, username });
     // Their own log-in works; terms aren't asked of them; admin-only tables stay closed to them (row-level security).
     const client = anon();
     expect((await client.auth.signInWithPassword({ email, password: 'teampass1' })).error).toBeNull();
@@ -34,7 +34,7 @@ describe.skipIf(!available)('admin team', () => {
 
     await expect(updateTeamMember(boss.id, boss.id, { role: 'support', canRefund: false })).rejects.toThrow(/your own admin access/);
     await expect(checkTeamRemoval(boss.id, boss.id)).rejects.toThrow(/your own account/);
-    await expect(addTeamMember(boss.id, { email, username: `t_${uid()}`, password: 'teampass1', role: 'support', canRefund: false })).rejects.toThrow(/already uses/);
+    await expect(addTeamMember(boss.id, { email, username: `t_${uid()}`, password: 'teampass1', role: 'support', country: 'US', canRefund: false })).rejects.toThrow(/already uses/);
     // A forged invite can't make an account an admin.
     const forged = await anon().auth.signUp({ email: `t_${uid()}@example.com`, password: 'teampass1', options: { data: { username: `t_${uid()}`, team_invite: 'a'.repeat(64) } } });
     expect(forged.error).not.toBeNull();

@@ -11,13 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Checkbox, Field, Input } from '@/components/ui/field';
+import { Checkbox, Field, Input, Select } from '@/components/ui/field';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Spinner, Table } from '@/components/ui/misc';
 import { cn } from '@/lib/utils';
 import { day, useAccess, useAdmin, LoadError } from './shared';
 
-type Member = { id: string; email: string; username: string; role: 'admin' | 'support'; canRefund: boolean; status: string; createdAt: string; lastSignInAt: string | null };
+type Country = 'US' | 'CA';
+const LOCATION: Record<Country, string> = { US: 'United States', CA: 'Canada' };
+type Member = { id: string; email: string; username: string; role: 'admin' | 'support'; country: Country; canRefund: boolean; status: string; createdAt: string; lastSignInAt: string | null };
 
 // The admin team (admins only): add admins with full access, or employees who look after accounts, and choose which
 // employees may give customers platform credit (courtesy refunds and goodwill).
@@ -28,12 +30,15 @@ export function TeamPanel() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin'] });
-  const change = async (m: Member, patch: Partial<Pick<Member, 'role' | 'canRefund'>>) => {
-    const next = { role: m.role, canRefund: m.canRefund, ...patch };
+  const change = async (m: Member, patch: Partial<Pick<Member, 'role' | 'canRefund' | 'country'>>) => {
+    const next = { role: m.role, canRefund: m.canRefund, country: m.country, ...patch };
+    if (patch.country && !confirm(`Move ${m.username} to ${LOCATION[patch.country]}? They will only see and manage ${LOCATION[patch.country]}.`)) return;
     if (next.role === 'admin' && m.role !== 'admin' && !confirm(`Give ${m.username} full admin access (payouts, income, settings, the team)?`)) return;
     const res = await updateTeamMemberAction({ id: m.id, ...next });
     if (!res.ok) return toast.error(res.error);
     toast.success(`${m.username} is updated.`);
+    // Your own location changed: the console now shows the other country.
+    if (patch.country && m.id === me.id) return location.reload();
     refresh();
   };
   const remove = async (m: Member) => {
@@ -53,17 +58,28 @@ export function TeamPanel() {
         <Button variant="green" onClick={() => setAdding(true)}><UserPlus /> Add team member</Button>
       </div>
       <ul className="mt-0 mb-4 grid gap-1 pl-5 text-sm text-ink-2">
+        <li><b>Location:</b> each member works in the United States or Canada and only sees and manages that country&apos;s restaurants, customers, orders, income and taxes.</li>
         <li><b>Admin:</b> full access to everything, including income, payouts, settings and this team.</li>
         <li><b>Employee:</b> sees Alerts, Restaurants, Customers, Orders and Live offers. Can approve, suspend, ban and reactivate accounts, update emails and details,
           and resend emails. Can&apos;t delete accounts. Gives customers courtesy refunds and goodwill as platform credit only if you tick <b>Credit</b>. (All sales are final: nothing is refunded to the card.)</li>
       </ul>
       {isLoading || !data ? <div className="grid place-items-center py-8"><Spinner /></div> : (
         <Table>
-          <thead><tr><th>Member</th><th>Access</th><th>Platform credit</th><th>Last log-in</th><th /></tr></thead>
+          <thead><tr><th>Member</th><th>Location</th><th>Access</th><th>Platform credit</th><th>Last log-in</th><th /></tr></thead>
           <tbody>
             {data.map((m) => (
               <tr key={m.id}>
                 <td><b>{m.username}</b>{m.id === me.id && <span className="text-muted"> (you)</span>}<div className="text-xs break-all text-muted">{m.email} · added {day(m.createdAt)}</div></td>
+                <td>
+                  <div className="inline-flex rounded-full border border-line bg-bg-2 p-0.5">
+                    {(['US', 'CA'] as const).map((c) => (
+                      <button key={c} type="button" onClick={() => m.country !== c && change(m, { country: c })}
+                        className={cn('rounded-full px-3 py-1 text-xs font-bold text-muted', m.country === c && 'bg-primary-soft text-primary-ink')}>
+                        {LOCATION[c]}
+                      </button>
+                    ))}
+                  </div>
+                </td>
                 <td>
                   <div className="inline-flex rounded-full border border-line bg-bg-2 p-0.5">
                     {(['admin', 'support'] as const).map((r) => (
@@ -103,7 +119,8 @@ export function TeamPanel() {
 }
 
 function AddMember({ onDone }: { onDone: () => void }) {
-  const [f, setF] = useState({ email: '', username: '', password: '', confirm: '', role: 'support' as 'admin' | 'support', canRefund: false });
+  const me = useAccess();
+  const [f, setF] = useState({ email: '', username: '', password: '', confirm: '', role: 'support' as 'admin' | 'support', country: me.country as Country, canRefund: false });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const set = (k: 'email' | 'username' | 'password' | 'confirm') => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value });
@@ -112,7 +129,7 @@ function AddMember({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError(null);
     // Never leave the button stuck on "Adding…", whatever happens to the request.
-    const res = await addTeamMemberAction({ email: f.email, username: f.username, password: f.password, role: f.role, canRefund: f.canRefund })
+    const res = await addTeamMemberAction({ email: f.email, username: f.username, password: f.password, role: f.role, country: f.country, canRefund: f.canRefund })
       .catch(() => ({ ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.', status: 0 }))
       .finally(() => setBusy(false));
     if (!res.ok && res.status === 401) return sendToLogin();
@@ -131,6 +148,12 @@ function AddMember({ onDone }: { onDone: () => void }) {
           </button>
         ))}
       </div>
+      <Field label="Location" htmlFor="tm-country" hint="They will only see and manage this country's restaurants, customers, orders and taxes.">
+        <Select id="tm-country" value={f.country} onChange={(e) => setF({ ...f, country: e.target.value as Country })}>
+          <option value="US">United States</option>
+          <option value="CA">Canada</option>
+        </Select>
+      </Field>
       <Field label="Email" htmlFor="tm-email"><Input id="tm-email" type="email" value={f.email} onChange={set('email')} /></Field>
       <Field label="User name" htmlFor="tm-user" hint="Letters, numbers, dots or underscores."><Input id="tm-user" value={f.username} onChange={set('username')} autoComplete="off" /></Field>
       <div className="grid gap-x-3 sm:grid-cols-2">

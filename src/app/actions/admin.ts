@@ -15,8 +15,6 @@ import { money } from '@/lib/format';
 import * as orders from '@/lib/orders';
 import { onboardingMessage, sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { refreshRestaurantTax, setManualTaxRate } from '@/lib/restaurant-tax';
-import { parseStates } from '@/lib/subscriptions';
-import { stateByCode } from '@/lib/tax/states';
 import { addTeamMember, checkTeamRemoval, editTeamMember, sendTeamResetCode, setTeamPassword, temporaryPassword, updateTeamMember } from '@/lib/team';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { SUSPENSION_DAYS } from '@/lib/constants';
@@ -26,6 +24,23 @@ import { checkAddress, dollars, emailSchema, int, parse, passwordSchema, restaur
 const db = () => supabaseAdmin();
 const note = (field: string, min = 0) => z.string().trim().min(min, `${field} must be at least ${min} characters.`).max(300, `${field} must be at most 300 characters.`);
 
+
+// Each admin and employee works in one country, their location (United States or Canada): they only see and act on that
+// country's restaurants, customers, orders and offers. The admin team itself is managed by admins across both.
+type Target = { restaurantId?: number; userId?: string; orderId?: number; offerId?: number; alertId?: number };
+async function inMyLocation(me: Viewer, t: Target) {
+  let country: string | null | undefined;
+  if (t.restaurantId !== undefined) country = (await db().from('restaurants').select('country').eq('id', t.restaurantId).maybeSingle()).data?.country;
+  else if (t.userId !== undefined) {
+    const p = (await db().from('profiles').select('country, role').eq('id', t.userId).maybeSingle()).data;
+    if (p?.role === 'admin' || p?.role === 'support') return; // team accounts: see checkTeamTarget
+    country = p?.country;
+  } else if (t.orderId !== undefined) country = (await db().from('orders').select('restaurants(country)').eq('id', t.orderId).maybeSingle()).data?.restaurants?.country;
+  else if (t.offerId !== undefined) country = (await db().from('offers').select('restaurants(country)').eq('id', t.offerId).maybeSingle()).data?.restaurants?.country;
+  else if (t.alertId !== undefined) country = (await db().from('admin_alerts').select('profiles!admin_alerts_user_id_fkey(country)').eq('id', t.alertId).maybeSingle()).data?.profiles?.country;
+  if (country !== me.country) throw new AppError(404, `Not found in your location (${me.country === 'CA' ? 'Canada' : 'United States'}).`);
+}
+
 const days = z.number().int().refine((n) => (SUSPENSION_DAYS as readonly number[]).includes(n), 'Choose a suspension length.').optional();
 
 // Approve, reinstate, suspend for a number of days, or ban a restaurant for good (see src/lib/moderation.ts).
@@ -33,6 +48,7 @@ export async function setRestaurantStatus(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int(), status: z.enum(['approved', 'suspended', 'banned', 'pending']), days, note: note('Note').default('') }), input);
+    await inMyLocation(me, { restaurantId: d.id });
     const name = await moderation.setRestaurantStatus(d.id, d);
     await log(me.id, `restaurant.${d.status}`, 'restaurant', d.id, `${name}${d.days ? ` for ${d.days} days` : ''}${d.note ? `: ${d.note}` : ''}`);
     // Welcome email (signed agreement + kiosk link); the console shows whether it went out, and why not.
@@ -46,6 +62,7 @@ export async function sendWelcomeEmail(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int() }), input);
+    await inMyLocation(me, { restaurantId: d.id });
     const r = must(await db().from('restaurants').select('name, status').eq('id', d.id).single());
     if (r.status !== 'approved') throw new AppError(409, 'Only approved restaurants get the welcome email.');
     const res = await sendOnboardingEmails(d.id, { resend: true });
@@ -68,6 +85,7 @@ export async function setUserStatus(input: unknown) {
     const d = parse(z.object({ id: z.string().uuid(), status: z.enum(['active', 'suspended', 'banned']), days, note: note('Reason').default('') }), input);
     if (d.id === me.id) throw new AppError(400, 'You cannot suspend or ban your own account.');
     await checkTeamTarget(me, d.id);
+    await inMyLocation(me, { userId: d.id });
     const res = await moderation.setUserStatus(d.id, d);
     await log(me.id, res.action, 'user', d.id, res.details);
     return null;
@@ -80,6 +98,7 @@ export async function deleteUser(input: unknown) {
     const me = await requireAdmin();
     const d = parse(z.object({ id: z.string().uuid() }), input);
     if (d.id === me.id) throw new AppError(400, 'You cannot delete your own account.');
+    await inMyLocation(me, { userId: d.id });
     const res = await moderation.deleteAccount(d.id);
     await log(me.id, 'user.delete', 'user', d.id, res.details);
     return { anonymized: res.anonymized };
@@ -91,6 +110,7 @@ export async function deleteRestaurant(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
     const d = parse(z.object({ id: z.number().int() }), input);
+    await inMyLocation(me, { restaurantId: d.id });
     const res = await moderation.deleteRestaurant(d.id);
     await log(me.id, 'restaurant.delete', 'restaurant', d.id, res.details);
     return { anonymized: res.anonymized };
@@ -102,6 +122,7 @@ export async function issueCredit(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('refund');
     const d = parse(z.object({ userId: z.string().uuid(), amount: dollars('Credit amount', 0.01, 1000), reason: note('Reason', 3) }), input);
+    await inMyLocation(me, { userId: d.userId });
     const balance = must(await db().rpc('issue_credit', { p_user: d.userId, p_amount_cents: d.amount, p_note: d.reason, p_by: me.id }));
     const u = must(await db().from('profiles').select('username').eq('id', d.userId).single());
     await log(me.id, 'credit.issue', 'user', d.userId, `${u.username}: ${money(d.amount)} - ${d.reason}`);
@@ -113,6 +134,7 @@ export async function adminCancelOrder(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('support');
     const d = parse(z.object({ id: int('Order', 1, Number.MAX_SAFE_INTEGER), reason: note('Reason').default('') }), input);
+    await inMyLocation(me, { orderId: d.id });
     const o = await orders.getOrder(d.id);
     if (o.status !== 'reserved' && o.status !== 'pending_payment') throw new AppError(409, 'Only orders awaiting pickup can be cancelled.');
     await orders.release(o.id, o.status, 'cancelled', true);
@@ -139,6 +161,7 @@ export async function refundOrder(input: unknown) {
       input,
     );
     const me = await requireAdmin('refund');
+    await inMyLocation(me, { orderId: d.id });
     const o = await orders.getOrder(d.id);
     const refundable = orders.refundableCents(o); // never the service fee
     const amountCents = d.percent !== undefined
@@ -157,6 +180,7 @@ export async function endOffer(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int(), reason: note('Reason').default('') }), input);
+    await inMyLocation(me, { offerId: d.id });
     const o = must(await db().from('offers').update({ status: 'ended' }).eq('id', d.id).select('id, title, restaurants(name)').maybeSingle());
     await log(me.id, 'offer.remove', 'offer', o.id, `${o.title} (${o.restaurants?.name ?? ''})${d.reason ? `: ${d.reason}` : ''}`);
     return null;
@@ -169,6 +193,7 @@ export async function payRestaurant(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
     const d = parse(z.object({ restaurantId: z.number().int(), amount: dollars('Amount', 0.01, 1_000_000), note: note('Note').default(''), manual: z.boolean() }), input);
+    await inMyLocation(me, { restaurantId: d.restaurantId });
     const r = must(await db().from('restaurants').select('name').eq('id', d.restaurantId).maybeSingle());
     const p = await orders.payRestaurant(d.restaurantId, d.amount, me.id, d.note, d.manual);
     await log(me.id, d.manual ? 'payout.record' : 'payout.transfer', 'restaurant', d.restaurantId, `${r.name}: ${money(d.amount)} (${p.invoice_number}, ${p.transaction_id})`);
@@ -189,14 +214,13 @@ export async function updateSettings(input: unknown) {
         requireRestaurantApproval: z.boolean(),
         // true: restaurants get the sales tax on their food and remit it; false: Bite Wise keeps and remits it.
         orderTaxToRestaurant: z.boolean().optional(),
-        // States where plan fees are taxed, e.g. "WA, NY" (empty: nowhere).
-        planTaxStates: z.string().max(200).optional(),
+        // Sales tax on plan fees in the admin's location (Washington or Newfoundland and Labrador).
+        platformTaxPct: z.coerce.number().min(0, 'Sales tax on plan fees must be 0% to 20%.').max(20, 'Sales tax on plan fees must be 0% to 20%.').optional(),
+        platformTaxLabel: z.string().trim().min(2, 'Name the tax, e.g. Washington (Seattle).').max(80).optional(),
       }),
       input,
     );
-    const states = parseStates(d.planTaxStates ?? '');
-    const unknown = states.filter((c) => !stateByCode(c));
-    if (unknown.length) throw new AppError(400, `Unknown state code: ${unknown.join(', ')}. Use two-letter codes like WA, NY.`);
+    const k = me.country.toLowerCase();
     const values = {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
       ...(d.serviceFeeMode ? { service_fee_mode: d.serviceFeeMode } : {}),
@@ -204,7 +228,8 @@ export async function updateSettings(input: unknown) {
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,
       ...(d.orderTaxToRestaurant !== undefined ? { order_tax_to_restaurant: d.orderTaxToRestaurant } : {}),
-      ...(d.planTaxStates !== undefined ? { plan_tax_states: [...new Set(states)].join(', ') } : {}),
+      ...(d.platformTaxPct !== undefined ? { [`platform_tax_rate_bps_${k}`]: Math.round(d.platformTaxPct * 100) } : {}),
+      ...(d.platformTaxLabel !== undefined ? { [`platform_tax_label_${k}`]: d.platformTaxLabel } : {}),
     };
     const current = new Map(must(await db().from('settings').select('key, value')).map((r) => [r.key, r.value]));
     const changed = Object.entries(values).filter(([k, v]) => current.get(k) !== v);
@@ -314,6 +339,7 @@ export async function chargeDelinquentPlan(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
     const d = parse(z.object({ restaurantId: z.number().int() }), input);
+    await inMyLocation(me, { restaurantId: d.restaurantId });
     const r = must(await db().from('restaurants').select('name').eq('id', d.restaurantId).maybeSingle());
     try {
       const res = await subscriptions.payNow(d.restaurantId);
@@ -332,7 +358,14 @@ export async function markAlertsRead(input: unknown) {
     const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.number().int().optional() }), input);
     let q = db().from('admin_alerts').update({ read_at: new Date().toISOString(), read_by: me.id }).is('read_at', null);
-    if (d.id) q = q.eq('id', d.id);
+    if (d.id) {
+      await inMyLocation(me, { alertId: d.id });
+      q = q.eq('id', d.id);
+    } else {
+      // All of this location's alerts.
+      const mine = must(await db().from('admin_alerts').select('id, profiles!admin_alerts_user_id_fkey!inner(country)').is('read_at', null).eq('profiles.country', me.country));
+      q = q.in('id', mine.map((a) => a.id));
+    }
     check(await q);
     return null;
   });
@@ -345,6 +378,7 @@ export async function recheckRestaurantTax(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
     const { restaurantId } = parse(z.object({ restaurantId: z.coerce.number().int().positive() }), input);
+    await inMyLocation(me, { restaurantId });
     const res = await refreshRestaurantTax(restaurantId, { force: true });
     if (!res) throw new AppError(404, 'Restaurant not found.');
     await log(me.id, 'restaurant.tax_lookup', 'restaurant', restaurantId, `${res.rateBps} bps · ${res.jurisdiction}${res.kept ? ' (kept)' : ''}`);
@@ -357,6 +391,7 @@ export async function setRestaurantTaxRate(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
     const d = parse(taxRateSchema, input);
+    await inMyLocation(me, { restaurantId: d.restaurantId });
     if (d.mode === 'auto') {
       const res = await refreshRestaurantTax(d.restaurantId, { force: true });
       await log(me.id, 'restaurant.tax_auto', 'restaurant', d.restaurantId, `${res?.rateBps} bps`);
@@ -377,6 +412,7 @@ export async function updateUserAccount(input: unknown) {
     const me = await requireAdmin('support');
     const d = parse(z.object({ id: z.string().uuid(), email: emailSchema, username: usernameSchema }), input);
     await checkTeamTarget(me, d.id);
+    await inMyLocation(me, { userId: d.id });
     const changed = await updateAccount(d.id, { email: d.email, username: d.username });
     if (changed.length) await log(me.id, 'user.update', 'user', d.id, changed.join('; '));
     return { changed: changed.length };
@@ -390,6 +426,8 @@ export async function updateRestaurant(input: unknown) {
     const d = checkAddress(parse(restaurantFieldsSchema.pick({ name: true, address: true, city: true, state: true, zip: true, country: true, phone: true, cuisine: true }).extend({
       id: z.number().int(), description: z.string().trim().max(400).default(''), ownerEmail: emailSchema, ownerUsername: usernameSchema,
     }), input));
+    await inMyLocation(me, { restaurantId: d.id });
+    if (d.country !== me.country) throw new AppError(403, 'A restaurant can\'t be moved to another country.');
     const r = must(await db().from('restaurants').select('owner_id').eq('id', d.id).single());
     const owner = await updateAccount(r.owner_id, { email: d.ownerEmail, username: d.ownerUsername });
     const details = await updateRestaurantDetails(d.id, {
@@ -406,6 +444,7 @@ export async function sendCustomerWelcomeEmail(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('support');
     const { id } = parse(z.object({ id: z.string().uuid() }), input);
+    await inMyLocation(me, { userId: id });
     const res = await sendCustomerWelcome(id, { resend: true });
     if (!res.sent) {
       const why = { not_found: 'Account not found.', not_customer: 'Only customers get this email.', not_confirmed: `${res.to} hasn't confirmed their email yet. The welcome email is sent once they do.`, already_sent: '', failed: `The email to ${res.to} couldn't be sent. Check the email settings (SMTP).` };
@@ -431,6 +470,7 @@ export async function adminImportMenu(input: unknown) {
     const me = await requireAdmin('support');
     const { restaurantId } = parse(z.object({ restaurantId: z.number().int() }), { restaurantId: (input as { restaurantId?: unknown })?.restaurantId });
     const d = parseImportInput(input);
+    await inMyLocation(me, { restaurantId });
     const r = must(await db().from('restaurants').select('name').eq('id', restaurantId).neq('status', 'deleted').single());
     const res = await importMenu(restaurantId, d.items, { updateExisting: d.updateExisting });
     await log(me.id, 'restaurant.menu_import', 'restaurant', restaurantId, `${r.name}: ${res.added} added, ${res.updated} updated, ${res.skipped} skipped`);
@@ -443,9 +483,9 @@ export async function adminImportMenu(input: unknown) {
 export async function addTeamMemberAction(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
-    const d = parse(z.object({ email: emailSchema, username: usernameSchema, password: passwordSchema, role: z.enum(['admin', 'support']), canRefund: z.boolean().default(false) }), input);
+    const d = parse(z.object({ email: emailSchema, username: usernameSchema, password: passwordSchema, role: z.enum(['admin', 'support']), country: z.enum(['US', 'CA']), canRefund: z.boolean().default(false) }), input);
     const id = await addTeamMember(me.id, d);
-    await log(me.id, 'team.add', 'user', id, `${d.username} (${d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ''}`})`);
+    await log(me.id, 'team.add', 'user', id, `${d.username} (${d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ''}`}, ${d.country === 'CA' ? 'Canada' : 'United States'})`);
     return null;
   });
 }
@@ -453,9 +493,9 @@ export async function addTeamMemberAction(input: unknown) {
 export async function updateTeamMemberAction(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
-    const d = parse(z.object({ id: z.string().uuid(), role: z.enum(['admin', 'support']), canRefund: z.boolean() }), input);
+    const d = parse(z.object({ id: z.string().uuid(), role: z.enum(['admin', 'support']), canRefund: z.boolean(), country: z.enum(['US', 'CA']).optional() }), input);
     await updateTeamMember(me.id, d.id, d);
-    await log(me.id, 'team.update', 'user', d.id, d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ', no refunds'}`);
+    await log(me.id, 'team.update', 'user', d.id, `${d.role === 'admin' ? 'admin' : `employee${d.canRefund ? ', refunds' : ', no refunds'}`}${d.country ? `, ${d.country === 'CA' ? 'Canada' : 'United States'}` : ''}`);
     return null;
   });
 }

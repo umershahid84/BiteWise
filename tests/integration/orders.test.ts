@@ -218,6 +218,7 @@ describe.skipIf(!available)('fixed service fee', () => {
   it('charges the fixed fee per order when the admin picks it, and the percentage otherwise', async () => {
     const setting = async (key: string, value: string | number) => db().from('settings').upsert({ key, value });
     const before = String((await db().from('settings').select('value').eq('key', 'service_fee_mode').single()).data!.value);
+    const beforeFixed = Number((await db().from('settings').select('value').eq('key', 'service_fee_fixed_cents').single()).data!.value);
     try {
       await setting('service_fee_mode', 'fixed');
       await setting('service_fee_fixed_cents', 150);
@@ -236,6 +237,7 @@ describe.skipIf(!available)('fixed service fee', () => {
       expect(o2.service_fee_cents).toBe(25);
     } finally {
       await setting('service_fee_mode', before);
+      await setting('service_fee_fixed_cents', beforeFixed);
     }
   });
 });

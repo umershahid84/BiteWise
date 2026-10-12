@@ -54,19 +54,22 @@ export async function prices() {
 }
 export const priceOf = (p: Awaited<ReturnType<typeof prices>>, plan: PaidPlan) => (plan === 'annual' ? p.annualCents : p.monthlyCents);
 
-// Sales tax on a plan fee, at the restaurant's location rate (the same rate as its food sales, src/lib/restaurant-tax.ts),
-// in the states where plan fees are taxed (the plan_tax_states setting, e.g. "WA, NY"); 0 elsewhere.
+// Sales tax on a plan fee (a Bite Wise platform fee): at the rate of Bite Wise's location in the restaurant's country,
+// set in the admin Settings: Washington for restaurants in the United States, Newfoundland and Labrador HST for
+// restaurants in Canada.
 export const salesTax = (cents: number, rateBps: number) => Math.round((cents * rateBps) / 10000);
 const withTax = (cents: number, rateBps: number) => cents + salesTax(cents, rateBps);
-export const parseStates = (v: unknown) => String(v ?? '').toUpperCase().split(/[^A-Z]+/).filter((x) => x.length === 2);
+export const PLATFORM_TAX_DEFAULTS = { US: { rateBps: 1035, label: 'Washington (Seattle)' }, CA: { rateBps: 1500, label: 'Newfoundland and Labrador HST' } };
+export async function platformTax(country: Country) {
+  const k = country === 'CA' ? 'ca' : 'us';
+  const rows = must(await db().from('settings').select('key, value').in('key', [`platform_tax_rate_bps_${k}`, `platform_tax_label_${k}`]));
+  const get = (key: string) => rows.find((r) => r.key === key)?.value;
+  const d = PLATFORM_TAX_DEFAULTS[country];
+  return { rateBps: Number(get(`platform_tax_rate_bps_${k}`) ?? d.rateBps), jurisdiction: String(get(`platform_tax_label_${k}`) ?? d.label) };
+}
 async function planTax(restaurantId: number) {
-  const [r, setting] = await Promise.all([
-    db().from('restaurants').select('tax_rate_bps, state, tax_jurisdiction').eq('id', restaurantId).single(),
-    db().from('settings').select('value').eq('key', 'plan_tax_states').maybeSingle(),
-  ]);
-  const row = must(r);
-  const taxed = parseStates(setting.data?.value ?? 'WA').includes(row.state);
-  return { rateBps: taxed ? row.tax_rate_bps : 0, jurisdiction: taxed ? row.tax_jurisdiction : '' };
+  const r = must(await db().from('restaurants').select('country').eq('id', restaurantId).single());
+  return platformTax(r.country === 'CA' ? 'CA' : 'US');
 }
 const taxRate = async (restaurantId: number) => (await planTax(restaurantId)).rateBps;
 
