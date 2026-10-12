@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PlayCircle, Store, UtensilsCrossed } from 'lucide-react';
 import { Button, type ButtonProps } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import VERSIONS from './demo-video-version.json';
 import { cn } from '@/lib/utils';
 
 // Short narrated screen recordings of the app (public/videos, made with scripts/demo-video; see its README).
@@ -24,6 +25,7 @@ export type TourName = keyof typeof TOURS;
 
 export function DemoVideo({ tour, autoPlay, className }: { tour: TourName; autoPlay?: boolean; className?: string }) {
   const t = TOURS[tour];
+  const v = VERSIONS[tour]; // changes whenever the video is re-recorded, so no cached copy is shown
   const ref = useRef<HTMLVideoElement>(null);
   // Opened from a button click, so browsers allow playing with sound. If one still refuses, the controls stay.
   useEffect(() => {
@@ -34,15 +36,15 @@ export function DemoVideo({ tour, autoPlay, className }: { tour: TourName; autoP
       ref={ref}
       key={tour}
       className={cn('aspect-video w-full rounded-card border border-line bg-black shadow-pop', className)}
-      poster={`${t.src}.jpg`}
+      poster={`${t.src}.jpg?v=${v}`}
       controls
       playsInline
       preload={autoPlay ? 'auto' : 'none'}
       aria-label={`${t.title} (a short video with voice-over): ${t.steps.join(', ')}.`}
     >
-      <source src={`${t.src}.webm`} type="video/webm" />
-      <source src={`${t.src}.mp4`} type="video/mp4" />
-      <track kind="subtitles" src={`${t.src}.vtt`} srcLang="en" label="English" />
+      <source src={`${t.src}.webm?v=${v}`} type="video/webm" />
+      <source src={`${t.src}.mp4?v=${v}`} type="video/mp4" />
+      <track kind="subtitles" src={`${t.src}.vtt?v=${v}`} srcLang="en" label="English" />
     </video>
   );
 }

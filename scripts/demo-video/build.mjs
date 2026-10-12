@@ -2,6 +2,7 @@
 // Needs an ffmpeg with libx264, libvpx-vp9 and libopus (set FFMPEG=/path/to/ffmpeg if it isn't on PATH).
 // Writes public/videos/<tour>-tour.{mp4,webm,vtt,jpg}.
 import { execFileSync, spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -78,3 +79,13 @@ for (const tour of ['customer', 'restaurant']) {
 
   console.log(`${tour}: ${length(`${base}.mp4`)} → ${base}.{mp4,webm,vtt,jpg}`);
 }
+
+// A version tag for each tour (from its files' contents), added to the video URLs so browsers and the CDN always load
+// a re-recorded video instead of a cached copy (src/components/app/demo-video-version.json).
+const version = (tour) => {
+  const h = crypto.createHash('sha256');
+  for (const ext of ['mp4', 'webm', 'vtt', 'jpg']) h.update(fs.readFileSync(path.join(OUT, `${tour}-tour.${ext}`)));
+  return h.digest('hex').slice(0, 10);
+};
+fs.writeFileSync(path.resolve('src/components/app/demo-video-version.json'),
+  `${JSON.stringify({ customer: version('customer'), restaurant: version('restaurant') }, null, 2)}\n`);
