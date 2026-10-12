@@ -28,7 +28,7 @@ node scripts/demo-video/build.mjs     # → public/videos/*-tour.{mp4,webm,vtt,j
 labels and PIN pop-ups from `story-photo.html` drawn over the footage (the clips are converted to WebM first, since the
 recording browser can't play H.264). Remove the clips to go back to the illustrated scenes.
 
-`build.mjs` prints each video's length; update `length` in `src/components/app/demo-video.tsx` if it changed. The `.vtt` files are optional subtitles (off by default in the player) with the same words as the voice-over. The bell in the restaurant tour is the dashboard's own order bell (`src/components/restaurant/bell.ts`), recreated in `voice.py`.
+`build.mjs` prints each video's length (the app just calls them short videos, so nothing needs updating). The `.vtt` files are optional subtitles (off by default in the player) with the same words as the voice-over. The bell in the restaurant tour is the dashboard's own order bell (`src/components/restaurant/bell.ts`), recreated in `voice.py`.
 
 The music's volume is `MUSIC_GAIN` in `build.mjs`; its tempo, chords, instruments and the whistled hook are at the top of `music.py`. The end screen's wording is `OUTRO` in `record.mjs`.
 

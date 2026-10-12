@@ -10,13 +10,11 @@ import { cn } from '@/lib/utils';
 export const TOURS = {
   customer: {
     title: 'How Bite Wise works for customers',
-    length: '1:41',
     src: '/videos/customer-tour',
     steps: ['Browse live deals near your ZIP or postal code', 'See the full total, and use a coupon', 'Your card is held, not charged', 'Show your 4-digit PIN at pickup'],
   },
   restaurant: {
     title: 'How Bite Wise works for restaurants',
-    length: '1:16',
     src: '/videos/restaurant-tour',
     steps: ['Post surplus food in under a minute', 'A bell rings when someone orders', 'Type the PIN and hand over the food', 'Get paid through Stripe, with reports'],
   },
@@ -40,7 +38,7 @@ export function DemoVideo({ tour, autoPlay, className }: { tour: TourName; autoP
       controls
       playsInline
       preload={autoPlay ? 'auto' : 'none'}
-      aria-label={`${t.title} (${t.length}, with voice-over): ${t.steps.join(', ')}.`}
+      aria-label={`${t.title} (a short video with voice-over): ${t.steps.join(', ')}.`}
     >
       <source src={`${t.src}.webm`} type="video/webm" />
       <source src={`${t.src}.mp4`} type="video/mp4" />
@@ -57,7 +55,7 @@ export function DemoVideoButton({ tour, label = 'Watch how it works', ...props }
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" {...props}><PlayCircle /> {label}</Button>
       </DialogTrigger>
-      <DialogContent title={t.title} description={`A ${t.length} narrated walkthrough of the app. Turn your sound on, or turn on subtitles in the player.`} className="w-[min(960px,calc(100%-24px))]">
+      <DialogContent title={t.title} description="A short narrated walkthrough of the app. Turn your sound on, or turn on subtitles in the player." className="w-[min(960px,calc(100%-24px))]">
         <DemoVideo tour={tour} autoPlay />
         <Steps tour={tour} className="mt-4" />
       </DialogContent>
