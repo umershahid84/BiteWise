@@ -57,7 +57,8 @@ describe.skipIf(!available)('automatic sales tax', () => {
     const c = await signUp('customer');
     const res = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 2, creditCents: 0, newCard: visa });
     const o = (await admin().from('orders').select('tax_rate_bps, tax_cents, subtotal_cents, tax_jurisdiction').eq('id', res.orderId).single()).data!;
-    expect(o).toEqual({ tax_rate_bps: 800, tax_cents: 80, subtotal_cents: 1000, tax_jurisdiction: 'Testville, WA (WA Department of Revenue)' });
+    expect(o).toEqual({ tax_rate_bps: 800, tax_cents: 80 + 5, subtotal_cents: 1000, // + 10.35% (WA) on the 50¢ fee
+      tax_jurisdiction: 'Testville, WA (WA Department of Revenue)' });
   });
 
   it("taxes plan fees at Bite Wise's location: Washington in the US, Newfoundland and Labrador HST in Canada", async () => {

@@ -124,7 +124,8 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   row(`DISCOUNT ${it.discountPct}%`, money(-it.savingsCents));
   row('SUBTOTAL', money(rc.subtotalCents));
   row(rc.serviceFeeLabel.toUpperCase(), money(rc.serviceFeeCents));
-  row(`SALES TAX ${pct(rc.taxRateBps)}`, money(rc.taxCents));
+  row(`SALES TAX ${pct(rc.taxRateBps)}`, money(rc.foodTaxCents));
+  if (rc.feeTaxCents) row('TAX ON SERVICE FEE', money(rc.feeTaxCents));
   double();
   row('TOTAL', money(rc.totalCents), { bold: true, size: 11.5, after: 3 });
   if (rc.creditAppliedCents) {

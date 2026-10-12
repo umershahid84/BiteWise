@@ -28,7 +28,7 @@ describe.skipIf(!available)('checkout', () => {
     expect(o.status).toBe('reserved');
     expect(o.payment_ref).toMatch(/^pi_mock_/);
     expect(o.destination_account).toMatch(/^acct_mock_/); // destination charge to the restaurant's Connect account
-    expect(o.total_cents).toBe(500 * 2 + 50 + 104); // $10 at 50% off x2 + 5% fee + 10.35% tax
+    expect(o.total_cents).toBe(500 * 2 + 50 + 104 + 5); // $10 at 50% off x2 + 5% fee + 10.35% tax on the food + 10.35% (WA) on the fee
     expect(await pinOf(o.id)).toMatch(/^\d{4}$/);
     expect(await offerLeft(shop.offer.id)).toBe(1);
   });
@@ -64,7 +64,7 @@ describe.skipIf(!available)('checkout', () => {
     const shop = await restaurantWithOffer({ quantity: 5 });
     const c = await signUp('customer');
     await giveCredit(c.id, 2000);
-    const total = 500 + 25 + 52;
+    const total = 500 + 25 + 52 + 3; // food, fee, tax on the food, tax on the fee
     await expect(orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: total - 20, newCard: visa })).rejects.toThrow('at least $0.50');
     // Credit covering everything needs no card at all.
     const res = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: total, cardId: null, newCard: null });
@@ -82,10 +82,10 @@ describe.skipIf(!available)('checkout', () => {
     expect(await offerLeft(shop.offer.id)).toBe(0);
     const res = await c.client.rpc('my_cancel_order', { p_order_id: orderId });
     expect(res.error).toBeNull();
-    expect((res.data as { keptCents: number }).keptCents).toBe(50);
+    expect((res.data as { keptCents: number }).keptCents).toBe(55); // the fee and its tax
     await orders.voidIfNeeded(orderId);
     const o = await orders.getOrder(orderId);
-    expect(o).toMatchObject({ status: 'cancelled', needs_void: false, needs_fee_charge: false, kept_fee_cents: 50, kept_tax_cents: 0, kept_card_cents: 50 });
+    expect(o).toMatchObject({ status: 'cancelled', needs_void: false, needs_fee_charge: false, kept_fee_cents: 50, kept_tax_cents: 5, kept_card_cents: 55 });
     expect(o.fee_charge_ref).toBeTruthy();
     expect(await offerLeft(shop.offer.id)).toBe(2);
     expect(await balance(c.id)).toBe(300);
@@ -100,7 +100,7 @@ describe.skipIf(!available)('checkout', () => {
     expect((await c.client.rpc('my_cancel_order', { p_order_id: orderId })).error).toBeNull();
     await orders.voidIfNeeded(orderId);
     expect(await orders.getOrder(orderId)).toMatchObject({ status: 'cancelled', kept_fee_cents: 25, kept_card_cents: 0, needs_fee_charge: false });
-    expect(await balance(c.id)).toBe(2000 - 25);
+    expect(await balance(c.id)).toBe(2000 - 25 - 3);
   });
 
   it('releases the whole hold, fee included, when Bite Wise cancels', async () => {
@@ -176,7 +176,7 @@ describe.skipIf(!available)('refunds', () => {
   it('refunds to the card and takes the restaurant share back from its transfer', async () => {
     const { shop, orderId, adminId } = await completedOrder();
     const o = await orders.getOrder(orderId);
-    expect(orders.refundableCents(o)).toBe(o.total_cents - o.service_fee_cents); // the service fee is never refunded
+    expect(orders.refundableCents(o)).toBe(500 + 52); // the food and its tax: the service fee and its tax are never refunded
     const half = Math.round(orders.refundableCents(o) / 2);
     const res = await orders.refundOrder(orderId, { amountCents: half, method: 'original', reason: 'cold food', adminId });
     expect(res.cardCents).toBe(half);
@@ -190,8 +190,8 @@ describe.skipIf(!available)('refunds', () => {
     const { shop, c, orderId, adminId } = await completedOrder();
     const o = await orders.getOrder(orderId);
     await expect(orders.refundOrder(orderId, { amountCents: o.total_cents, method: 'credit', reason: 'sorry', adminId })).rejects.toThrow('service fee is not refundable');
-    await orders.refundOrder(orderId, { amountCents: o.total_cents - o.service_fee_cents, method: 'credit', reason: 'sorry', adminId });
-    expect(await balance(c.id)).toBe(o.total_cents - o.service_fee_cents);
+    await orders.refundOrder(orderId, { amountCents: orders.refundableCents(o), method: 'credit', reason: 'sorry', adminId });
+    expect(await balance(c.id)).toBe(orders.refundableCents(o));
     const bal = (await db().from('restaurant_balances').select('*').eq('restaurant_id', shop.restaurant.id).single()).data!;
     expect(bal).toMatchObject({ earned_cents: 552, paid_cents: 552 });
     await expect(orders.refundOrder(orderId, { amountCents: 1, method: 'credit', reason: 'again', adminId })).rejects.toThrow('fully refunded');
@@ -208,7 +208,7 @@ describe.skipIf(!available)('cleanup sweep', () => {
     await db().from('offers').update({ pickup_start: new Date(Date.now() - 3600000).toISOString(), pickup_end: past }).eq('id', shop.offer.id);
     await db().from('orders').update({ pickup_end: past }).eq('id', orderId);
     await orders.sweep();
-    expect(await orders.getOrder(orderId)).toMatchObject({ status: 'expired', needs_void: false, needs_fee_charge: false, kept_fee_cents: 25, kept_card_cents: 25 });
+    expect(await orders.getOrder(orderId)).toMatchObject({ status: 'expired', needs_void: false, needs_fee_charge: false, kept_fee_cents: 25, kept_tax_cents: 3, kept_card_cents: 28 });
     expect(await balance(c.id)).toBe(200);
     expect((await db().from('offers').select('status').eq('id', shop.offer.id).single()).data!.status).toBe('ended');
   });
@@ -228,7 +228,7 @@ describe.skipIf(!available)('fixed service fee', () => {
       const o = await orders.getOrder(res.orderId);
       expect(o.service_fee_cents).toBe(150); // once per order, not per item
       expect(o.service_fee_bps).toBe(0);
-      expect(o.total_cents).toBe(1500 + 150 + 155); // food tax only (10.35% of $15.00)
+      expect(o.total_cents).toBe(1500 + 150 + 155 + 16); // 10.35% tax on the food and on the fee
 
       await setting('service_fee_mode', 'percent');
       const res2 = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 0, newCard: visa });

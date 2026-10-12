@@ -188,7 +188,8 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
               <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{m(q.originalUnitCents)}</span> {m(q.unitPriceCents)}</td><td>{m(q.subtotalCents)}</td></tr>
               <tr><td colSpan={2} className="text-primary-ink">You save {m(q.savingsCents)} ({q.discountPct}% off)</td></tr>
               <tr><td>{serviceFeeLabel(q.serviceFeeBps)} <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>
-              <tr><td>Sales tax ({pct(q.taxRateBps)})</td><td>{m(q.taxCents)}</td></tr>
+              <tr><td>Sales tax on food ({pct(q.taxRateBps)})</td><td>{m(q.foodTaxCents)}</td></tr>
+              {q.serviceFeeTaxCents > 0 && <tr><td>Tax on service fee ({pct(q.serviceFeeTaxBps)})</td><td>{m(q.serviceFeeTaxCents)}</td></tr>}
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{m(q.totalCents)}</td></tr>
               {creditCents > 0 && (
                 <>

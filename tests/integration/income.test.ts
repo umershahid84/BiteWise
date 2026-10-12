@@ -1,5 +1,6 @@
 // The owner console's Income tab: service fees + plan fees (without sales tax) - platform credit Bite Wise funds.
 // Against the local database; compares before and after, so other data in it doesn't matter.
+import { feeTaxCents } from '@/lib/pricing';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/email/send', () => ({ sendEmail: vi.fn(async () => true), emailConfigured: () => true }));
@@ -44,7 +45,8 @@ describe.skipIf(!available)('income', () => {
     expect(d('planFeesCents')).toBe(1500);
     expect(d('planTaxCents')).toBe(plan.tax_cents);
     expect(plan.tax_cents).toBeGreaterThan(0);
-    expect(d('orderTaxCents')).toBe(0); // the food's sales tax is paid to the restaurant, which remits it
+    expect(d('orderTaxCents')).toBe(feeTaxCents(order)); // only the tax on the service fee: the food's is paid to the restaurant, which remits it
+    expect(feeTaxCents(order)).toBeGreaterThan(0);
     expect(d('creditCostCents')).toBe(300);
     expect(d('netCents')).toBe(order.service_fee_cents + 1500 - 300);
     // Today, this month and this year include it too.

@@ -309,7 +309,8 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
           ${it.savingsCents > 0 ? row(`Bite Wise discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
           ${row('Subtotal', usd(rc.subtotalCents))}
           ${rc.serviceFeeCents ? row(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
-          ${row(`Sales tax (${(rc.taxRateBps / 100).toFixed(2).replace(/\.?0+$/, '')}%)`, usd(rc.taxCents))}
+          ${row(`Sales tax (${(rc.taxRateBps / 100).toFixed(2).replace(/\.?0+$/, '')}%)`, usd(rc.foodTaxCents))}
+          ${rc.feeTaxCents ? row('Tax on service fee', usd(rc.feeTaxCents)) : ''}
           ${row('Total paid', usd(rc.totalCents), { strong: true })}
           ${paidWith ? row('Paid with', paidWith) : ''}
         </table>
@@ -321,7 +322,7 @@ ${r.name}, ${r.address}, ${r.city} ${r.zip}
 
 ${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
 Subtotal: ${usd(rc.subtotalCents)}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
-Sales tax: ${usd(rc.taxCents)}
+Sales tax: ${usd(rc.foodTaxCents)}${rc.feeTaxCents ? `\nTax on service fee: ${usd(rc.feeTaxCents)}` : ''}
 Total paid: ${usd(rc.totalCents)}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
 
 Your receipt: ${o.receiptUrl}`,

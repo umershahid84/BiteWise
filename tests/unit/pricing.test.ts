@@ -21,7 +21,7 @@ describe('pricing', () => {
   });
 
   it('can tax the service fee when configured', () => {
-    const q = quote({ originalUnitCents: 1000, discountPct: 50, quantity: 1, serviceFeeBps: 500, taxRateBps: 1000, taxServiceFee: true });
+    const q = quote({ originalUnitCents: 1000, discountPct: 50, quantity: 1, serviceFeeBps: 500, taxRateBps: 1000, serviceFeeTaxBps: 1000 });
     expect(q.taxCents).toBe(Math.floor((500 + 25) * 0.1 + 0.5));
   });
 

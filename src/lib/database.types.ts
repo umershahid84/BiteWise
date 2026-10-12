@@ -872,8 +872,11 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"platform_tax_bps":
+{ Args: { "p_country": string }; Returns: number
+                           },
 "price_quote":
-{ Args: { "p_discount_pct": number,"p_original_unit_cents": number,"p_quantity": number,"p_tax_rate_bps": number }; Returns: Json
+{ Args: { "p_country": string,"p_discount_pct": number,"p_original_unit_cents": number,"p_quantity": number,"p_tax_rate_bps": number }; Returns: Json
                            },
 "quote_offer":
 { Args: { "p_offer_id": number,"p_quantity": number }; Returns: Json

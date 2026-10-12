@@ -14,7 +14,7 @@ import type { Role } from '@/lib/constants';
 import type { Country } from '@/lib/regions';
 import { describeServiceFee, type ServiceFee } from '@/lib/service-fee';
 
-export const LEGAL_VERSION = '2026-10-20.1';
+export const LEGAL_VERSION = '2026-10-20.2';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
@@ -90,7 +90,8 @@ your order, it is yours as is (Section 6).</p>
 
 <h2>4. Ordering, pricing and payment</h2>
 <p>4.1 <b>Prices.</b> Before you place an order, we show you the item's original price, the Restaurant's discount, the discounted
-price, a Bite Wise service fee (currently ${feeText(c, j)}), applicable sales tax, and the total.
+price, a Bite Wise service fee (currently ${feeText(c, j)}), applicable sales tax, and the total. Sales tax on the food is at the
+Restaurant's local rate; ${t(j, 'sales tax on the service fee is at the Washington rate for Bite Wise\'s location', 'HST on the service fee is at the Newfoundland and Labrador rate for Bite Wise\'s location')}.
 Orders are charged in the currency of the Restaurant's country: U.S. dollars at Restaurants in the United States and Canadian
 dollars at Restaurants in Canada. If your card is in another currency, your card issuer may charge its own conversion fees.</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold

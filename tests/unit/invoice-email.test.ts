@@ -6,7 +6,7 @@ const receipt = {
   receiptNumber: 'BW-20261006-000042', orderId: 42, pickedUpAtText: 'Oct 6, 2026, 6:10 PM', card: 'VISA •••• 4242',
   restaurant: { name: 'Pho & Co', address: '1 Main St', city: 'Seattle', zip: '98101', phone: '' },
   item: { title: 'Pho', quantity: 2, originalUnitCents: 1500, discountPct: 50, unitPriceCents: 750, lineOriginalCents: 3000, lineTotalCents: 1500, savingsCents: 1500 },
-  subtotalCents: 1500, serviceFeeCents: 75, serviceFeeLabel: 'Service fee (5%)', taxRateBps: 1035, taxCents: 155, totalCents: 1730,
+  subtotalCents: 1500, serviceFeeCents: 75, serviceFeeLabel: 'Service fee (5%)', taxRateBps: 1035, taxCents: 155, foodTaxCents: 155, feeTaxCents: 0, totalCents: 1730,
   creditAppliedCents: 500, amountChargedCents: 1230,
 } as unknown as Receipt;
 

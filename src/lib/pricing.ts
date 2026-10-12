@@ -16,6 +16,11 @@ export type Quote = {
   serviceFeeBps: number;
   serviceFeeCents: number;
   taxRateBps: number;
+  // Food: the restaurant's rate. Service fee (Bite Wise's platform fee): the rate of Bite Wise's location in the
+  // restaurant's country (Washington / Newfoundland and Labrador HST).
+  foodTaxCents: number;
+  serviceFeeTaxBps: number;
+  serviceFeeTaxCents: number;
   taxCents: number;
   totalCents: number;
 };
@@ -28,14 +33,15 @@ export function quote(q: {
   // A fixed fee per order instead of the percentage (then serviceFeeBps is ignored and recorded as 0).
   serviceFeeFixedCents?: number | null;
   taxRateBps: number;
-  taxServiceFee?: boolean;
+  serviceFeeTaxBps?: number;
 }): Quote {
   const unitPriceCents = discountedUnitPrice(q.originalUnitCents, q.discountPct);
   const subtotalCents = unitPriceCents * q.quantity;
   const fixed = q.serviceFeeFixedCents != null;
   const serviceFeeCents = fixed ? q.serviceFeeFixedCents! : roundHalfUp((subtotalCents * q.serviceFeeBps) / 10000);
-  const taxableCents = subtotalCents + (q.taxServiceFee ? serviceFeeCents : 0);
-  const taxCents = roundHalfUp((taxableCents * q.taxRateBps) / 10000);
+  const foodTaxCents = roundHalfUp((subtotalCents * q.taxRateBps) / 10000);
+  const serviceFeeTaxCents = roundHalfUp((serviceFeeCents * (q.serviceFeeTaxBps ?? 0)) / 10000);
+  const taxCents = foodTaxCents + serviceFeeTaxCents;
   return {
     quantity: q.quantity,
     originalUnitCents: q.originalUnitCents,
@@ -46,6 +52,9 @@ export function quote(q: {
     serviceFeeBps: fixed ? 0 : q.serviceFeeBps,
     serviceFeeCents,
     taxRateBps: q.taxRateBps,
+    foodTaxCents,
+    serviceFeeTaxBps: q.serviceFeeTaxBps ?? 0,
+    serviceFeeTaxCents,
     taxCents,
     totalCents: subtotalCents + serviceFeeCents + taxCents,
   };

@@ -63,10 +63,10 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
         </fieldset>
         <Field label="Starting sales tax for new restaurants (%)" htmlFor="s-tax" hint="Used only until a new restaurant's rate is looked up from its address (usually straight away). Set a restaurant's rate by hand in the Restaurants tab."><Input id="s-tax" inputMode="decimal" className="max-w-40" value={f.defaultTaxRatePct} onChange={(e) => setF({ ...f, defaultTaxRatePct: e.target.value })} /></Field>
         <Field
-          label={`Sales tax on plan fees (${data.settings.country === 'CA' ? 'Canada' : 'United States'})`} htmlFor="s-plan-tax"
+          label={`Tax on Bite Wise's fees (${data.settings.country === 'CA' ? 'Canada' : 'United States'})`} htmlFor="s-plan-tax"
           hint={data.settings.country === 'CA'
-            ? 'Charged on every Canadian restaurant\'s plan fee, at Bite Wise\'s Newfoundland and Labrador rate (HST 15%).'
-            : 'Charged on every US restaurant\'s plan fee, at the rate of Bite Wise\'s Washington location.'}
+            ? 'Charged on the customer service fee of every order in Canada and on Canadian restaurants\' plan fees, at Bite Wise\'s Newfoundland and Labrador rate (HST 15%). New orders and plan payments use it.'
+            : 'Charged on the customer service fee of every order in the US and on US restaurants\' plan fees, at the rate of Bite Wise\'s Washington location. New orders and plan payments use it.'}
         >
           <div className="flex flex-wrap items-center gap-2">
             <Input id="s-plan-tax" inputMode="decimal" className="w-24" value={f.platformTaxPct} onChange={(e) => setF({ ...f, platformTaxPct: e.target.value })} />
