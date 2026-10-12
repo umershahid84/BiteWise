@@ -41,3 +41,6 @@ __pycache__/
 
 # npm run email:template output (paste into the Supabase dashboard)
 /confirm-signup-email.html
+
+# demo video source clips (stock footage; the finished videos in public/videos are committed)
+/scripts/demo-video/clips/*.mp4

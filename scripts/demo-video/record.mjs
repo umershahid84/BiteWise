@@ -5,13 +5,33 @@
 // The recording shows a visible pointer; the voice-over is mixed in afterwards by build.mjs.
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const BASE = process.env.DEMO_URL ?? 'http://localhost:3000';
 const OUT = path.resolve('.video-tmp');
 const DURATIONS = JSON.parse(fs.readFileSync(path.join(OUT, 'voice/durations.json'), 'utf8'));
 const LOGO = fs.readFileSync(new URL('../../public/assets/logo-dark.svg', import.meta.url), 'utf8');
-const STORY = fs.readFileSync(new URL('./story.html', import.meta.url), 'utf8');
+// The "real life" part: real video clips (clips/order.mp4, drive.mp4, pickup.mp4; see clips/CREDITS.md) when all
+// three are there, otherwise the illustrated scenes.
+const CLIPS_DIR = new URL('./clips/', import.meta.url);
+const CLIPS = ['order', 'drive', 'pickup'];
+const REAL_CLIPS = CLIPS.every((c) => fs.existsSync(new URL(`${c}.mp4`, CLIPS_DIR)));
+const STORY = fs.readFileSync(new URL(REAL_CLIPS ? './story-photo.html' : './story.html', import.meta.url), 'utf8');
+// The recording browser (open-source Chromium) can't play H.264, so the clips are converted to WebM (VP9) first:
+// 1280×720, cropped to fill, no sound.
+function webmClip(name) {
+  const out = path.join(OUT, 'clips', `${name}.webm`);
+  const src = new URL(`${name}.mp4`, CLIPS_DIR);
+  if (!fs.existsSync(out) || fs.statSync(out).mtimeMs < fs.statSync(src).mtimeMs) {
+    fs.mkdirSync(path.dirname(out), { recursive: true });
+    execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', fileURLToPath(src), '-an', '-vf', 'scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,fps=30',
+      '-c:v', 'libvpx-vp9', '-b:v', '4M', '-deadline', 'realtime', '-cpu-used', '8', out]);
+  }
+  return out;
+}
+if (REAL_CLIPS) CLIPS.forEach(webmClip);
 const SIZE = { width: 1280, height: 720 };
 // The deals page asks for the customer's location; the demo browser allows it, at the demo restaurants' area.
 const DEMO_LOCATION = { permissions: ['geolocation'], geolocation: { latitude: 47.6101, longitude: -122.3421 } };
@@ -110,7 +130,11 @@ async function showStory(p, n) {
   await p.evaluate((html) => document.body.insertAdjacentHTML('beforeend', html), STORY);
   for (const [i, [id, minMs]] of STORY_SCENES.entries()) {
     const start = Date.now();
-    await p.evaluate((i) => document.querySelectorAll('#bw-story .scene').forEach((el, j) => el.classList.toggle('active', j === i)), i);
+    await p.evaluate((i) => document.querySelectorAll('#bw-story .scene').forEach((el, j) => {
+      el.classList.toggle('active', j === i);
+      const v = el.querySelector('video'); // real clips: play this scene's from the start
+      if (v && j === i) { v.currentTime = 0; v.play(); } else if (v) v.pause();
+    }), i);
     await n.say(p, id, { gap: i === 0 ? 300 : 0 });
     await n.idle(p, 300);
     const left = minMs - (Date.now() - start);
@@ -210,6 +234,12 @@ async function logIn(p, user, page = '/login') {
 async function recordingContext(browser) {
   const ctx = await browser.newContext({ viewport: SIZE, recordVideo: { dir: OUT, size: SIZE }, deviceScaleFactor: 1, timezoneId: 'America/Los_Angeles', ...DEMO_LOCATION });
   await ctx.addInitScript(OVERLAY);
+  // The story's video clips, served to the page from scripts/demo-video/clips.
+  await ctx.route('**/__story-clips/*', (route) => {
+    const name = path.basename(new URL(route.request().url()).pathname).replace(/\.webm$/, '');
+    if (!CLIPS.includes(name)) return route.fulfill({ status: 404 });
+    return route.fulfill({ status: 200, contentType: 'video/webm', body: fs.readFileSync(webmClip(name)) });
+  });
   return ctx;
 }
 
@@ -375,6 +405,7 @@ async function restaurantTour(browser) {
   return p;
 }
 
+console.log(REAL_CLIPS ? 'Customer story: real video clips (clips/)' : 'Customer story: illustrated scenes (story.html)');
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
   const only = process.env.TOUR; // e.g. TOUR=restaurant records just that one
