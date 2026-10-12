@@ -14,7 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Field, Input } from '@/components/ui/field';
-import { CountrySelect } from '@/components/ui/state-select';
 import { Table } from '@/components/ui/misc';
 import { fmtDateTime, money } from '@/lib/format';
 import { countryInfo, type Country } from '@/lib/regions';
@@ -110,7 +109,8 @@ export function AccountPanel({ username, email, country, postalCode, payments }:
                 <div>
                   <b>{cardText(c)}</b>
                   <div className="text-xs text-muted">
-                    Expires {String(c.exp_month).padStart(2, '0')}/{c.exp_year} · for {c.country === 'CA' ? 'restaurants in Canada (CA$)' : 'restaurants in the US (US$)'}
+                    Expires {String(c.exp_month).padStart(2, '0')}/{c.exp_year}
+                    {c.country !== country && ` · used at restaurants in ${c.country === 'CA' ? 'Canada' : 'the US'}`}
                   </div>
                 </div>
                 <span className="flex-1" />
@@ -142,12 +142,12 @@ export function AccountPanel({ username, email, country, postalCode, payments }:
   );
 }
 
-// Cards are saved for one country: the US Stripe account charges in US dollars, the Canadian one in Canadian dollars.
-function AddCardDialog({ open, payments, country: home, onClose, onSaved }: {
+// A card added here is saved for the customer's own country (US dollars in the US, Canadian dollars in Canada). An order
+// at a restaurant in the other country is paid in that country's currency, with a card entered at checkout.
+function AddCardDialog({ open, payments, country, onClose, onSaved }: {
   open: boolean; payments: PaymentConfigs; country: Country; onClose: () => void; onSaved: () => void;
 }) {
   const ref = useRef<CardEntryHandle>(null);
-  const [country, setCountry] = useState<Country>(home);
   const payment = payments[country];
   const [makeDefault, setMakeDefault] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,10 +177,7 @@ function AddCardDialog({ open, payments, country: home, onClose, onSaved }: {
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       {open && (
         <DialogContent title="Add a card">
-          <Field label="Use this card at restaurants in" htmlFor="card-country" hint="Orders are paid in the restaurant's currency: US dollars in the US, Canadian dollars in Canada.">
-            <CountrySelect id="card-country" value={country} onChange={(e) => setCountry(e.target.value as Country)} />
-          </Field>
-          <CardEntry key={country} config={payment} ref={ref} />
+          <CardEntry config={payment} ref={ref} />
           <Checkbox className="my-3" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} label="Make this my default card" />
           <ErrorText error={error} />
           <Button variant="green" block disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save card'}</Button>

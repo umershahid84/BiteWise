@@ -203,6 +203,11 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
       </div>
 
       <SectionLabel>Payment</SectionLabel>
+      {offerCountry !== homeCountry && (
+        <p className="mb-3 text-sm text-muted">
+          This restaurant is in {offerCountry === 'CA' ? 'Canada, so you pay in Canadian dollars (CA$)' : 'the United States, so you pay in US dollars (US$)'}.
+        </p>
+      )}
       {balance > 0 && (
         <div className="mb-3 rounded-xl border border-accent/30 bg-accent-soft/50 p-3">
           <Checkbox checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} label={<>Use my Bite Wise credit · <b>{m(balance)}</b> available</>} />
