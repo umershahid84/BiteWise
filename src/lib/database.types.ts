@@ -55,15 +55,28 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"coupons": {
+                },"coupon_email_templates": {
                   Row: {
-                    "active": boolean,"amount_cents": number | null,"code": string,"country": string,"created_at": string,"created_by": string | null,"description": string,"emailed_at": string | null,"emailed_count": number,"expires_at": string,"id": number,"kind": Database["public"]['Enums']["coupon_kind"],"percent": number | null
+                    "body": string,"id": number,"name": string,"subject": string,"updated_at": string
                   }
                   Insert: {
-                    "active"?: boolean,"amount_cents"?: number | null,"code": string,"country": string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"emailed_at"?: string | null,"emailed_count"?: number,"expires_at": string,"id"?: number,"kind": Database["public"]['Enums']["coupon_kind"],"percent"?: number | null
+                    "body": string,"id"?: never,"name": string,"subject": string,"updated_at"?: string
                   }
                   Update: {
-                    "active"?: boolean,"amount_cents"?: number | null,"code"?: string,"country"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"emailed_at"?: string | null,"emailed_count"?: number,"expires_at"?: string,"id"?: number,"kind"?: Database["public"]['Enums']["coupon_kind"],"percent"?: number | null
+                    "body"?: string,"id"?: never,"name"?: string,"subject"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"coupons": {
+                  Row: {
+                    "active": boolean,"amount_cents": number | null,"code": string,"country": string,"created_at": string,"created_by": string | null,"description": string,"email_subject": string,"emailed_at": string | null,"emailed_count": number,"expires_at": string,"id": number,"kind": Database["public"]['Enums']["coupon_kind"],"percent": number | null
+                  }
+                  Insert: {
+                    "active"?: boolean,"amount_cents"?: number | null,"code": string,"country": string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"email_subject"?: string,"emailed_at"?: string | null,"emailed_count"?: number,"expires_at": string,"id"?: number,"kind": Database["public"]['Enums']["coupon_kind"],"percent"?: number | null
+                  }
+                  Update: {
+                    "active"?: boolean,"amount_cents"?: number | null,"code"?: string,"country"?: string,"created_at"?: string,"created_by"?: string | null,"description"?: string,"email_subject"?: string,"emailed_at"?: string | null,"emailed_count"?: number,"expires_at"?: string,"id"?: number,"kind"?: Database["public"]['Enums']["coupon_kind"],"percent"?: number | null
                   }
                   Relationships: [
                     {
@@ -703,6 +716,7 @@ isOneToOne: false
 "created_at": string,
 "created_by": string | null,
 "description": string,
+"email_subject": string,
 "emailed_at": string | null,
 "emailed_count": number,
 "expires_at": string,

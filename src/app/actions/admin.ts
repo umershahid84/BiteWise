@@ -573,14 +573,11 @@ export async function createCouponAction(input: unknown) {
       percent: z.coerce.number().int('Use a whole percentage.').min(1, 'Enter a percentage from 1 to 100.').max(100, 'Enter a percentage from 1 to 100.').optional(),
       description: z.string().trim().max(300).default(''),
       expiresOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose the expiration date.'),
-      email: z.boolean().default(false),
     }), input);
     const amountCents = d.kind === 'fixed' ? parse(dollars('Amount off', 0.01, 1000), d.amount ?? '') : undefined;
     const c = await coupons.createCoupon(me.id, me.country, { ...d, amountCents, percent: d.kind === 'percent' ? d.percent : undefined });
     await log(me.id, 'coupon.create', 'coupon', c.id, `${c.code}: ${coupons.couponOffer(c)}, until ${d.expiresOn}`);
-    const emailed = d.email ? await coupons.emailCoupon(c.id, me.country) : null;
-    if (emailed) await log(me.id, 'coupon.email', 'coupon', c.id, `${c.code} to ${emailed.customers} customers`);
-    return { code: c.code, emailedTo: emailed?.customers ?? null };
+    return { id: c.id, code: c.code };
   });
 }
 
@@ -594,12 +591,48 @@ export async function setCouponActiveAction(input: unknown) {
   });
 }
 
+const couponEmailSchema = z.object({ id: z.number().int(), subject: z.string().trim().max(200), body: z.string().trim().max(5000) });
+
+// The coupon email as customers will see it (with a sample name), and how many customers it goes to.
+export async function previewCouponEmailAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(couponEmailSchema, input);
+    return coupons.previewCouponEmail(d.id, me.country, d);
+  });
+}
+
 export async function emailCouponAction(input: unknown) {
   return action(async () => {
     const me = await requireAdmin();
-    const d = parse(z.object({ id: z.number().int() }), input);
-    const res = await coupons.emailCoupon(d.id, me.country);
-    await log(me.id, 'coupon.email', 'coupon', d.id, `${res.code} to ${res.customers} customers`);
+    const d = parse(couponEmailSchema.extend({ templateName: z.string().trim().max(60).default('') }), input);
+    const res = await coupons.emailCoupon(d.id, me.country, d);
+    await log(me.id, 'coupon.email', 'coupon', d.id, `${res.code} to ${res.customers} customers${d.templateName ? ` (${d.templateName})` : ''}: ${d.subject}`);
     return res;
+  });
+}
+
+const couponTemplateSchema = z.object({
+  id: z.number().int().nullish(),
+  name: z.string().trim().min(2, 'Name the template.').max(60),
+  subject: z.string().trim().min(2, 'Write a subject.').max(200),
+  body: z.string().trim().min(2, 'Write the message.').max(5000),
+});
+
+export async function saveCouponTemplateAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const t = await coupons.saveCouponTemplate(parse(couponTemplateSchema, input));
+    await log(me.id, 'coupon.template_save', 'coupon_template', t.id, t.name);
+    return t;
+  });
+}
+
+export async function deleteCouponTemplateAction(id: number) {
+  return action(async () => {
+    const me = await requireAdmin();
+    await coupons.deleteCouponTemplate(parse(z.number().int(), id));
+    await log(me.id, 'coupon.template_delete', 'coupon_template', id, '');
+    return null;
   });
 }

@@ -60,7 +60,7 @@ export async function listCoupons(country: Country) {
     const mine = used.filter((u) => u.coupon_id === c.id);
     return {
       id: c.id, code: c.code, kind: c.kind as CouponKind, offer: couponOffer(c), description: c.description, expiresAt: c.expires_at,
-      expired: Date.parse(c.expires_at) <= Date.now(), active: c.active, createdAt: c.created_at, emailedAt: c.emailed_at, emailedCount: c.emailed_count,
+      expired: Date.parse(c.expires_at) <= Date.now(), active: c.active, createdAt: c.created_at, emailedAt: c.emailed_at, emailedCount: c.emailed_count, emailSubject: c.email_subject,
       uses: mine.length,
       // Paid by restaurants (food discounts) and by Bite Wise (waived fees).
       restaurantCostCents: mine.reduce((n, u) => n + u.coupon_discount_cents, 0),
@@ -81,21 +81,65 @@ export async function setCouponActive(id: number, country: Country, active: bool
   return c.code;
 }
 
+// ---------------------------------------------------------------- coupon emails
+
+// Placeholders in coupon email templates.
+export const COUPON_PLACEHOLDERS = ['name', 'code', 'offer', 'expires', 'message'] as const;
+export type CouponEmailText = { subject: string; body: string };
+
+export async function listCouponTemplates() {
+  return must(await db().from('coupon_email_templates').select('*').order('id'));
+}
+
+export async function saveCouponTemplate(t: { id?: number | null; name: string; subject: string; body: string }) {
+  const row = { name: t.name, subject: t.subject, body: t.body, updated_at: new Date().toISOString() };
+  const saved = t.id
+    ? must(await db().from('coupon_email_templates').update(row).eq('id', t.id).select('*').maybeSingle())
+    : must(await db().from('coupon_email_templates').insert(row).select('*').single());
+  if (!saved) throw new AppError(404, 'Template not found.');
+  return saved;
+}
+
+export async function deleteCouponTemplate(id: number) {
+  check(await db().from('coupon_email_templates').delete().eq('id', id));
+}
+
+type CouponRow = Awaited<ReturnType<typeof couponOf>>;
+const fill = (text: string, vars: Record<string, string>) => text.replace(/\{\{\s*(\w+)\s*\}\}/g, (all, k: string) => vars[k] ?? all);
+const dealsUrl = () => `${publicEnv.siteUrl.replace(/\/$/, '')}/offers`;
+
+// The email one customer gets, with the placeholders filled in.
+function couponMail(c: CouponRow, t: CouponEmailText, username: string) {
+  const vars = { name: username, code: c.code, offer: couponOffer(c), expires: expiryText(c.expires_at), message: c.description };
+  return couponEmail({ subject: fill(t.subject, vars), body: fill(t.body, vars), code: c.code, offer: vars.offer, expires: vars.expires, dealsUrl: dealsUrl() });
+}
+
+function checkText(t: CouponEmailText) {
+  if (t.subject.trim().length < 2) throw new AppError(400, 'Write a subject for the email.');
+  if (t.body.trim().length < 2) throw new AppError(400, 'Write the email message.');
+}
+
+// What customers will get (shown with a sample name before sending).
+export async function previewCouponEmail(id: number, country: Country, t: CouponEmailText) {
+  checkText(t);
+  const c = await couponOf(id, country);
+  const { count } = await db().from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'customer').eq('status', 'active').eq('country', country);
+  const mail = couponMail(c, t, 'Alex');
+  return { subject: mail.subject, html: mail.html, customers: count ?? 0 };
+}
+
 // Emails the coupon to every active customer in its country. The emails go out after the response (one at a time
 // would take long for many customers); the count is recorded as they're sent.
-export async function emailCoupon(id: number, country: Country) {
+export async function emailCoupon(id: number, country: Country, t: CouponEmailText) {
+  checkText(t);
   const c = await couponOf(id, country);
   if (!c.active || Date.parse(c.expires_at) <= Date.now()) throw new AppError(409, 'This coupon is turned off or expired.');
   const customers = must(await db().from('profiles').select('email, username').eq('role', 'customer').eq('status', 'active').eq('country', country));
-  check(await db().from('coupons').update({ emailed_at: new Date().toISOString() }).eq('id', id));
-  const mail = (p: { email: string; username: string }) => ({
-    to: p.email,
-    ...couponEmail({ username: p.username, code: c.code, offer: couponOffer(c), description: c.description, expires: expiryText(c.expires_at), dealsUrl: `${publicEnv.siteUrl.replace(/\/$/, '')}/offers` }),
-  });
+  check(await db().from('coupons').update({ emailed_at: new Date().toISOString(), email_subject: t.subject.slice(0, 200) }).eq('id', id));
   after(async () => {
     let sent = 0;
     for (let i = 0; i < customers.length; i += 10) {
-      const batch = await Promise.all(customers.slice(i, i + 10).map((p) => sendEmail(mail(p)).catch(() => false)));
+      const batch = await Promise.all(customers.slice(i, i + 10).map((p) => sendEmail({ to: p.email, ...couponMail(c, t, p.username) }).catch(() => false)));
       sent += batch.filter(Boolean).length;
     }
     await db().from('coupons').update({ emailed_count: c.emailed_count + sent }).eq('id', id);

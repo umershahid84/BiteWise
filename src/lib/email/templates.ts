@@ -516,28 +516,30 @@ Log in: ${o.loginUrl}`,
   };
 }
 
-// A coupon from Bite Wise, sent to every customer in the coupon's country.
-export function couponEmail(o: { username: string; code: string; offer: string; description: string; expires: string; dealsUrl: string }) {
+// A coupon from Bite Wise, sent to every customer in the coupon's country. The subject and text come from a coupon
+// email template the admin chose and edited (placeholders already filled in); the code box and button are added here.
+export function couponEmail(o: { subject: string; body: string; code: string; offer: string; expires: string; dealsUrl: string }) {
+  const paragraphs = o.body.trim().split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
   return {
-    subject: `🎟️ A Bite Wise coupon for you: ${o.offer}`,
+    subject: o.subject,
     html: layout({
-      preview: `Use code ${o.code} at checkout before ${o.expires}.`,
+      preview: `Use code ${o.code} at checkout: ${o.offer}, until ${o.expires}.`,
       emoji: '🎟️',
-      title: `${esc(o.offer)}`,
-      subtitle: `A coupon for you, ${esc(o.username)}`,
-      body: `${o.description ? `<p style="margin:0 0 16px;">${esc(o.description)}</p>` : ''}
-        <div style="background:#F8FAFC;border:2px dashed #3E8230;border-radius:18px;padding:20px;text-align:center;margin:0 0 18px;">
+      title: esc(o.offer),
+      subtitle: `Coupon code ${esc(o.code)}`,
+      body: `${paragraphs.map((p) => `<p style="margin:0 0 14px;">${esc(p).replace(/\n/g, '<br>')}</p>`).join('')}
+        <div style="background:#F8FAFC;border:2px dashed #3E8230;border-radius:18px;padding:20px;text-align:center;margin:8px 0 18px;">
           <div style="font:13px ${FONT};color:#64748B;letter-spacing:.08em;text-transform:uppercase;">Your coupon code</div>
           <div style="font:800 30px ${FONT};color:#14284B;letter-spacing:.12em;margin:6px 0;">${esc(o.code)}</div>
           <div style="font:14px ${FONT};color:#475569;">${esc(o.offer)} · valid until ${esc(o.expires)}</div>
         </div>
-        <p style="margin:0 0 18px;">Enter the code in the <b>Coupon code</b> box when you order. One coupon per order; you can use this one once.</p>
+        <p style="margin:0 0 18px;font-size:14px;color:#475569;">Enter the code in the <b>Coupon code</b> box when you order. One coupon per order; each coupon can be used once.</p>
         ${button(o.dealsUrl, 'Find deals near me', '#14284B')}`,
     }),
-    text: `${o.offer}: a Bite Wise coupon for you, ${o.username}.
-${o.description ? `${o.description}\n` : ''}
-Coupon code: ${o.code} (valid until ${o.expires})
-Enter it in the Coupon code box when you order. One coupon per order; you can use this one once.
+    text: `${paragraphs.join('\n\n')}
+
+Coupon code: ${o.code} (${o.offer}, valid until ${o.expires})
+Enter it in the Coupon code box when you order. One coupon per order; each coupon can be used once.
 
 Find deals near you: ${o.dealsUrl}`,
   };
