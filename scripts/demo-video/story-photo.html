@@ -14,17 +14,17 @@
   #bw-story video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   /* A slow push-in keeps still moments alive. */
   #bw-story .scene.active video { animation: p-zoom 12s linear both; }
-  #bw-story .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 60%, rgba(0,0,0,.45) 100%); }
+  #bw-story .bwp-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 60%, rgba(0,0,0,.45) 100%); }
   #bw-story .step { position: absolute; left: 48px; top: 40px; display: flex; align-items: center; gap: 14px; padding: 10px 22px 10px 10px;
     border-radius: 999px; background: rgba(20, 40, 75, .92); color: #fff; font-weight: 800; font-size: 26px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
     animation: p-pop .7s cubic-bezier(.34,1.56,.64,1) .2s both; }
   #bw-story .step b { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #6cc24a; color: #0b1f17; font-size: 24px; }
-  #bw-story .card { position: absolute; border-radius: 22px; background: #fff; color: #14284B; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
-  #bw-story .label { font-size: 14px; font-weight: 800; letter-spacing: .14em; color: #64748B; }
-  #bw-story .pin { font-size: 52px; font-weight: 800; letter-spacing: .18em; color: #065F46; }
-  #bw-story .banner { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 18px 34px; border-radius: 999px;
+  #bw-story .bwp-card { position: absolute; border-radius: 22px; background: #fff; color: #14284B; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+  #bw-story .bwp-label { font-size: 14px; font-weight: 800; letter-spacing: .14em; color: #64748B; }
+  #bw-story .bwp-pin { font-size: 52px; font-weight: 800; letter-spacing: .18em; color: #065F46; }
+  #bw-story .bwp-banner { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 18px 34px; border-radius: 999px;
     background: #14284B; color: #fff; font-size: 28px; font-weight: 800; white-space: nowrap; box-shadow: 0 14px 40px rgba(0,0,0,.35); }
-  #bw-story .banner i { color: #6cc24a; font-style: normal; }
+  #bw-story .bwp-banner i { color: #6cc24a; font-style: normal; }
 
   @keyframes p-fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes p-zoom { from { transform: scale(1) } to { transform: scale(1.07) } }
@@ -33,53 +33,53 @@
   @keyframes p-banner { from { transform: translate(-50%, 40px); opacity: 0 } to { transform: translate(-50%, 0); opacity: 1 } }
 
   /* 1 · Order: the confirmation with the PIN slides up like the app's own screen. */
-  .p1 .card { right: 64px; bottom: 64px; width: 330px; padding: 24px 26px; animation: p-up .8s cubic-bezier(.34,1.56,.64,1) 2.4s both; }
-  .p1 .card .ok { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #14284B; margin-bottom: 14px; }
-  .p1 .card .ok span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #4E9F3D; color: #fff; font-size: 20px; }
+  .p1 .bwp-card { right: 64px; bottom: 64px; width: 330px; padding: 24px 26px; animation: p-up .8s cubic-bezier(.34,1.56,.64,1) 2.4s both; }
+  .p1 .bwp-card .bwp-ok { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #14284B; margin-bottom: 14px; }
+  .p1 .bwp-card .bwp-ok span { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #4E9F3D; color: #fff; font-size: 20px; }
   /* 2 · Drive: where to, and the pickup deadline. */
-  .p2 .card { right: 64px; bottom: 64px; padding: 18px 24px; display: flex; align-items: center; gap: 16px; animation: p-up .8s cubic-bezier(.34,1.56,.64,1) 1.2s both; }
-  .p2 .card .icon { font-size: 40px; }
-  .p2 .card b { display: block; font-size: 22px; }
-  .p2 .card small { font-size: 17px; color: #475569; }
-  .p2 .timer { position: absolute; right: 64px; top: 44px; padding: 12px 20px; border-radius: 999px; background: #FEF3C7; color: #92400E;
+  .p2 .bwp-card { right: 64px; bottom: 64px; padding: 18px 24px; display: flex; align-items: center; gap: 16px; animation: p-up .8s cubic-bezier(.34,1.56,.64,1) 1.2s both; }
+  .p2 .bwp-card .bwp-icon { font-size: 40px; }
+  .p2 .bwp-card b { display: block; font-size: 22px; }
+  .p2 .bwp-card small { font-size: 17px; color: #475569; }
+  .p2 .bwp-timer { position: absolute; right: 64px; top: 44px; padding: 12px 20px; border-radius: 999px; background: #FEF3C7; color: #92400E;
     font-size: 20px; font-weight: 800; box-shadow: 0 10px 30px rgba(0,0,0,.25); animation: p-pop .7s cubic-bezier(.34,1.56,.64,1) 2.4s both; }
   /* 3 · Pickup: the PIN is shown, the restaurant enters it, the card is charged. */
-  .p3 .card { left: 64px; bottom: 150px; padding: 20px 28px; text-align: center; animation: p-pop .7s cubic-bezier(.34,1.56,.64,1) .6s both; }
-  .p3 .pos { left: auto; right: 64px; bottom: 150px; padding: 20px 28px; text-align: center; animation: p-pop .7s cubic-bezier(.34,1.56,.64,1) 1.4s both; }
-  .p3 .pos .pin span { display: inline-block; animation: p-pop .3s cubic-bezier(.34,1.56,.64,1) both; }
-  .p3 .pos .check { position: absolute; right: -16px; top: -16px; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
+  .p3 .bwp-card { left: 64px; bottom: 150px; padding: 20px 28px; text-align: center; animation: p-pop .7s cubic-bezier(.34,1.56,.64,1) .6s both; }
+  .p3 .bwp-pos { left: auto; right: 64px; bottom: 150px; padding: 20px 28px; text-align: center; animation: p-pop .7s cubic-bezier(.34,1.56,.64,1) 1.4s both; }
+  .p3 .bwp-pos .bwp-pin span { display: inline-block; animation: p-pop .3s cubic-bezier(.34,1.56,.64,1) both; }
+  .p3 .bwp-pos .bwp-check { position: absolute; right: -16px; top: -16px; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%;
     background: #4E9F3D; color: #fff; font-size: 26px; font-weight: 800; animation: p-pop .5s cubic-bezier(.34,1.56,.64,1) 3.9s both; }
-  .p3 .banner { animation: p-banner .7s cubic-bezier(.34,1.56,.64,1) 5.2s both; }
+  .p3 .bwp-banner { animation: p-banner .7s cubic-bezier(.34,1.56,.64,1) 5.2s both; }
 </style>
 
 <div id="bw-story">
   <div class="scene p1">
     <video src="/__story-clips/order.webm" muted playsinline preload="auto"></video>
-    <div class="shade"></div>
+    <div class="bwp-shade"></div>
     <div class="step"><b>1</b> Order on your phone</div>
-    <div class="card">
-      <div class="ok"><span>✓</span> Order placed</div>
-      <div class="label">YOUR PICKUP PIN</div>
-      <div class="pin">4827</div>
+    <div class="bwp-card">
+      <div class="bwp-ok"><span>✓</span> Order placed</div>
+      <div class="bwp-label">YOUR PICKUP PIN</div>
+      <div class="bwp-pin">4827</div>
     </div>
   </div>
   <div class="scene p2">
     <video src="/__story-clips/drive.webm" muted playsinline preload="auto"></video>
-    <div class="shade"></div>
+    <div class="bwp-shade"></div>
     <div class="step"><b>2</b> Head to the restaurant</div>
-    <div class="timer">⏳ Pick up within 1h 45m</div>
-    <div class="card"><div class="icon">📍</div><div><b>Harbor Pho House</b><small>1410 2nd Ave · 0.8 mi</small></div></div>
+    <div class="bwp-timer">⏳ Pick up within 1h 45m</div>
+    <div class="bwp-card"><div class="bwp-icon">📍</div><div><b>Harbor Pho House</b><small>1410 2nd Ave · 0.8 mi</small></div></div>
   </div>
   <div class="scene p3">
     <video src="/__story-clips/pickup.webm" muted playsinline preload="auto"></video>
-    <div class="shade"></div>
+    <div class="bwp-shade"></div>
     <div class="step"><b>3</b> Show your PIN &amp; pick up</div>
-    <div class="card"><div class="label">PICKUP PIN</div><div class="pin">4827</div></div>
-    <div class="card pos">
-      <div class="label">ENTER PICKUP PIN</div>
-      <div class="pin" style="color:#14284B"><span style="animation-delay:2s">4</span><span style="animation-delay:2.4s">8</span><span style="animation-delay:2.8s">2</span><span style="animation-delay:3.2s">7</span></div>
-      <div class="check">✓</div>
+    <div class="bwp-card"><div class="bwp-label">PICKUP PIN</div><div class="bwp-pin">4827</div></div>
+    <div class="bwp-card bwp-pos">
+      <div class="bwp-label">ENTER PICKUP PIN</div>
+      <div class="bwp-pin" style="color:#14284B"><span style="animation-delay:2s">4</span><span style="animation-delay:2.4s">8</span><span style="animation-delay:2.8s">2</span><span style="animation-delay:3.2s">7</span></div>
+      <div class="bwp-check">✓</div>
     </div>
-    <div class="banner"><i>✓</i> Picked up · card charged $8.48</div>
+    <div class="bwp-banner"><i>✓</i> Picked up · card charged $8.48</div>
   </div>
 </div>

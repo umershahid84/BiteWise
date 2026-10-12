@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 export const TOURS = {
   customer: {
     title: 'How Bite Wise works for customers',
-    length: '1:47',
+    length: '1:42',
     src: '/videos/customer-tour',
     steps: ['Browse live deals near your ZIP or postal code', 'See the full total, and use a coupon', 'Your card is held, not charged', 'Show your 4-digit PIN at pickup'],
   },

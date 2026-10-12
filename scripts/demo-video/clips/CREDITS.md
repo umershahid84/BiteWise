@@ -14,4 +14,8 @@ Landscape, 1280×720 or larger, H.264 MP4. The clips are not committed (see `.gi
 
 ## Sources
 
-(none yet)
+All from Pexels, under the Pexels License (free for commercial use, no attribution required; https://www.pexels.com/license/).
+
+- `order.mp4`: "Woman Using her Cellphone while Sitting on the Couch", https://www.pexels.com/video/woman-using-her-cellphone-while-sitting-on-the-couch-6608792/ (1280×720 file)
+- `drive.mp4`: "Woman Driving a Car" by Daniel Torobekov, https://www.pexels.com/video/woman-driving-a-car-5277922/ (1280×720 file)
+- `pickup.mp4`: "A Person Packaging a Food on a Paper Bag", https://www.pexels.com/video/a-person-packaging-a-food-on-a-paper-bag-7457401/ (1280×720 file, slowed to 0.83× to fit the scene)
