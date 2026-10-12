@@ -4,6 +4,7 @@ import { useEffect, useImperativeHandle, useState } from 'react';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { Field, Input } from '@/components/ui/field';
+import { formatPostalInput, normalizePostal, type Country } from '@/lib/regions';
 
 // Card entry. With Stripe, card numbers go straight from the browser to Stripe (Stripe Elements)
 // and never reach Bite Wise. In mock mode (no Stripe keys), only brand, last 4 digits and expiry
@@ -11,7 +12,7 @@ import { Field, Input } from '@/components/ui/field';
 
 // One per country: US cards are saved with the US Stripe account (US dollars), Canadian ones with the Canadian
 // account (Canadian dollars). 'off': that country's Stripe account isn't set up yet.
-export type PaymentConfig = { mode: 'stripe' | 'mock' | 'off'; publishableKey: string };
+export type PaymentConfig = { country: Country; mode: 'stripe' | 'mock' | 'off'; publishableKey: string };
 export type PaymentConfigs = { US: PaymentConfig; CA: PaymentConfig };
 export const PAYMENTS_OFF = 'Card payments for this country aren\'t available yet. Please try again later.';
 
@@ -36,6 +37,26 @@ function PaymentsOff({ ref }: { ref: React.Ref<CardEntryHandle> }) {
   return <div className="rounded-xl border border-dashed border-line px-3 py-2 text-sm text-muted">{PAYMENTS_OFF}</div>;
 }
 
+// The card's billing ZIP or postal code. Stripe's own box asks for a 5-digit "ZIP" whenever the card is a US one (all
+// the common test cards are), so for Canadian purchases we ask for the postal code ourselves (a US ZIP still works,
+// for visitors paying with a US card).
+function PostalField({ country, value, onChange }: { country: Country; value: string; onChange: (v: string) => void }) {
+  return (
+    <Field label={country === 'CA' ? 'Postal code' : 'ZIP code'} htmlFor="cc-zip">
+      <Input
+        id="cc-zip" autoComplete="postal-code" inputMode={country === 'CA' ? 'text' : 'numeric'} maxLength={country === 'CA' ? 7 : 10}
+        placeholder={country === 'CA' ? 'A1H 0G5' : '98101'} className={country === 'CA' ? 'uppercase' : undefined} value={value}
+        onChange={(e) => onChange(/\d{3}/.test(e.target.value) ? e.target.value : formatPostalInput(country, e.target.value))}
+      />
+    </Field>
+  );
+}
+const billingPostal = (country: Country, v: string) => {
+  const ok = normalizePostal(country, v) ?? (country === 'CA' ? normalizePostal('US', v) : null);
+  if (!ok) throw new Error(country === 'CA' ? 'Please enter your card\'s postal code, like A1H 0G5.' : 'Please enter your card\'s 5-digit ZIP code.');
+  return ok;
+};
+
 function luhn(num: string) {
   let sum = 0;
   for (let i = 0; i < num.length; i++) {
@@ -57,8 +78,9 @@ function brandOf(num: string) {
   return 'card';
 }
 
-function MockCardEntry({ ref }: { ref: React.Ref<CardEntryHandle> }) {
+function MockCardEntry({ country, ref }: { country: Country; ref: React.Ref<CardEntryHandle> }) {
   const [num, setNum] = useState('');
+  const [postal, setPostal] = useState('');
   const [exp, setExp] = useState('');
   const [cvc, setCvc] = useState('');
   const token = () => {
@@ -67,6 +89,7 @@ function MockCardEntry({ ref }: { ref: React.Ref<CardEntryHandle> }) {
     const [mm, yy] = exp.split('/').map((s) => Number(s.trim()));
     if (!(mm >= 1 && mm <= 12) || !(yy >= 0)) throw new Error('Please enter the expiry as MM / YY.');
     if (!/^\d{3,4}$/.test(cvc.trim())) throw new Error('Please enter the CVC.');
+    billingPostal(country, postal);
     return { brand: brandOf(digits), last4: digits.slice(-4), expMonth: mm, expYear: 2000 + yy };
   };
   useImperativeHandle(ref, () => ({
@@ -95,7 +118,7 @@ function MockCardEntry({ ref }: { ref: React.Ref<CardEntryHandle> }) {
         <Field label="CVC" htmlFor="cc-cvc">
           <Input id="cc-cvc" inputMode="numeric" autoComplete="cc-csc" placeholder="123" maxLength={4} value={cvc} onChange={(e) => setCvc(e.target.value)} />
         </Field>
-        <Field label="ZIP / Postal" htmlFor="cc-zip"><Input id="cc-zip" autoComplete="postal-code" placeholder="ZIP or postal code" maxLength={10} /></Field>
+        <PostalField country={country} value={postal} onChange={setPostal} />
       </div>
       <div className="rounded-xl border border-dashed border-line px-3 py-2 text-xs text-muted">
         🧪 <b>Test mode</b>: no real charges. Use <code>4242 4242 4242 4242</code>, any future date and any CVC.{' '}
@@ -105,9 +128,13 @@ function MockCardEntry({ ref }: { ref: React.Ref<CardEntryHandle> }) {
   );
 }
 
-function StripeFields({ ref }: { ref: React.Ref<CardEntryHandle> }) {
+function StripeFields({ country, ref }: { country: Country; ref: React.Ref<CardEntryHandle> }) {
   const stripe = useStripe();
   const elements = useElements();
+  const [postal, setPostal] = useState('');
+  // Canada: our own postal code box instead of Stripe's "ZIP" one.
+  const ownPostal = country === 'CA';
+  const billing = () => (ownPostal ? { billing_details: { address: { postal_code: billingPostal(country, postal) } } } : {});
   const card = () => {
     const el = elements?.getElement(CardElement);
     if (!stripe || !el) throw new Error('The secure card form is still loading. Try again in a moment.');
@@ -116,7 +143,7 @@ function StripeFields({ ref }: { ref: React.Ref<CardEntryHandle> }) {
   useImperativeHandle(ref, () => ({
     async getToken() {
       const { stripe: s, el } = card();
-      const { paymentMethod, error } = await s.createPaymentMethod({ type: 'card', card: el });
+      const { paymentMethod, error } = await s.createPaymentMethod({ type: 'card', card: el, ...billing() });
       if (error) throw new Error(error.message);
       return paymentMethod.id;
     },
@@ -127,7 +154,7 @@ function StripeFields({ ref }: { ref: React.Ref<CardEntryHandle> }) {
     },
     async confirmSetup(clientSecret) {
       const { stripe: s, el } = card();
-      const { setupIntent, error } = await s.confirmCardSetup(clientSecret ?? '', { payment_method: { card: el } });
+      const { setupIntent, error } = await s.confirmCardSetup(clientSecret ?? '', { payment_method: { card: el, ...billing() } });
       if (error) throw new Error(error.message);
       return setupIntent.payment_method;
     },
@@ -136,8 +163,9 @@ function StripeFields({ ref }: { ref: React.Ref<CardEntryHandle> }) {
   return (
     <div>
       <div className="rounded-field border border-line bg-bg-2 px-3.5 py-3.5">
-        <CardElement options={{ style: { base: { fontSize: '16px', color: colors.ink, iconColor: colors.muted, '::placeholder': { color: colors.muted } }, invalid: { color: colors.danger } } }} />
+        <CardElement options={{ hidePostalCode: ownPostal, style: { base: { fontSize: '16px', color: colors.ink, iconColor: colors.muted, '::placeholder': { color: colors.muted } }, invalid: { color: colors.danger } } }} />
       </div>
+      {ownPostal && <div className="mt-3"><PostalField country={country} value={postal} onChange={setPostal} /></div>}
       <div className="mt-2 text-xs text-muted">🔒 Card details are sent securely to Stripe and never stored on Bite Wise servers.</div>
     </div>
   );
@@ -164,11 +192,11 @@ function useThemeColors() {
 }
 
 export function CardEntry({ config, ref }: { config: PaymentConfig; ref: React.Ref<CardEntryHandle> }) {
-  if (config.mode === 'mock') return <MockCardEntry ref={ref} />;
+  if (config.mode === 'mock') return <MockCardEntry country={config.country} ref={ref} />;
   if (config.mode === 'off') return <PaymentsOff ref={ref} />;
   return (
-    <Elements key={config.publishableKey} stripe={getStripe(config.publishableKey)}>
-      <StripeFields ref={ref} />
+    <Elements key={config.publishableKey} stripe={getStripe(config.publishableKey)} options={{ locale: config.country === 'CA' ? 'en-CA' : 'en' }}>
+      <StripeFields country={config.country} ref={ref} />
     </Elements>
   );
 }

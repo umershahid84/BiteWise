@@ -61,6 +61,7 @@ export function paymentMode(country: 'US' | 'CA' = 'US'): PaymentMode {
 }
 // What the browser needs to collect cards for a country's Stripe account.
 export const paymentConfig = (country: 'US' | 'CA' = 'US') => ({
+  country,
   mode: paymentMode(country),
   publishableKey: country === 'CA' ? publicEnv.stripePublishableKeyCa : publicEnv.stripePublishableKey,
 });
