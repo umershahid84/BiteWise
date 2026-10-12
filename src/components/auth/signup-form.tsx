@@ -10,7 +10,7 @@ import { Alert, ErrorText } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { CountrySelect, StateSelect } from '@/components/ui/state-select';
-import { countryInfo, type Country } from '@/lib/regions';
+import { countryInfo, formatPostalInput, type Country } from '@/lib/regions';
 import { Field, Input } from '@/components/ui/field';
 import { PasswordInput } from '@/components/ui/password-input';
 import { SectionLabel } from '@/components/ui/misc';
@@ -123,11 +123,17 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
                 <Input
                   key={country} id="postal" name="postal" autoComplete="postal-code" required
                   inputMode={country === 'US' ? 'numeric' : 'text'} maxLength={country === 'US' ? 10 : 7}
-                  placeholder={country === 'US' ? '98101' : 'A1A 1A1'} className={country === 'CA' ? 'uppercase' : undefined}
+                  placeholder={country === 'US' ? '98101' : 'M5V 3L9'} className={country === 'CA' ? 'uppercase' : undefined}
+                  onChange={(e) => { e.currentTarget.value = formatPostalInput(country, e.currentTarget.value); }}
                 />
               </Field>
             </div>
-            <p className="-mt-1 text-xs text-muted">We show the deals closest to your {c.postalLabel} first. You can change it any time in your account.</p>
+            <p className="-mt-1 text-xs text-muted">
+              {country === 'CA'
+                ? 'Your own postal code, like M5V 3L9 (or just its first 3 characters).'
+                : 'Your 5-digit ZIP code, like 98101.'}{' '}
+              We show the deals closest to it first. You can change it any time in your account.
+            </p>
           </>
         )}
         {role === 'restaurant' && (
@@ -139,7 +145,8 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
             <div className="grid grid-cols-2 gap-3">
               <Field label={c.regionLabel} htmlFor="r-state"><StateSelect key={country} id="r-state" name="r-state" country={country} defaultValue="" /></Field>
               <Field label={c.postalLabel} htmlFor="r-zip">
-                <Input id="r-zip" name="r-zip" autoComplete="postal-code" inputMode={country === 'CA' ? 'text' : 'numeric'} placeholder={country === 'CA' ? 'A1A 1A1' : '98101'} className={country === 'CA' ? 'uppercase' : undefined} />
+                <Input id="r-zip" name="r-zip" autoComplete="postal-code" inputMode={country === 'CA' ? 'text' : 'numeric'} placeholder={country === 'CA' ? 'M5V 3L9' : '98101'} className={country === 'CA' ? 'uppercase' : undefined}
+                  maxLength={country === 'CA' ? 7 : 10} onChange={(e) => { e.currentTarget.value = formatPostalInput(country, e.currentTarget.value); }} />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">

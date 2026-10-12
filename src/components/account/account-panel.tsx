@@ -16,7 +16,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Field, Input } from '@/components/ui/field';
 import { Table } from '@/components/ui/misc';
 import { fmtDateTime, money } from '@/lib/format';
-import { countryInfo, type Country } from '@/lib/regions';
+import { countryInfo, formatPostalInput, type Country } from '@/lib/regions';
 import { supabaseBrowser } from '@/lib/supabase/client';
 
 const KIND: Record<string, string> = {
@@ -212,8 +212,8 @@ function HomeArea({ country, postalCode }: { country: Country; postalCode: strin
     <form onSubmit={save} className="mt-4 flex flex-wrap items-start gap-3">
       <Field label={`Your ${label}`} htmlFor="home-postal" hint="Deals closest to it show first when you log in." className="m-0">
         <Input
-          id="home-postal" value={value} onChange={(e) => setValue(e.target.value)} autoComplete="postal-code" required
-          inputMode={country === 'US' ? 'numeric' : 'text'} maxLength={country === 'US' ? 10 : 7} placeholder={country === 'US' ? '98101' : 'A1A 1A1'}
+          id="home-postal" value={value} onChange={(e) => setValue(formatPostalInput(country, e.target.value))} autoComplete="postal-code" required
+          inputMode={country === 'US' ? 'numeric' : 'text'} maxLength={country === 'US' ? 10 : 7} placeholder={country === 'US' ? '98101' : 'M5V 3L9'}
           className={country === 'CA' ? 'w-40 uppercase' : 'w-40'}
         />
       </Field>

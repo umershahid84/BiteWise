@@ -127,3 +127,19 @@ describe('United States and Canada', () => {
     expect(validRegion('US', 'ON')).toBe(false);
   });
 });
+
+describe('postal codes', () => {
+  it('accepts real Canadian postal codes in any form, and their first 3 characters for a home area', async () => {
+    const { formatPostalInput, normalizeHomePostal, normalizePostal } = await import('@/lib/regions');
+    for (const [typed, stored] of [['M5V 3L9', 'M5V 3L9'], ['m5v3l9', 'M5V 3L9'], ['T2P-1J9', 'T2P 1J9'], ['A1C 5H6', 'A1C 5H6'], [' h2x 1y4 ', 'H2X 1Y4']]) {
+      expect(normalizePostal('CA', typed)).toBe(stored);
+      expect(normalizeHomePostal('CA', typed)).toBe(stored);
+    }
+    expect(normalizeHomePostal('CA', 'm5v')).toBe('M5V');
+    expect(normalizePostal('CA', 'M5V')).toBeNull(); // a restaurant needs its full code
+    expect(normalizeHomePostal('CA', '98101')).toBeNull();
+    expect(normalizeHomePostal('US', '98101')).toBe('98101');
+    expect(formatPostalInput('CA', 'm5v3l9')).toBe('M5V 3L9');
+    expect(formatPostalInput('CA', 'M5V 3')).toBe('M5V 3');
+  });
+});

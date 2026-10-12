@@ -24,3 +24,25 @@ export function normalizePostal(c: Country, v: string) {
   }
   return /^\d{5}(-\d{4})?$/.test(s) ? s : null;
 }
+
+// A customer's home area: a full ZIP or postal code, or in Canada also just its first three characters (the area,
+// e.g. "M5V"), which is enough to find nearby deals.
+export function normalizeHomePostal(c: Country, v: string) {
+  const full = normalizePostal(c, v);
+  if (full || c !== 'CA') return full;
+  const area = v.trim().toUpperCase().replace(/\s+/g, '');
+  return /^[A-Z]\d[A-Z]$/.test(area) ? area : null;
+}
+
+// What the person sees while typing: Canadian codes in capitals with the space in the middle ("m5v3l9" → "M5V 3L9").
+export function formatPostalInput(c: Country, v: string) {
+  if (c !== 'CA') return v.replace(/[^\d-]/g, '').slice(0, 10);
+  const s = v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  return s.length > 3 ? `${s.slice(0, 3)} ${s.slice(3)}` : s;
+}
+
+// The message when a code isn't recognised.
+export const postalHelp = (c: Country) =>
+  c === 'CA'
+    ? 'Enter your postal code: 6 characters, letter-number-letter number-letter-number, like M5V 3L9 or T2P 1J9.'
+    : 'Enter your 5-digit ZIP code, like 98101.';

@@ -39,7 +39,9 @@ export function checkAddress<T extends { country: Country; state: string; zip: s
   const c = countryInfo(a.country);
   if (!validRegion(a.country, a.state)) throw new AppError(400, `Choose the ${c.regionLabel.toLowerCase()}.`);
   const zip = normalizePostal(a.country, a.zip);
-  if (!zip) throw new AppError(400, a.country === 'CA' ? 'Please enter a valid postal code, like K1A 0B1.' : 'Please enter a valid ZIP code.');
+  if (!zip) throw new AppError(400, a.country === 'CA'
+    ? 'Enter the restaurant\'s full postal code: 6 characters, like M5V 3L9.'
+    : 'Enter the restaurant\'s 5-digit ZIP code, like 98101.');
   return { ...a, zip };
 }
 

@@ -18,7 +18,7 @@ import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
 import { checkAddress, parse, passwordSchema, signupSchema } from '@/lib/validate';
-import { countryInfo, normalizePostal, validRegion } from '@/lib/regions';
+import { countryInfo, normalizeHomePostal, postalHelp, validRegion } from '@/lib/regions';
 import { saveHomeArea } from '@/lib/home-area';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
@@ -41,8 +41,8 @@ function checkSignup(input: unknown) {
     return { ...data, restaurant, country: restaurant.country, region: restaurant.state, city: restaurant.city };
   }
   if (!validRegion(data.country, data.region)) throw new AppError(400, `Choose your ${countryInfo(data.country).regionLabel.toLowerCase()}.`);
-  const postal = normalizePostal(data.country, data.postal);
-  if (!postal) throw new AppError(400, data.country === 'CA' ? 'Enter your postal code, like A1A 1A1.' : 'Enter your 5-digit ZIP code.');
+  const postal = normalizeHomePostal(data.country, data.postal);
+  if (!postal) throw new AppError(400, postalHelp(data.country));
   return { ...data, postal };
 }
 
