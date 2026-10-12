@@ -14,7 +14,7 @@ import type { Role } from '@/lib/constants';
 import type { Country } from '@/lib/regions';
 import { describeServiceFee, type ServiceFee } from '@/lib/service-fee';
 
-export const LEGAL_VERSION = '2026-10-20.2';
+export const LEGAL_VERSION = '2026-10-21.1';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
@@ -123,6 +123,13 @@ order, and <b>it is not refunded, whether or not you pick up your order</b>. In 
 <p>The only exception is an order the Restaurant or Bite Wise cancels or declines (for example, because the food became unavailable or
 unsafe, or the Restaurant's account was closed), or an order whose payment failed: those holds are released in full and you are not
 charged at all.</p>
+<p>4.7 <b>Coupons.</b> From time to time Bite Wise may send you coupon codes. A coupon may waive the service fee, or take a fixed amount
+or a percentage off the price of the food, as the coupon says. Enter the code at checkout; the discount is shown before you place your
+order. One coupon can be used per order, and each coupon once per customer. Coupons work only at Restaurants in the country they were
+issued for, only until their expiration date, and only while Bite Wise has not withdrawn them. They have no cash value, cannot be sold,
+transferred or exchanged for Platform Credit, and are void where prohibited. If an order is cancelled before pickup, or its payment fails,
+you can use the coupon again; a missed pickup uses it up. Sales tax is charged on the price after the coupon. We may refuse or reverse a
+coupon used by mistake, against these Terms or fraudulently.</p>
 
 <h2>5. Pickup, PIN and the discard timer</h2>
 <p>5.1 Each Offer has a discard timer set by the Restaurant. You must pick up your order at the Restaurant before the timer ends. If
@@ -414,6 +421,20 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   part, for any reason: this includes unused parts of a monthly or annual period, turning off automatic renewal, a paused, suspended or
   delinquent plan, and the end of this Agreement by either party. If you turn off automatic renewal or this Agreement ends, your plan
   simply runs to the end of the period you have paid for and is not renewed. This applies except where the law requires a refund.</li>
+</ul>
+<p>5.7 <b>Bite Wise coupons.</b> From time to time Bite Wise issues promotional coupons to customers, which customers can use on your
+Offers. You agree to honour them as follows:</p>
+<ul>
+  <li><b>Coupons that take money off the food</b> (a fixed amount or a percentage, never more than the food's price) are <b>paid by
+  you</b>. The discount lowers the food subtotal of that order, so your proceeds for the order (Section 5.2), and the sales tax on the food,
+  are calculated on the price after the coupon. In other words, the coupon amount is deducted from the money you receive for that order.</li>
+  <li><b>Coupons that waive the Bite Wise service fee</b> ("No Service Fee" coupons) are <b>paid by Bite Wise</b> and do not change your
+  proceeds.</li>
+  <li>Bite Wise decides when to issue coupons, their value, the customers who receive them and their expiration dates. Each coupon applies
+  to one order, once per customer, in the country it was issued for.</li>
+  <li>Every coupon used on one of your orders is shown with that order at pickup, in your Orders tab and on your daily sales report, and
+  your payouts reflect it.</li>
+  <li>A coupon is part of the customer's price, not a refund: Section 5.5 still applies to the order.</li>
 </ul>
 
 <h2>6. Content and licence</h2>

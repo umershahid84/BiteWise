@@ -72,7 +72,9 @@ async function main() {
   console.log(`  ${userIds.length} test accounts (t_xxxxxxxx@example.com and owners of test restaurants)`);
   console.log(`  ${restaurantIds.length} test restaurants ("Test Kitchen t_xxxxxxxx")`);
   console.log(`  ${orderIds.size} orders placed by or at them`);
-  if (!userIds.length && !restaurantIds.length) {
+  const { count: couponCount } = await db.from('coupons').select('id', { count: 'exact', head: true }).like('code', 'T-%');
+  console.log(`  ${couponCount ?? 0} test coupons (codes starting with T-)`);
+  if (!userIds.length && !restaurantIds.length && !couponCount) {
     console.log('Nothing to remove.');
     return;
   }
@@ -92,6 +94,9 @@ async function main() {
   counts.offers = await remove('offers', 'restaurant_id', restaurantIds);
   counts.restaurants = await remove('restaurants', 'id', restaurantIds);
   await remove('subscription_price_changes', 'created_by', userIds); // fee changes the tests scheduled
+  // Coupons the tests made (codes starting with T-; orders that used them are gone above).
+  const testCoupons = (await db.from('coupons').delete({ count: 'exact' }).like('code', 'T-%')).count ?? 0;
+  counts.coupons = testCoupons;
 
   let accounts = 0;
   for (const id of userIds) {

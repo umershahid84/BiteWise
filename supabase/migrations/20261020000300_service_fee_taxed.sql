@@ -140,3 +140,5 @@ $$;
 
 -- The Customer Terms now say how the service fee is taxed.
 update public.legal_documents set version = '2026-10-20.2';
+grant execute on function public.price_quote(integer, integer, integer, integer, text) to service_role;
+grant execute on function public.platform_tax_bps(text) to service_role;

@@ -36,7 +36,7 @@ export function OrdersPanel({ restaurantId, showMoney = true }: { restaurantId: 
                 </div>
               </td>
               <td>{o.customer_username}</td>
-              {showMoney && <><td>{money(o.subtotal_cents)}</td><td>{money(o.total_cents)}</td></>}
+              {showMoney && <><td>{money(o.subtotal_cents)}{o.coupon_discount_cents > 0 && <div className="text-xs text-muted">after coupon {o.coupon_code} (−{money(o.coupon_discount_cents)})</div>}</td><td>{money(o.total_cents)}</td></>}
               <td><StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} /></td>
               <td className="text-xs whitespace-nowrap">{fmtDateTime(o.picked_up_at ?? o.created_at)}</td>
             </tr>

@@ -122,8 +122,9 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   // Totals.
   row('MENU VALUE', money(it.lineOriginalCents));
   row(`DISCOUNT ${it.discountPct}%`, money(-it.savingsCents));
+  if (rc.coupon?.discountCents) row(`COUPON ${rc.coupon.code}`, money(-rc.coupon.discountCents));
   row('SUBTOTAL', money(rc.subtotalCents));
-  row(rc.serviceFeeLabel.toUpperCase(), money(rc.serviceFeeCents));
+  row(rc.coupon?.feeWaivedCents ? `SERVICE FEE WAIVED (${rc.coupon.code})` : rc.serviceFeeLabel.toUpperCase(), money(rc.serviceFeeCents));
   row(`SALES TAX ${pct(rc.taxRateBps)}`, money(rc.foodTaxCents));
   if (rc.feeTaxCents) row('TAX ON SERVICE FEE', money(rc.feeTaxCents));
   double();
@@ -221,15 +222,15 @@ export function reportPdf(rep: Report) {
   doc.image(LOGO, L, 34, { height: 38 });
   doc.font('head').fontSize(18).fillColor(INK).text('Daily sales report', L, 36, { width: W, align: 'right' });
   doc.font('regular').fontSize(9.5).fillColor(MUTED).text(`${rep.restaurant.name} · ${rep.dateText}`, L, 60, { width: W, align: 'right' });
-  doc.text(`${rep.restaurant.address}, ${rep.restaurant.city}, WA ${rep.restaurant.zip}${rep.restaurant.phone ? ` · ${displayPhone(rep.restaurant.phone)}` : ''}`, L, 74, { width: W, align: 'right' });
+  doc.text(`${rep.restaurant.address}, ${rep.restaurant.city}, ${rep.restaurant.state} ${rep.restaurant.zip}${rep.restaurant.phone ? ` · ${displayPhone(rep.restaurant.phone)}` : ''}`, L, 74, { width: W, align: 'right' });
   rule(doc, L, R, 96);
 
   const s = rep.summary;
   const cards: [string, string][] = [
     ['Food sales', money(s.foodSalesCents)], ['Orders picked up', String(s.ordersPickedUp)], ['Meals rescued', String(s.mealsRescued)],
-    ['Discounts given', money(s.discountsCents)], ['Sales tax paid to you', money(s.taxPaidToYouCents)], ['Your payout', money(s.payoutCents)],
+    ['Discounts given', money(s.discountsCents)], ['Coupon discounts', money(s.couponDiscountsCents)], ['Sales tax paid to you', money(s.taxPaidToYouCents)], ['Your payout', money(s.payoutCents)],
   ];
-  const cw = (W - 5 * 8) / 6;
+  const cw = (W - (cards.length - 1) * 8) / cards.length;
   cards.forEach(([k, v], i) => {
     const x = L + i * (cw + 8);
     doc.roundedRect(x, 108, cw, 50, 8).fill('#f2f7f4');

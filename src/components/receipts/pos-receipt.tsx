@@ -48,8 +48,11 @@ export function PosReceipt({ r }: { r: Receipt }) {
         <hr className="pos-dash" />
         <Row left="Menu value" right={money(it.lineOriginalCents)} />
         <Row left={`Discount ${it.discountPct}%`} right={`-${money(it.savingsCents)}`} />
+        {r.coupon?.discountCents ? <Row left={`Coupon ${r.coupon.code}`} right={`-${money(r.coupon.discountCents)}`} /> : null}
         <Row left="Subtotal" right={money(r.subtotalCents)} />
-        <Row left={r.serviceFeeLabel} right={money(r.serviceFeeCents)} />
+        {r.coupon?.feeWaivedCents
+          ? <Row left={`Service fee waived (${r.coupon.code})`} right={money(0)} />
+          : <Row left={r.serviceFeeLabel} right={money(r.serviceFeeCents)} />}
         <Row left={`Sales tax ${pct(r.taxRateBps)}`} right={money(r.foodTaxCents)} />
         {r.feeTaxCents > 0 && <Row left="Tax on service fee" right={money(r.feeTaxCents)} />}
         <hr className="pos-double" />

@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart3, Banknote, Bell, ClipboardList, Crown, DollarSign, Landmark, ScrollText, Settings, ShieldCheck, Store, Tag, Users } from 'lucide-react';
+import { BarChart3, Banknote, Bell, ClipboardList, Crown, DollarSign, Landmark, ScrollText, Settings, ShieldCheck, Store, Tag, Ticket, Users } from 'lucide-react';
 import { SUPPORT_TABS } from '@/lib/constants';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertsPanel, useUnreadAlerts } from './alerts';
 import { AuditPanel } from './audit';
+import { CouponsPanel } from './coupons';
 import { IncomePanel } from './income';
 import { OffersPanel } from './offers';
 import { OrdersPanel } from './orders';
@@ -21,7 +22,7 @@ import { TaxPanel } from './tax';
 import { UsersPanel } from './users';
 
 const TABS = [
-  ['overview', 'Overview', BarChart3], ['income', 'Income', DollarSign], ['alerts', 'Alerts', Bell], ['restaurants', 'Restaurants', Store], ['plans', 'Plans', Crown], ['customers', 'Customers', Users], ['orders', 'Orders', ClipboardList],
+  ['overview', 'Overview', BarChart3], ['income', 'Income', DollarSign], ['alerts', 'Alerts', Bell], ['restaurants', 'Restaurants', Store], ['plans', 'Plans', Crown], ['coupons', 'Coupons', Ticket], ['customers', 'Customers', Users], ['orders', 'Orders', ClipboardList],
   ['offers', 'Live offers', Tag], ['payouts', 'Payouts', Banknote], ['tax', 'Sales tax', Landmark], ['settings', 'Settings', Settings], ['team', 'Team', ShieldCheck],
   ['audit', 'Audit log', ScrollText],
 ] as const;
@@ -82,6 +83,7 @@ export function AdminConsole({ access }: { access: Access }) {
             <TabsContent value="overview"><OverviewPanel range={range} setRange={setRange} go={go} /></TabsContent>
             <TabsContent value="income"><IncomePanel /></TabsContent>
             <TabsContent value="plans"><PlansPanel /></TabsContent>
+            <TabsContent value="coupons"><CouponsPanel /></TabsContent>
             <TabsContent value="payouts"><PayoutsPanel /></TabsContent>
             <TabsContent value="tax"><TaxPanel range={range} setRange={setRange} /></TabsContent>
             <TabsContent value="settings"><SettingsPanel /></TabsContent>

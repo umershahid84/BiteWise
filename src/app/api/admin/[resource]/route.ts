@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import * as admin from '@/lib/admin';
 import { requireAdmin } from '@/lib/auth';
+import { listCoupons } from '@/lib/coupons';
 import { listTeam } from '@/lib/team';
 import { paymentMode } from '@/lib/env';
 import { AppError } from '@/lib/errors';
@@ -21,6 +22,7 @@ const RESOURCES: Record<string, (p: URLSearchParams) => Promise<unknown>> = {
   alerts: admin.alerts,
   income: admin.income,
   team: () => listTeam(),
+  coupons: (p) => listCoupons(p.get('country') === 'CA' ? 'CA' : 'US'),
 };
 // What admin employees ('support') can read: their tabs (not the admin team's accounts).
 const SUPPORT = new Set(['restaurants', 'users', 'orders', 'refunds', 'offers', 'alerts']);

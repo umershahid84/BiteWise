@@ -307,8 +307,9 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
           ${row(`${it.quantity} × ${esc(it.title)}`, usd(it.lineOriginalCents), { sub: `${usd(it.originalUnitCents)} each` })}
           ${it.savingsCents > 0 ? row(`Bite Wise discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
+          ${rc.coupon?.discountCents ? row(`Coupon ${esc(rc.coupon.code)}`, `−${usd(rc.coupon.discountCents)}`, { color: '#3E8230' }) : ''}
           ${row('Subtotal', usd(rc.subtotalCents))}
-          ${rc.serviceFeeCents ? row(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
+          ${rc.coupon?.feeWaivedCents ? row(`Service fee waived (coupon ${esc(rc.coupon.code)})`, usd(0), { color: '#3E8230' }) : rc.serviceFeeCents ? row(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
           ${row(`Sales tax (${(rc.taxRateBps / 100).toFixed(2).replace(/\.?0+$/, '')}%)`, usd(rc.foodTaxCents))}
           ${rc.feeTaxCents ? row('Tax on service fee', usd(rc.feeTaxCents)) : ''}
           ${row('Total paid', usd(rc.totalCents), { strong: true })}
@@ -321,7 +322,7 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
 ${r.name}, ${r.address}, ${r.city} ${r.zip}
 
 ${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
-Subtotal: ${usd(rc.subtotalCents)}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
+${rc.coupon?.discountCents ? `Coupon ${rc.coupon.code}: -${usd(rc.coupon.discountCents)}\n` : ''}Subtotal: ${usd(rc.subtotalCents)}${rc.coupon?.feeWaivedCents ? `\nService fee waived (coupon ${rc.coupon.code})` : ''}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
 Sales tax: ${usd(rc.foodTaxCents)}${rc.feeTaxCents ? `\nTax on service fee: ${usd(rc.feeTaxCents)}` : ''}
 Total paid: ${usd(rc.totalCents)}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
 
@@ -512,5 +513,32 @@ export function teamPasswordEmail(o: { username: string; password: string; tempo
     text: `An admin set a new password for your Bite Wise account ${o.username}: ${o.password}
 ${o.temporary ? 'It is temporary: you will be asked to choose your own when you log in.' : 'Keep it private.'}
 Log in: ${o.loginUrl}`,
+  };
+}
+
+// A coupon from Bite Wise, sent to every customer in the coupon's country.
+export function couponEmail(o: { username: string; code: string; offer: string; description: string; expires: string; dealsUrl: string }) {
+  return {
+    subject: `🎟️ A Bite Wise coupon for you: ${o.offer}`,
+    html: layout({
+      preview: `Use code ${o.code} at checkout before ${o.expires}.`,
+      emoji: '🎟️',
+      title: `${esc(o.offer)}`,
+      subtitle: `A coupon for you, ${esc(o.username)}`,
+      body: `${o.description ? `<p style="margin:0 0 16px;">${esc(o.description)}</p>` : ''}
+        <div style="background:#F8FAFC;border:2px dashed #3E8230;border-radius:18px;padding:20px;text-align:center;margin:0 0 18px;">
+          <div style="font:13px ${FONT};color:#64748B;letter-spacing:.08em;text-transform:uppercase;">Your coupon code</div>
+          <div style="font:800 30px ${FONT};color:#14284B;letter-spacing:.12em;margin:6px 0;">${esc(o.code)}</div>
+          <div style="font:14px ${FONT};color:#475569;">${esc(o.offer)} · valid until ${esc(o.expires)}</div>
+        </div>
+        <p style="margin:0 0 18px;">Enter the code in the <b>Coupon code</b> box when you order. One coupon per order; you can use this one once.</p>
+        ${button(o.dealsUrl, 'Find deals near me', '#14284B')}`,
+    }),
+    text: `${o.offer}: a Bite Wise coupon for you, ${o.username}.
+${o.description ? `${o.description}\n` : ''}
+Coupon code: ${o.code} (valid until ${o.expires})
+Enter it in the Coupon code box when you order. One coupon per order; you can use this one once.
+
+Find deals near you: ${o.dealsUrl}`,
   };
 }

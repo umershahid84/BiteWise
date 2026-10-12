@@ -107,8 +107,9 @@ export function PickupPanel() {
           <p className="mt-1 mb-3 text-sm text-muted">Customer: <b className="text-ink">{order.customerUsername}</b> · Ordered {fmtDateTime(order.createdAt)}</p>
           <table className="w-full text-sm [&_td]:py-0.5 [&_td:last-child]:text-right">
             <tbody>
-              <tr><td>Food ({order.quantity} × {money(order.unitPriceCents)})</td><td>{money(order.subtotalCents)}</td></tr>
-              <tr><td>Service fee</td><td>{money(order.serviceFeeCents)}</td></tr>
+              <tr><td>Food ({order.quantity} × {money(order.unitPriceCents)})</td><td>{money(order.subtotalCents + (order.couponDiscountCents ?? 0))}</td></tr>
+              {!!order.couponDiscountCents && <tr><td>Coupon {order.couponCode} <span className="text-xs text-muted">· comes off your payout</span></td><td>−{money(order.couponDiscountCents)}</td></tr>}
+              <tr><td>Service fee{order.couponFeeWaivedCents ? ` (waived, coupon ${order.couponCode})` : ''}</td><td>{money(order.serviceFeeCents)}</td></tr>
               <tr><td>Sales tax</td><td>{money(order.taxCents)}</td></tr>
               <tr className="border-t border-line font-bold"><td className="pt-1">Customer pays</td><td className="pt-1">{money(order.totalCents)}</td></tr>
             </tbody>

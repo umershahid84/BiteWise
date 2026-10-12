@@ -63,13 +63,18 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<OrderConfirmation | null>(null);
+  // A coupon code from Bite Wise: checked when applied, and again when the order is placed.
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [checkingCoupon, setCheckingCoupon] = useState(false);
   // The restaurant decides how many are available; customers can't order more than that.
   const max = offer.quantity_available;
 
   const quote = useQuery({
-    queryKey: ['quote', offer.id, quantity],
+    queryKey: ['quote', offer.id, quantity, coupon],
     queryFn: async () => {
-      const { data, error: e } = await supabase.rpc('quote_offer', { p_offer_id: offer.id, p_quantity: quantity });
+      const { data, error: e } = await supabase.rpc('quote_offer', { p_offer_id: offer.id, p_quantity: quantity, p_coupon_code: coupon ?? undefined });
       if (e) throw new Error(e.message);
       return data as unknown as Quote;
     },
@@ -108,6 +113,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
         creditCents,
         cardId: needsCard && selected !== 'new' ? Number(selected) : null,
         newCard: needsCard && selected === 'new' ? { token: await cardRef.current!.getToken(), save: saveCard } : null,
+        couponCode: coupon,
       };
       const res = await placeOrder(input);
       if (!res.ok) {
@@ -132,6 +138,17 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
     } finally {
       setBusy(false);
     }
+  };
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCheckingCoupon(true);
+    setCouponError(null);
+    const { error: e } = await supabase.rpc('quote_offer', { p_offer_id: offer.id, p_quantity: quantity, p_coupon_code: code });
+    setCheckingCoupon(false);
+    if (e) return setCouponError(e.message);
+    setCoupon(code);
   };
 
   if (done) return <Confirmation order={done} currency={currency} onClose={onClose} />;
@@ -185,9 +202,12 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
         {q ? (
           <table className="w-full [&_td]:py-1 [&_td:last-child]:text-right [&_td:last-child]:tabular-nums">
             <tbody>
-              <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{m(q.originalUnitCents)}</span> {m(q.unitPriceCents)}</td><td>{m(q.subtotalCents)}</td></tr>
+              <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{m(q.originalUnitCents)}</span> {m(q.unitPriceCents)}</td><td>{m(q.foodCents ?? q.subtotalCents)}</td></tr>
               <tr><td colSpan={2} className="text-primary-ink">You save {m(q.savingsCents)} ({q.discountPct}% off)</td></tr>
-              <tr><td>{serviceFeeLabel(q.serviceFeeBps)} <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>
+              {!!q.couponDiscountCents && <tr className="text-primary-ink"><td>Coupon {q.couponCode}</td><td>−{m(q.couponDiscountCents)}</td></tr>}
+              {q.couponFeeWaivedCents
+                ? <tr className="text-primary-ink"><td>Service fee waived (coupon {q.couponCode})</td><td><span className="mr-1.5 text-muted line-through">{m(q.couponFeeWaivedCents)}</span>{m(0)}</td></tr>
+                : <tr><td>{serviceFeeLabel(q.serviceFeeBps)} <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>}
               <tr><td>Sales tax on food ({pct(q.taxRateBps)})</td><td>{m(q.foodTaxCents)}</td></tr>
               {q.serviceFeeTaxCents > 0 && <tr><td>Tax on service fee ({pct(q.serviceFeeTaxBps)})</td><td>{m(q.serviceFeeTaxCents)}</td></tr>}
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{m(q.totalCents)}</td></tr>
@@ -203,6 +223,25 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
           <div className="text-muted">Calculating…</div>
         )}
       </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {coupon ? (
+          <>
+            <span className="text-sm">🎟️ Coupon <b>{coupon}</b> applied{q?.couponDescription ? <span className="text-muted"> · {q.couponDescription}</span> : null}</span>
+            <Button size="sm" variant="ghost" onClick={() => { setCoupon(null); setCouponInput(''); }}>Remove</Button>
+          </>
+        ) : (
+          <>
+            <Input
+              aria-label="Coupon code" placeholder="Coupon code" className="h-9 w-40 uppercase" value={couponInput} maxLength={24}
+              onChange={(e) => { setCouponInput(e.target.value); setCouponError(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }}
+            />
+            <Button size="sm" variant="ghost" disabled={checkingCoupon || !couponInput.trim()} onClick={applyCoupon}>{checkingCoupon ? 'Checking…' : 'Apply'}</Button>
+          </>
+        )}
+      </div>
+      {couponError && <p className="mt-1 mb-0 text-sm text-danger">{couponError}</p>}
 
       <SectionLabel>Payment</SectionLabel>
       {offerCountry !== homeCountry && (

@@ -25,6 +25,8 @@ export type PickupOrder = {
   id: number; itemTitle: string; imageUrl: string | null; quantity: number; unitPriceCents: number; subtotalCents: number;
   serviceFeeCents: number; taxCents: number; totalCents: number; creditAppliedCents: number; customerUsername: string;
   createdAt: string; pickupEnd: string;
+  // A Bite Wise coupon: money off the food (paid by the restaurant) or the service fee waived (paid by Bite Wise).
+  couponCode?: string; couponDiscountCents?: number; couponFeeWaivedCents?: number;
 };
 
 const pinSchema = z.string().trim().regex(/^\d{4}$/, 'Enter the 4-digit PIN.');

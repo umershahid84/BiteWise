@@ -72,9 +72,12 @@ export async function receiptData(order: Order) {
       discountPct: order.discount_pct,
       unitPriceCents: order.unit_price_cents,
       lineOriginalCents: lineOriginal,
-      lineTotalCents: order.subtotal_cents,
-      savingsCents: lineOriginal - order.subtotal_cents,
+      // The food before any coupon.
+      lineTotalCents: order.subtotal_cents + order.coupon_discount_cents,
+      savingsCents: lineOriginal - order.subtotal_cents - order.coupon_discount_cents,
     },
+    // A Bite Wise coupon: money off the food, or the service fee waived.
+    coupon: order.coupon_code ? { code: order.coupon_code, discountCents: order.coupon_discount_cents, feeWaivedCents: order.coupon_fee_waived_cents } : null,
     subtotalCents: order.subtotal_cents,
     serviceFeeCents: order.service_fee_cents,
     serviceFeeLabel: serviceFeeLabel(order.service_fee_bps),
@@ -113,7 +116,7 @@ export async function reportData(restaurantId: number, date: string) {
   const tz = serverEnv.timeZone;
   const { start, end } = dayRange(date, tz);
   const db = supabaseAdmin();
-  const restaurant = must(await db.from('restaurants').select('name, address, city, zip, phone, country').eq('id', restaurantId).single());
+  const restaurant = must(await db.from('restaurants').select('name, address, city, state, zip, phone, country').eq('id', restaurantId).single());
   const rows = must(
     await db.from('orders').select('*').eq('restaurant_id', restaurantId)
       .not('status', 'in', '(pending_payment,failed)')
@@ -140,6 +143,8 @@ export async function reportData(restaurantId: number, date: string) {
       // the part of that which is sales tax for the restaurant to report and remit.
       payoutCents: sum(sold, (o) => o.restaurant_share_cents),
       taxPaidToYouCents: sum(sold, (o) => o.restaurant_share_cents - o.subtotal_cents),
+      // Bite Wise coupons that took money off the food: paid by the restaurant (Partner Agreement, coupons).
+      couponDiscountsCents: sum(sold, (o) => o.coupon_discount_cents),
       serviceFeesCents: sum(sold, (o) => o.service_fee_cents),
       totalChargedCents: sum(sold, (o) => o.total_cents),
       awaitingPickup: count('reserved'),

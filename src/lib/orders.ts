@@ -104,8 +104,8 @@ export async function setDefaultCard(userId: string, cardId: number) {
   check(await db().from('payment_methods').update({ is_default: true }).eq('id', card.id));
 }
 
-export async function quoteOffer(offerId: number, quantity: number): Promise<Quote> {
-  return must(await db().rpc('quote_offer', { p_offer_id: offerId, p_quantity: quantity })) as unknown as Quote;
+export async function quoteOffer(offerId: number, quantity: number, couponCode?: string | null): Promise<Quote> {
+  return must(await db().rpc('quote_offer', { p_offer_id: offerId, p_quantity: quantity, p_coupon_code: couponCode || undefined })) as unknown as Quote;
 }
 
 export type CheckoutInput = {
@@ -114,12 +114,14 @@ export type CheckoutInput = {
   creditCents: number;
   cardId?: number | null;
   newCard?: { token: unknown; save: boolean } | null;
+  // A coupon code from Bite Wise (src/lib/coupons.ts).
+  couponCode?: string | null;
 };
 
 // Places an order: reserves the food, then places a hold on the card for whatever platform credit
 // doesn't cover. Returns requiresAction + clientSecret when the card needs 3-D Secure.
 export async function checkout(userId: string, input: CheckoutInput) {
-  const q = await quoteOffer(input.offerId, input.quantity); // validates before touching the card
+  const q = await quoteOffer(input.offerId, input.quantity, input.couponCode); // validates before touching the card
   if (!Number.isInteger(input.creditCents) || input.creditCents < 0 || input.creditCents > q.totalCents) {
     throw new AppError(400, 'Invalid credit amount.');
   }
@@ -162,7 +164,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
   const order = must(
     await db().rpc('reserve_order', {
       p_user: userId, p_offer_id: input.offerId, p_quantity: input.quantity,
-      p_card_label: label ?? '', p_credit_cents: input.creditCents,
+      p_card_label: label ?? '', p_credit_cents: input.creditCents, p_coupon_code: input.couponCode || undefined,
     }),
   );
 

@@ -17,6 +17,7 @@ const checkoutSchema = z.object({
   creditCents: int('Credit', 0, 10_000_000).default(0),
   cardId: z.number().int().positive().nullish(),
   newCard: z.object({ token: z.unknown(), save: z.boolean() }).nullish(),
+  couponCode: z.string().trim().toUpperCase().max(24).nullish(),
 });
 
 // What the confirmation screen shows: the order, its PIN and the restaurant (read as the customer, so RLS applies).

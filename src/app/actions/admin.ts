@@ -8,6 +8,7 @@ import { updateAccount, updateRestaurantDetails } from '@/lib/admin-edit';
 import { aiAvailable } from '@/lib/menu-import/ai';
 import { importMenu, parseImportInput, parsePreviewInput, previewFor } from '@/lib/menu-import';
 import { sendCustomerWelcome } from '@/lib/customer-welcome';
+import * as coupons from '@/lib/coupons';
 import * as feeChanges from '@/lib/fee-changes';
 import * as moderation from '@/lib/moderation';
 import * as subscriptions from '@/lib/subscriptions';
@@ -557,5 +558,48 @@ export async function adminMenuImportOptions() {
   return action(async () => {
     await requireAdmin('support');
     return { ai: aiAvailable() };
+  });
+}
+
+// ---------------------------------------------------------------- coupons (admins; src/lib/coupons.ts)
+
+export async function createCouponAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({
+      code: z.string().trim().max(24).optional(),
+      kind: z.enum(['no_fee', 'fixed', 'percent'], { message: 'Choose the kind of coupon.' }),
+      amount: z.union([z.string(), z.number()]).optional(),
+      percent: z.coerce.number().int('Use a whole percentage.').min(1, 'Enter a percentage from 1 to 100.').max(100, 'Enter a percentage from 1 to 100.').optional(),
+      description: z.string().trim().max(300).default(''),
+      expiresOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose the expiration date.'),
+      email: z.boolean().default(false),
+    }), input);
+    const amountCents = d.kind === 'fixed' ? parse(dollars('Amount off', 0.01, 1000), d.amount ?? '') : undefined;
+    const c = await coupons.createCoupon(me.id, me.country, { ...d, amountCents, percent: d.kind === 'percent' ? d.percent : undefined });
+    await log(me.id, 'coupon.create', 'coupon', c.id, `${c.code}: ${coupons.couponOffer(c)}, until ${d.expiresOn}`);
+    const emailed = d.email ? await coupons.emailCoupon(c.id, me.country) : null;
+    if (emailed) await log(me.id, 'coupon.email', 'coupon', c.id, `${c.code} to ${emailed.customers} customers`);
+    return { code: c.code, emailedTo: emailed?.customers ?? null };
+  });
+}
+
+export async function setCouponActiveAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({ id: z.number().int(), active: z.boolean() }), input);
+    const code = await coupons.setCouponActive(d.id, me.country, d.active);
+    await log(me.id, d.active ? 'coupon.on' : 'coupon.off', 'coupon', d.id, code);
+    return null;
+  });
+}
+
+export async function emailCouponAction(input: unknown) {
+  return action(async () => {
+    const me = await requireAdmin();
+    const d = parse(z.object({ id: z.number().int() }), input);
+    const res = await coupons.emailCoupon(d.id, me.country);
+    await log(me.id, 'coupon.email', 'coupon', d.id, `${res.code} to ${res.customers} customers`);
+    return res;
   });
 }

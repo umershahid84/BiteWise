@@ -11,6 +11,14 @@ export type Quote = {
   originalUnitCents: number;
   discountPct: number;
   unitPriceCents: number;
+  // A coupon (from the database's price_quote; the TypeScript quote() below has none): foodCents is the food before
+  // it, subtotalCents after it. no_fee coupons waive the service fee instead (couponFeeWaivedCents).
+  foodCents?: number;
+  couponCode?: string;
+  couponKind?: 'no_fee' | 'fixed' | 'percent' | null;
+  couponDescription?: string;
+  couponDiscountCents?: number;
+  couponFeeWaivedCents?: number;
   subtotalCents: number;
   savingsCents: number;
   serviceFeeBps: number;
