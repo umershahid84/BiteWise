@@ -203,6 +203,8 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
 
   const demoId = await user('demo', 'customer');
   await user('admin', 'admin');
+  // The demo customer's home ZIP code (downtown Seattle): the deals page opens around it.
+  must(await db.from('profiles').update({ region: 'WA', postal_code: '98101', home_lat: 47.6101, home_lng: -122.3421 }).eq('id', demoId).select('id'), 'home area');
 
   // Demo rates count as already looked up (fictional addresses; no lookups over the internet when seeding).
   const demoTax = (city: string) => ({
@@ -374,8 +376,16 @@ Create them first with: npx supabase db push   (see "Run it locally" in README.m
     must(await db.from('credit_ledger').insert({ user_id: demoId, amount_cents: 1000, kind: 'goodwill', note: 'Welcome credit (demo)' }).select('id'), 'credit');
   }
 
+  // A demo coupon for US customers (20% off the food), renewed on every run.
+  const adminRow = must(await db.from('profiles').select('id').eq('username', 'admin').single(), 'admin');
+  const couponRow = {
+    code: 'RESCUE20', kind: 'percent' as const, percent: 20, country: 'US', active: true, created_by: adminRow.id,
+    description: 'Thanks for rescuing food with us!', expires_at: new Date(Date.now() + 60 * 86_400_000).toISOString(),
+  };
+  must(await db.from('coupons').upsert(couponRow, { onConflict: 'code' }).select('id'), 'coupon');
+
   console.log('Seeded demo data.');
-  console.log(`  Customer login:    demo / ${DEMO_PASSWORD}`);
+  console.log(`  Customer login:    demo / ${DEMO_PASSWORD}  (home ZIP 98101; coupon code RESCUE20)`);
   console.log(`  Owner/admin login: admin / ${DEMO_PASSWORD}  (demo only: create your real one with npm run create-admin)`);
   console.log(`  Admin employee login (password ${DEMO_PASSWORD}, at /admin/login, no refunds): support.demo`);
   console.log(`  Restaurant staff login (password ${DEMO_PASSWORD}, at /login): harborpho.manager`);

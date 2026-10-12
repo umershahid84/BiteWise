@@ -198,8 +198,9 @@ async function scrollBy(p, dy, steps = 12) {
   }
 }
 
-async function logIn(p, user) {
-  await p.goto(`${BASE}/login`);
+// Restaurants log in on their own page (/restaurant/login), customers on /login.
+async function logIn(p, user, page = '/login') {
+  await p.goto(`${BASE}${page}`);
   await type(p, '#login', user);
   await type(p, '#password', PASSWORD, 30);
   await click(p, 'button[type=submit]');
@@ -242,7 +243,14 @@ async function customerTour(browser) {
   }
   await n.say(p, 'total');
   await wait(p, 2600);
-  await scrollBy(p, 360);
+  // The demo coupon from the seed data (20% off the food).
+  await scrollBy(p, 240);
+  await n.say(p, 'coupon');
+  await type(p, 'input[aria-label="Coupon code"]', 'RESCUE20', 90);
+  await click(p, 'button:has-text("Apply")');
+  await p.waitForSelector('text=Coupon RESCUE20 applied');
+  await n.idle(p, -600);
+  await scrollBy(p, 240);
   await n.say(p, 'payment');
   const newCard = p.locator('label:has-text("Use a new card")');
   if (await newCard.count()) {
@@ -287,7 +295,7 @@ async function restaurantTour(browser) {
   await wait(p, 1500);
   await scrollBy(p, 400, 20);
   await n.say(p, 'login');
-  await logIn(p, 'harborpho');
+  await logIn(p, 'harborpho', '/restaurant/login');
   await p.waitForSelector('text=Verify a pickup');
   await p.mouse.click(1200, 690); // one click turns on the order bell
   await n.say(p, 'dashboard');
@@ -369,7 +377,8 @@ async function restaurantTour(browser) {
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
-  for (const [name, tour] of [['customer', customerTour], ['restaurant', restaurantTour]]) {
+  const only = process.env.TOUR; // e.g. TOUR=restaurant records just that one
+  for (const [name, tour] of [['customer', customerTour], ['restaurant', restaurantTour]].filter(([t]) => !only || t === only)) {
     const video = (await tour(browser)).video();
     await video.saveAs(path.join(OUT, `${name}-raw.webm`));
     await video.delete();

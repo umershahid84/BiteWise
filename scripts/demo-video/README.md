@@ -10,9 +10,9 @@ pip install kokoro-onnx soundfile
 python scripts/demo-video/voice.py kokoro-v1.0.onnx voices-v1.0.bin   # → .video-tmp/voice/
 
 # 2. Screen recording, timed to the voice (needs Playwright's Chromium: npx playwright install chromium)
-npm run db:reset && npm run seed      # fresh demo data
+npm run db:reset && npm run seed      # fresh demo data (the demo customer's home ZIP and the RESCUE20 coupon)
 npm run dev                           # in another terminal
-node scripts/demo-video/record.mjs    # → .video-tmp/*-raw.webm, *-cues.json
+node scripts/demo-video/record.mjs    # → .video-tmp/*-raw.webm, *-cues.json (TOUR=customer or TOUR=restaurant for one)
 
 # 3. Background music, fitted to each recording
 sudo apt install fluidsynth fluid-soundfont-gm   # macOS: brew install fluid-synth, then SOUNDFONT=/path/to/FluidR3_GM.sf2
