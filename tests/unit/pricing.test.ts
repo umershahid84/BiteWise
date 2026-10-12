@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { salesTaxLabel } from '@/lib/service-fee';
 import { discountedUnitPrice, feeTaxCents, nonRefundableCents, quote, refundableTotalCents, restaurantShareOfRefund } from '@/lib/pricing';
 
 describe('pricing', () => {
@@ -39,5 +40,14 @@ describe('pricing', () => {
     const withTax = { ...o, restaurant_share_cents: 1104 };
     expect(restaurantShareOfRefund(1104, withTax)).toBe(1104);
     expect(restaurantShareOfRefund(552, withTax)).toBe(552);
+  });
+});
+
+describe('sales tax line', () => {
+  it('shows one line, with the rate when the food and the fee were taxed at it', () => {
+    expect(salesTaxLabel({ taxRateBps: 1035, serviceFeeCents: 85, feeTaxCents: 9 })).toBe('Sales tax (10.35%)');
+    expect(salesTaxLabel({ taxRateBps: 1035, serviceFeeCents: 0, feeTaxCents: 0 })).toBe('Sales tax (10.35%)');
+    // Canada: 13% on the food, 15% NL HST on the fee.
+    expect(salesTaxLabel({ taxRateBps: 1300, serviceFeeCents: 100, feeTaxCents: 15 })).toBe('Sales tax');
   });
 });

@@ -357,13 +357,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "can_refund": boolean,"city": string,"country": string,"created_at": string,"email": string,"home_lat": number | null,"home_lng": number | null,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"postal_code": string,"region": string,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"stripe_customer_id_ca": string | null,"suspended_until": string | null,"username": string,"welcome_email_sent_at": string | null
+                    "can_refund": boolean,"city": string,"country": string,"created_at": string,"email": string,"home_lat": number | null,"home_lng": number | null,"id": string,"no_show_probation": boolean,"no_show_strikes": number,"no_shows_total": number,"password_reset_attempts": number,"password_reset_sent_at": string | null,"postal_code": string,"region": string,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["account_status"],"stripe_customer_id": string | null,"stripe_customer_id_ca": string | null,"suspended_until": string | null,"username": string,"welcome_credit_at": string | null,"welcome_email_sent_at": string | null
                   }
                   Insert: {
-                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email": string,"home_lat"?: number | null,"home_lng"?: number | null,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"postal_code"?: string,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"stripe_customer_id_ca"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email": string,"home_lat"?: number | null,"home_lng"?: number | null,"id": string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"postal_code"?: string,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"stripe_customer_id_ca"?: string | null,"suspended_until"?: string | null,"username": string,"welcome_credit_at"?: string | null,"welcome_email_sent_at"?: string | null
                   }
                   Update: {
-                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email"?: string,"home_lat"?: number | null,"home_lng"?: number | null,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"postal_code"?: string,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"stripe_customer_id_ca"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_email_sent_at"?: string | null
+                    "can_refund"?: boolean,"city"?: string,"country"?: string,"created_at"?: string,"email"?: string,"home_lat"?: number | null,"home_lng"?: number | null,"id"?: string,"no_show_probation"?: boolean,"no_show_strikes"?: number,"no_shows_total"?: number,"password_reset_attempts"?: number,"password_reset_sent_at"?: string | null,"postal_code"?: string,"region"?: string,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["account_status"],"stripe_customer_id"?: string | null,"stripe_customer_id_ca"?: string | null,"suspended_until"?: string | null,"username"?: string,"welcome_credit_at"?: string | null,"welcome_email_sent_at"?: string | null
                   }
                   Relationships: [
                     
@@ -897,6 +897,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"grant_welcome_credit":
+{ Args: { "p_user": string }; Returns: number
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },

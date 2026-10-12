@@ -2,7 +2,7 @@ import 'server-only';
 import path from 'node:path';
 import PDFDocument from 'pdfkit';
 import { code128 } from '@/lib/code128';
-import { money as fmtMoney, pct } from '@/lib/format';
+import { money as fmtMoney } from '@/lib/format';
 
 const money = (cents: number) => fmtMoney(cents);
 import type { Receipt, Report } from './data';
@@ -125,8 +125,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   if (rc.coupon?.discountCents) row(`COUPON ${rc.coupon.code}`, money(-rc.coupon.discountCents));
   row('SUBTOTAL', money(rc.subtotalCents));
   row(rc.coupon?.feeWaivedCents ? `SERVICE FEE WAIVED (${rc.coupon.code})` : rc.serviceFeeLabel.toUpperCase(), money(rc.serviceFeeCents));
-  row(`SALES TAX ${pct(rc.taxRateBps)}`, money(rc.foodTaxCents));
-  if (rc.feeTaxCents) row('TAX ON SERVICE FEE', money(rc.feeTaxCents));
+  row(rc.salesTaxLabel.toUpperCase(), money(rc.taxCents));
   double();
   row('TOTAL', money(rc.totalCents), { bold: true, size: 11.5, after: 3 });
   if (rc.creditAppliedCents) {

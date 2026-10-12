@@ -210,6 +210,7 @@ export async function updateSettings(input: unknown) {
         // A percentage of the food subtotal, or a fixed amount per order (same number in USD and CAD).
         serviceFeeMode: z.enum(['percent', 'fixed']).optional(),
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
+        welcomeCredit: z.coerce.number().min(0, 'The welcome bonus must be $0 to $100.').max(100, 'The welcome bonus must be $0 to $100.').optional(),
         serviceFeeFixed: z.coerce.number().min(0, 'The fixed service fee must be $0 to $20.').max(20, 'The fixed service fee must be $0 to $20.').optional(),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
@@ -225,6 +226,7 @@ export async function updateSettings(input: unknown) {
     const values = {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
       ...(d.serviceFeeMode ? { service_fee_mode: d.serviceFeeMode } : {}),
+      ...(d.welcomeCredit !== undefined ? { welcome_credit_cents: Math.round(d.welcomeCredit * 100) } : {}),
       ...(d.serviceFeeFixed !== undefined ? { service_fee_fixed_cents: Math.round(d.serviceFeeFixed * 100) } : {}),
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,

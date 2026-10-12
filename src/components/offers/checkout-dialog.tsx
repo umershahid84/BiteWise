@@ -17,9 +17,9 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { MIN_CARD_CHARGE_CENTS, OFFER_REASONS } from '@/lib/constants';
-import { currencyOf, fmtTime, money, pct } from '@/lib/format';
+import { currencyOf, fmtTime, money } from '@/lib/format';
 import type { Country } from '@/lib/regions';
-import { serviceFeeLabel } from '@/lib/service-fee';
+import { salesTaxLabel, serviceFeeLabel } from '@/lib/service-fee';
 import { distanceMiles } from '@/lib/geo';
 import type { Quote } from '@/lib/pricing';
 import { supabaseBrowser } from '@/lib/supabase/client';
@@ -208,8 +208,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
               {q.couponFeeWaivedCents
                 ? <tr className="text-primary-ink"><td>Service fee waived (coupon {q.couponCode})</td><td><span className="mr-1.5 text-muted line-through">{m(q.couponFeeWaivedCents)}</span>{m(0)}</td></tr>
                 : <tr><td>{serviceFeeLabel(q.serviceFeeBps)} <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>}
-              <tr><td>Sales tax on food ({pct(q.taxRateBps)})</td><td>{m(q.foodTaxCents)}</td></tr>
-              {q.serviceFeeTaxCents > 0 && <tr><td>Tax on service fee ({pct(q.serviceFeeTaxBps)})</td><td>{m(q.serviceFeeTaxCents)}</td></tr>}
+              <tr><td>{salesTaxLabel({ taxRateBps: q.taxRateBps, serviceFeeCents: q.serviceFeeCents, feeTaxCents: q.serviceFeeTaxCents })}</td><td>{m(q.taxCents)}</td></tr>
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{m(q.totalCents)}</td></tr>
               {creditCents > 0 && (
                 <>

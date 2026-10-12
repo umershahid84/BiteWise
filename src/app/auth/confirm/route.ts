@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { loginFor } from '@/lib/constants';
-import { sendCustomerWelcome } from '@/lib/customer-welcome';
+import { grantWelcomeCredit, sendCustomerWelcome } from '@/lib/customer-welcome';
 import { sendOnboardingEmails } from '@/lib/restaurant-onboarding';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { supabaseServer } from '@/lib/supabase/server';
@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
       // A restaurant that just confirmed its email gets "your application is pending" (or, if it's already
       // approved, the welcome email with its kiosk link).
       // A customer gets the congratulations email with the phone app buttons.
-      if (data.user && data.user.user_metadata?.role !== 'restaurant') await sendCustomerWelcome(data.user.id).catch((err) => console.error('customer welcome email:', err));
+      if (data.user && data.user.user_metadata?.role !== 'restaurant') {
+        await grantWelcomeCredit(data.user.id).catch((err) => console.error('welcome bonus:', err));
+        await sendCustomerWelcome(data.user.id).catch((err) => console.error('customer welcome email:', err));
+      }
       if (data.user?.user_metadata?.role === 'restaurant') {
         const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', data.user.id).maybeSingle();
         if (r) await sendOnboardingEmails(r.id);

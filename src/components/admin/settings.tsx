@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/misc';
 import { run, useAdmin, LoadError } from './shared';
 
 type S = {
-  settings: { serviceFeeMode: 'percent' | 'fixed'; serviceFeeFixed: number; serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; platformTaxPct: number; platformTaxLabel: string; country: 'US' | 'CA' };
+  settings: { serviceFeeMode: 'percent' | 'fixed'; serviceFeeFixed: number; welcomeCredit: number; serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; platformTaxPct: number; platformTaxLabel: string; country: 'US' | 'CA' };
   paymentMode: Mode;
   paymentModeCa: Mode;
 };
@@ -32,6 +32,7 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
     serviceFeeMode: data.settings.serviceFeeMode,
     serviceFeePct: String(data.settings.serviceFeePct),
     serviceFeeFixed: data.settings.serviceFeeFixed.toFixed(2),
+    welcomeCredit: data.settings.welcomeCredit.toFixed(2),
     defaultTaxRatePct: String(data.settings.defaultTaxRatePct),
     requireRestaurantApproval: data.settings.requireRestaurantApproval,
     orderTaxToRestaurant: data.settings.orderTaxToRestaurant,
@@ -61,6 +62,9 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
             A fixed fee is charged once per order, whatever the quantity: in US dollars in the US and the same amount in Canadian dollars in Canada.
           </p>
         </fieldset>
+        <Field label="Welcome bonus for new customers ($)" htmlFor="s-welcome" hint="Platform credit each new customer gets once, when they confirm their email (the same number in Canadian dollars in Canada). Bite Wise pays for it; 0 turns it off.">
+          <Input id="s-welcome" inputMode="decimal" className="max-w-40" value={f.welcomeCredit} onChange={(e) => setF({ ...f, welcomeCredit: e.target.value })} />
+        </Field>
         <Field label="Starting sales tax for new restaurants (%)" htmlFor="s-tax" hint="Used only until a new restaurant's rate is looked up from its address (usually straight away). Set a restaurant's rate by hand in the Restaurants tab."><Input id="s-tax" inputMode="decimal" className="max-w-40" value={f.defaultTaxRatePct} onChange={(e) => setF({ ...f, defaultTaxRatePct: e.target.value })} /></Field>
         <Field
           label={`Tax on Bite Wise's fees (${data.settings.country === 'CA' ? 'Canada' : 'United States'})`} htmlFor="s-plan-tax"

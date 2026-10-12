@@ -502,6 +502,8 @@ export async function settings(params: URLSearchParams) {
     serviceFeeMode: get('service_fee_mode') === 'fixed' ? 'fixed' : 'percent',
     serviceFeePct: Number(get('service_fee_bps') ?? 500) / 100,
     serviceFeeFixed: Number(get('service_fee_fixed_cents') ?? 99) / 100,
+    // Platform credit every new customer gets when they confirm their email (0: none).
+    welcomeCredit: Number(get('welcome_credit_cents') ?? 1000) / 100,
     defaultTaxRatePct: Number(get('default_tax_rate_bps') ?? 1035) / 100,
     requireRestaurantApproval: get('require_restaurant_approval') !== false,
     orderTaxToRestaurant: get('order_tax_to_restaurant') !== false,

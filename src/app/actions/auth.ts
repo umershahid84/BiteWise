@@ -10,7 +10,7 @@ import { requiredDocuments } from '@/lib/legal/documents';
 import { getViewer } from '@/lib/auth';
 import { homeFor, loginFor, portalFor } from '@/lib/constants';
 import { action, AppError, fromDb } from '@/lib/errors';
-import { sendCustomerWelcome } from '@/lib/customer-welcome';
+import { grantWelcomeCredit, sendCustomerWelcome } from '@/lib/customer-welcome';
 import { requestPasswordReset, resetPassword } from '@/lib/password-reset';
 import { locateRestaurant } from '@/lib/restaurant-location';
 import { refreshRestaurantTax } from '@/lib/restaurant-tax';
@@ -164,7 +164,10 @@ export async function signUp(input: unknown) {
     if (data.role === 'restaurant' && res.user) await lookUpTax(res.user.id);
     if (data.role === 'customer' && res.user) await saveHomeArea(res.user.id, data.country, data.postal);
     // With email confirmation off, the email counts as confirmed at once: send the restaurant's onboarding email now.
-    if (res.session && data.role === 'customer' && res.user) await sendCustomerWelcome(res.user.id).catch((err) => console.error('customer welcome email:', err));
+    if (res.session && data.role === 'customer' && res.user) {
+      await grantWelcomeCredit(res.user.id).catch((err) => console.error('welcome bonus:', err));
+      await sendCustomerWelcome(res.user.id).catch((err) => console.error('customer welcome email:', err));
+    }
     if (res.session && data.role === 'restaurant' && res.user) {
       const { data: r } = await supabaseAdmin().from('restaurants').select('id').eq('owner_id', res.user.id).maybeSingle();
       if (r) await sendOnboardingEmails(r.id);

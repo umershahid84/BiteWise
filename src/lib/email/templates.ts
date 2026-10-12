@@ -310,8 +310,7 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
           ${rc.coupon?.discountCents ? row(`Coupon ${esc(rc.coupon.code)}`, `−${usd(rc.coupon.discountCents)}`, { color: '#3E8230' }) : ''}
           ${row('Subtotal', usd(rc.subtotalCents))}
           ${rc.coupon?.feeWaivedCents ? row(`Service fee waived (coupon ${esc(rc.coupon.code)})`, usd(0), { color: '#3E8230' }) : rc.serviceFeeCents ? row(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
-          ${row(`Sales tax (${(rc.taxRateBps / 100).toFixed(2).replace(/\.?0+$/, '')}%)`, usd(rc.foodTaxCents))}
-          ${rc.feeTaxCents ? row('Tax on service fee', usd(rc.feeTaxCents)) : ''}
+          ${row(rc.salesTaxLabel, usd(rc.taxCents))}
           ${row('Total paid', usd(rc.totalCents), { strong: true })}
           ${paidWith ? row('Paid with', paidWith) : ''}
         </table>
@@ -323,7 +322,7 @@ ${r.name}, ${r.address}, ${r.city} ${r.zip}
 
 ${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
 ${rc.coupon?.discountCents ? `Coupon ${rc.coupon.code}: -${usd(rc.coupon.discountCents)}\n` : ''}Subtotal: ${usd(rc.subtotalCents)}${rc.coupon?.feeWaivedCents ? `\nService fee waived (coupon ${rc.coupon.code})` : ''}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
-Sales tax: ${usd(rc.foodTaxCents)}${rc.feeTaxCents ? `\nTax on service fee: ${usd(rc.feeTaxCents)}` : ''}
+${rc.salesTaxLabel}: ${usd(rc.taxCents)}
 Total paid: ${usd(rc.totalCents)}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
 
 Your receipt: ${o.receiptUrl}`,
@@ -441,7 +440,7 @@ The code works for ${o.minutes} minutes and only once. Didn't ask for it? Ignore
 }
 
 // A customer who just confirmed their email: congratulations, and buttons to put Bite Wise on their phone's home screen.
-export function customerWelcomeEmail(o: { username: string; androidUrl: string; iphoneUrl: string; windowsUrl: string; dealsUrl: string }) {
+export function customerWelcomeEmail(o: { username: string; androidUrl: string; iphoneUrl: string; windowsUrl: string; dealsUrl: string; welcomeCredit?: string | null }) {
   return {
     subject: `Congratulations, ${o.username}! You're ready to rescue food 🎉`,
     html: layout({
@@ -450,6 +449,7 @@ export function customerWelcomeEmail(o: { username: string; androidUrl: string; 
       title: `Congratulations, ${esc(o.username)}!`,
       subtitle: 'Your account is confirmed',
       body: `<p style="margin:0 0 14px;">Welcome to Bite Wise! Restaurants near you post their surplus food at big discounts, and you pick it up before it goes to waste.</p>
+        ${o.welcomeCredit ? `<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:14px;padding:14px 18px;margin:0 0 16px;font:15px/1.5 ${FONT};color:#065F46;">🎁 <b>${esc(o.welcomeCredit)} welcome bonus</b> is waiting in your account. Use it at checkout on your first orders.</div>` : ''}
         <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:18px;padding:22px 22px 16px;">
           <h2 style="margin:0 0 6px;font:800 19px ${FONT};color:#14284B;">📲 Get Bite Wise on your phone</h2>
           <p style="margin:0 0 16px;font:15px/1.55 ${FONT};color:#475569;">Open this email on your phone and tap your phone below. A <b>Bite Wise</b> icon appears on
@@ -464,7 +464,7 @@ export function customerWelcomeEmail(o: { username: string; androidUrl: string; 
         <div style="padding:6px 0 0;">${button(o.dealsUrl, 'Find deals near me', '#14284B')}</div>`,
     }),
     text: `Congratulations, ${o.username}! Your Bite Wise account is confirmed.
-Get Bite Wise on your phone (open this on your phone):
+${o.welcomeCredit ? `A ${o.welcomeCredit} welcome bonus is waiting in your account, to use at checkout.\n` : ''}Get Bite Wise on your phone (open this on your phone):
 Android: ${o.androidUrl}
 iPhone: ${o.iphoneUrl}
 Windows: ${o.windowsUrl}

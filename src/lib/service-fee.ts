@@ -24,3 +24,10 @@ export const describeServiceFee = (f: ServiceFee, currency?: string | null) =>
 
 // The fee's line on a quote, receipt or invoice. An order's service_fee_bps is 0 when the fee was a fixed amount.
 export const serviceFeeLabel = (bps: number) => (bps > 0 ? `Service fee (${pct(bps)})` : 'Service fee');
+
+// One "Sales tax" line for the customer: the food's tax and the service fee's together. It shows the rate when both
+// were taxed at it (the fee's tax matches that rate), and no rate when they differ (e.g. HST on the fee in Canada).
+export function salesTaxLabel(o: { taxRateBps: number; serviceFeeCents: number; feeTaxCents: number }) {
+  const sameRate = Math.floor((o.serviceFeeCents * o.taxRateBps) / 10000 + 0.5) === o.feeTaxCents;
+  return sameRate || !o.feeTaxCents ? `Sales tax (${pct(o.taxRateBps)})` : 'Sales tax';
+}

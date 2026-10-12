@@ -1,5 +1,5 @@
 import type { Receipt } from '@/lib/receipts/data';
-import { money as fmtMoney, pct } from '@/lib/format';
+import { money as fmtMoney } from '@/lib/format';
 import { displayPhone } from '@/lib/phone';
 
 // Point-of-sale (80 mm thermal) receipt. The PDF version is drawn by src/lib/receipts/pdf.ts.
@@ -53,8 +53,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
         {r.coupon?.feeWaivedCents
           ? <Row left={`Service fee waived (${r.coupon.code})`} right={money(0)} />
           : <Row left={r.serviceFeeLabel} right={money(r.serviceFeeCents)} />}
-        <Row left={`Sales tax ${pct(r.taxRateBps)}`} right={money(r.foodTaxCents)} />
-        {r.feeTaxCents > 0 && <Row left="Tax on service fee" right={money(r.feeTaxCents)} />}
+        <Row left={r.salesTaxLabel} right={money(r.taxCents)} />
         <hr className="pos-double" />
         <Row left="Total" right={money(r.totalCents)} className="total" />
         {r.creditAppliedCents > 0 && (

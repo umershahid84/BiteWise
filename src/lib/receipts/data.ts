@@ -6,7 +6,7 @@ import { serverEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
 import { currencyOf, money as fmtMoney } from '@/lib/format';
 import { feeTaxCents, refundableTotalCents } from '@/lib/pricing';
-import { serviceFeeLabel } from '@/lib/service-fee';
+import { salesTaxLabel, serviceFeeLabel } from '@/lib/service-fee';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { dayRange, formatDateTime, formatTime } from './time';
 
@@ -86,6 +86,8 @@ export async function receiptData(order: Order) {
     // The food's tax (restaurant's rate) and the service fee's (Bite Wise's location rate).
     foodTaxCents: order.tax_cents - feeTaxCents(order),
     feeTaxCents: feeTaxCents(order),
+    // Shown to the customer as one line: the food's tax and the fee's together.
+    salesTaxLabel: salesTaxLabel({ taxRateBps: order.tax_rate_bps, serviceFeeCents: order.service_fee_cents, feeTaxCents: feeTaxCents(order) }),
     totalCents: order.total_cents,
     creditAppliedCents: order.credit_applied_cents,
     amountChargedCents: order.status === 'picked_up' ? order.total_cents - order.credit_applied_cents : order.kept_card_cents,
