@@ -10,6 +10,7 @@ import type { PlanInvoice } from './plan-invoice';
 import type { Income } from '@/lib/admin';
 import type { Cell, Report as ListReport } from '@/lib/exports';
 import { displayPhone } from '@/lib/phone';
+import { cityLine } from '@/lib/regions';
 
 // PDF receipts (80 mm point-of-sale roll) and daily reports (landscape letter).
 // WOFF fonts (not WOFF2): pdfkit's font subsetter can fail on WOFF2 input.
@@ -100,7 +101,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   y += logoW * LOGO_RATIO + 4;
   center('RESCUED FOOD · EAT WELL, WASTE LESS', 'mono', 6.2, { spacing: 0.4, after: 7 });
   center(rc.restaurant.name.toUpperCase(), 'monoBold', 9.5, { after: 1 });
-  center(`${rc.restaurant.address}\n${rc.restaurant.city}, WA ${rc.restaurant.zip}${rc.restaurant.phone ? `\nTel ${displayPhone(rc.restaurant.phone)}` : ''}`, 'mono', 7.2, { after: 2 });
+  center(`${rc.restaurant.address}\n${cityLine(rc.restaurant)}${rc.restaurant.phone ? `\nTel ${displayPhone(rc.restaurant.phone)}` : ''}`, 'mono', 7.2, { after: 2 });
   dashes();
 
   // Order facts.
@@ -221,7 +222,7 @@ export function reportPdf(rep: Report) {
   doc.image(LOGO, L, 34, { height: 38 });
   doc.font('head').fontSize(18).fillColor(INK).text('Daily sales report', L, 36, { width: W, align: 'right' });
   doc.font('regular').fontSize(9.5).fillColor(MUTED).text(`${rep.restaurant.name} · ${rep.dateText}`, L, 60, { width: W, align: 'right' });
-  doc.text(`${rep.restaurant.address}, ${rep.restaurant.city}, ${rep.restaurant.state} ${rep.restaurant.zip}${rep.restaurant.phone ? ` · ${displayPhone(rep.restaurant.phone)}` : ''}`, L, 74, { width: W, align: 'right' });
+  doc.text(`${rep.restaurant.address}, ${cityLine(rep.restaurant)}${rep.restaurant.phone ? ` · ${displayPhone(rep.restaurant.phone)}` : ''}`, L, 74, { width: W, align: 'right' });
   rule(doc, L, R, 96);
 
   const s = rep.summary;
@@ -304,7 +305,7 @@ export function planInvoicePdf(inv: PlanInvoice) {
   const r = inv.restaurant;
   label(doc, 'BILLED TO', L, 140);
   doc.font('bold').fontSize(10.5).fillColor(INK).text(r.name, L, 154, { width: W / 2 });
-  doc.font('regular').fontSize(10).text([r.address, `${r.city}, WA ${r.zip}`, r.phone ? displayPhone(r.phone) : ''].filter(Boolean).join('\n'), { width: W / 2, lineGap: 2 });
+  doc.font('regular').fontSize(10).text([r.address, cityLine(r), r.phone ? displayPhone(r.phone) : ''].filter(Boolean).join('\n'), { width: W / 2, lineGap: 2 });
   label(doc, 'FROM', L, 140, { width: W, align: 'right' });
   doc.font('bold').fontSize(10.5).fillColor(INK).text(inv.from.entity, L, 154, { width: W, align: 'right' });
   doc.font('regular').fontSize(10).text(`${inv.from.address}\n${inv.from.email}`, L, doc.y, { width: W, align: 'right', lineGap: 2 });

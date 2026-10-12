@@ -70,7 +70,7 @@ async function restaurantsReport(p: URLSearchParams): Promise<Report> {
         { h: 'Stripe', w: 85, align: 'left' }, { h: 'Tax rate', w: 0 }, { h: 'Joined', w: 0, align: 'left' }, { h: 'Admin note', w: 0, align: 'left' },
       ],
       rows: rows.map((r) => [
-        r.name, r.cuisine, `${r.address}, ${r.city} ${r.zip}`, r.city, r.zip, r.phone ? displayPhone(r.phone) : '', r.ownerUsername, r.ownerEmail,
+        r.name, r.cuisine, `${r.address}, ${r.city}${r.state ? `, ${r.state}` : ''} ${r.zip}`, r.city, r.zip, r.phone ? displayPhone(r.phone) : '', r.ownerUsername, r.ownerEmail,
         r.activeOffers, r.orders, cents(r.foodCents), planText(r),
         r.status === 'suspended' && r.suspendedUntil ? `Suspended until ${dateOnly(r.suspendedUntil)}` : cap(r.status),
         r.stripeReady ? 'Connected' : 'Not connected', pct(r.taxRateBps), dateOnly(r.createdAt), r.adminNote ?? '',

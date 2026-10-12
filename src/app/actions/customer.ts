@@ -23,7 +23,7 @@ const checkoutSchema = z.object({
 // What the confirmation screen shows: the order, its PIN and the restaurant (read as the customer, so RLS applies).
 async function confirmation(orderId: number) {
   const supabase = await supabaseServer();
-  const order = must(await supabase.from('orders').select('*, restaurants(name, address, city, zip, phone), order_pins(pin)').eq('id', orderId).single());
+  const order = must(await supabase.from('orders').select('*, restaurants(name, address, city, state, zip, phone, country), order_pins(pin)').eq('id', orderId).single());
   return {
     id: order.id,
     status: order.status,

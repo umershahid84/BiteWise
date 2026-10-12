@@ -76,19 +76,19 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
     setView(readSession<'list' | 'map'>('bw-view', 'list'));
   }, [homeSpot]);
 
-  // City and ZIP suggestions for the area box.
+  // Suggestions for the area box: the cities and codes with restaurants in the customer's own country.
   const areas = useQuery({
-    queryKey: ['areas'],
-    staleTime: Infinity,
-    queryFn: async () => (await supabase.from('zips').select('zip, city, county').order('city')).data ?? [],
+    queryKey: ['areas', country],
+    staleTime: 10 * 60_000,
+    queryFn: async () => (await supabase.rpc('area_suggestions', { p_country: country })).data ?? [],
   });
-  const cities = [...new Map((areas.data ?? []).map((z) => [z.city, z.county])).entries()];
 
   const offers = useQuery({
     queryKey: ['offers', f, origin],
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      // A known city or ZIP ("Tacoma", "98198") searches around that place; otherwise the user's own location.
+      // A known city or code ("Tacoma", "98198", "St. John's", "A1H 0G5") searches around that place; otherwise the
+      // user's own location.
       let place: { label: string; lat: number; lng: number } | null = null;
       if (f.area.trim()) {
         const { data } = await supabase.rpc('resolve_area', { p_query: f.area });
@@ -209,8 +209,7 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
         <Input placeholder="Search dishes, restaurants, cuisines…" aria-label="Search" value={filters.q} onChange={set('q')} />
         <Input placeholder={country === 'CA' ? 'City or postal code' : 'City or ZIP code'} aria-label="City, ZIP or postal code" list="area-list" value={filters.area} onChange={set('area')} />
         <datalist id="area-list">
-          {cities.map(([c, county]) => <option key={c} value={c}>{county} County</option>)}
-          {(areas.data ?? []).map((z) => <option key={z.zip} value={z.zip}>{z.city}</option>)}
+          {(areas.data ?? []).map((a) => <option key={`${a.kind}:${a.value}`} value={a.value}>{a.kind === 'zip' ? a.hint : ''}</option>)}
         </datalist>
         <Select aria-label="Dietary" value={filters.dietary} onChange={set('dietary')}>
           <option value="">Any diet</option>

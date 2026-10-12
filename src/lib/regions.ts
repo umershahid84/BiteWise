@@ -46,3 +46,12 @@ export const postalHelp = (c: Country) =>
   c === 'CA'
     ? 'Enter your postal code: 6 characters, letter-number-letter number-letter-number, like M5V 3L9 or T2P 1J9.'
     : 'Enter your 5-digit ZIP code, like 98101.';
+
+// The city line of an address: "Seattle, WA 98101", "St. John's, NL A1H 0G5".
+type Place = { city: string; state?: string | null; zip: string; country?: string | null };
+export const cityLine = (r: Place) => `${r.city}${r.state ? `, ${r.state}` : ''} ${r.zip}`.trim();
+// A Google Maps link to a place, with its country so the right one is found.
+export const mapUrl = (r: Place & { name?: string; address: string }) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    [r.name, r.address, cityLine(r), r.country === 'CA' ? 'Canada' : 'USA'].filter(Boolean).join(', '),
+  )}`;

@@ -9,6 +9,7 @@ import { money } from '@/lib/format';
 import { displayPhone } from '@/lib/phone';
 import { planInvoice } from '@/lib/receipts/plan-invoice';
 import { supabaseServer } from '@/lib/supabase/server';
+import { cityLine } from '@/lib/regions';
 
 export const metadata: Metadata = { title: 'Invoice' };
 
@@ -19,7 +20,7 @@ export default async function InvoicePage({ params }: PageProps<'/restaurant/inv
   const viewer = await requirePageViewer();
   if (viewer.role === 'customer') notFound();
   const supabase = await supabaseServer();
-  const { data: x } = await supabase.from('subscription_payments').select('*, restaurants(name, address, city, zip, phone)').eq('id', Number(id)).maybeSingle();
+  const { data: x } = await supabase.from('subscription_payments').select('*, restaurants(name, address, city, state, zip, phone, country)').eq('id', Number(id)).maybeSingle();
   if (!x || !x.invoice_number || !x.restaurants) notFound();
   const inv = planInvoice(x, x.restaurants);
   const r = inv.restaurant;
@@ -45,7 +46,7 @@ export default async function InvoicePage({ params }: PageProps<'/restaurant/inv
           <div>
             <p className="m-0 text-xs font-bold tracking-wider text-[#64748B] uppercase">Billed to</p>
             <p className="m-0 font-bold">{r.name}</p>
-            <p className="m-0">{r.address}<br />{r.city}, WA {r.zip}{r.phone && <><br />{displayPhone(r.phone)}</>}</p>
+            <p className="m-0">{r.address}<br />{cityLine(r)}{r.phone && <><br />{displayPhone(r.phone)}</>}</p>
           </div>
           <div className="sm:text-right">
             <p className="m-0 text-xs font-bold tracking-wider text-[#64748B] uppercase">From</p>

@@ -35,7 +35,7 @@ export async function receiptData(order: Order) {
   const tz = serverEnv.timeZone;
   const db = supabaseAdmin();
   const [restaurant, customer, refunds, pin] = await Promise.all([
-    db.from('restaurants').select('name, address, city, zip, phone').eq('id', order.restaurant_id).single(),
+    db.from('restaurants').select('name, address, city, state, zip, phone, country').eq('id', order.restaurant_id).single(),
     db.from('profiles').select('username, email').eq('id', order.user_id).single(),
     db.from('refunds').select('*').eq('order_id', order.id).order('id'),
     order.status === 'reserved' ? db.from('order_pins').select('pin').eq('order_id', order.id).maybeSingle() : Promise.resolve({ data: null }),

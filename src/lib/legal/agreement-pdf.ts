@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 import { company } from './company';
 import { renderDocument } from './documents';
 import { displayPhone } from '@/lib/phone';
+import { cityLine } from '@/lib/regions';
 
 // The restaurant's copy of its Restaurant Partner Agreement as a PDF: the full text, then an electronic signature
 // record built from the acceptance stored at sign-up (who, when, from which IP and device, which version) and
@@ -39,7 +40,7 @@ const when = (iso: string) =>
 
 export async function signedAgreementPdf(restaurantId: number, approvedAt?: string | null): Promise<{ filename: string; pdf: Buffer }> {
   const db = supabaseAdmin();
-  const r = must(await db.from('restaurants').select('id, name, address, city, zip, phone, owner_id, status, country').eq('id', restaurantId).single());
+  const r = must(await db.from('restaurants').select('id, name, address, city, state, zip, phone, owner_id, status, country').eq('id', restaurantId).single());
   const owner = must(await db.from('profiles').select('email, username').eq('id', r.owner_id).single());
   // The agreement of the restaurant's country (US or Canada).
   const docId = r.country === 'CA' ? 'restaurant-agreement-ca' : 'restaurant-agreement';
@@ -65,7 +66,7 @@ export async function signedAgreementPdf(restaurantId: number, approvedAt?: stri
     .text(`Version ${doc.version} · Effective ${doc.effective} · Electronically signed copy`, { width: W });
   pdf.moveDown(0.8);
   pdf.font('bold').fontSize(10).fillColor('#111').text('Between ', { continued: true })
-    .font('regular').text(`${serverEnv.legal.entity} (${serverEnv.legal.address}) and ${r.name}, ${r.address}, ${r.city}, WA ${r.zip}.`, { width: W });
+    .font('regular').text(`${serverEnv.legal.entity} (${serverEnv.legal.address}) and ${r.name}, ${r.address}, ${cityLine(r)}.`, { width: W });
   pdf.moveTo(L, pdf.y + 10).lineTo(L + W, pdf.y + 10).strokeColor(LINE).lineWidth(1).stroke();
   pdf.moveDown(1.4);
 
@@ -90,7 +91,7 @@ export async function signedAgreementPdf(restaurantId: number, approvedAt?: stri
   pdf.moveDown(1);
 
   const rows: [string, string][] = [
-    ['Restaurant', `${r.name}\n${r.address}, ${r.city}, WA ${r.zip}${r.phone ? `\nTel ${displayPhone(r.phone)}` : ''}`],
+    ['Restaurant', `${r.name}\n${r.address}, ${cityLine(r)}${r.phone ? `\nTel ${displayPhone(r.phone)}` : ''}`],
     ['Signed by', `${owner.username} <${owner.email}>`],
     ['Signed on', accepted ? when(accepted.accepted_at) : 'No acceptance record found'],
     ['IP address', accepted?.ip || 'not recorded'],

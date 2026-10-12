@@ -26,6 +26,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 import { OfferImage } from './offer-card';
 import type { OfferRow, Origin } from './types';
 import { displayPhone } from '@/lib/phone';
+import { cityLine, mapUrl } from '@/lib/regions';
 
 export function CheckoutDialog({ offer, origin, payments, country, onClose }: {
   offer: OfferRow | null;
@@ -153,7 +154,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
 
   if (done) return <Confirmation order={done} currency={currency} onClose={onClose} />;
 
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${offer.restaurant_name}, ${offer.address}, ${offer.city}, WA ${offer.zip}`)}`;
+  const mapLink = mapUrl({ name: offer.restaurant_name, address: offer.address, city: offer.city, state: offer.state, zip: offer.zip, country: offer.country });
   const away = origin && offer.lat != null ? distanceMiles(origin.lat, origin.lng, offer.lat, offer.lng) : null;
   const q = quote.data;
   return (
@@ -165,7 +166,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
       )}
       <p className="mb-1"><b>{offer.restaurant_name}</b>{offer.cuisine ? ` · ${offer.cuisine}` : ''}</p>
       <p className="mb-3 text-sm text-muted">
-        {offer.address}, {offer.city}, WA {offer.zip} · <a href={mapUrl} target="_blank" rel="noopener">Map</a>
+        {offer.address}, {cityLine(offer)} · <a href={mapLink} target="_blank" rel="noopener">Map</a>
         {offer.phone && <> · <a href={`tel:${offer.phone.replace(/[^\d+]/g, '')}`}>{displayPhone(offer.phone)}</a></>}
         {away != null && <> · {distanceText(away, distanceUnit(homeCountry))} away</>}
       </p>

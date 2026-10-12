@@ -27,7 +27,7 @@ export function OrdersList({ userId }: { userId: string }) {
     queryFn: async () => {
       const res = await supabase
         .from('orders')
-        .select('*, restaurants(name, address, city), order_pins(pin)')
+        .select('*, restaurants(name, address, city, state), order_pins(pin)')
         .neq('status', 'failed')
         .order('created_at', { ascending: false })
         .limit(100);
@@ -99,7 +99,7 @@ export function OrdersList({ userId }: { userId: string }) {
               <div className="min-w-0">
                 <StatusBadge status={o.status} label={ORDER_STATUS_LABELS[o.status]} />
                 <h3 className="mt-2 mb-0.5 text-lg font-bold">{o.quantity} × {o.item_title}</h3>
-                <div className="text-sm text-muted">{r?.name} · {r?.address}, {r?.city} · Ordered {fmtDateTime(o.created_at)}</div>
+                <div className="text-sm text-muted">{r?.name} · {r?.address}, {r?.city}{r?.state ? `, ${r.state}` : ''} · Ordered {fmtDateTime(o.created_at)}</div>
                 {o.status === 'reserved' && (
                   <div className="mt-1.5 text-sm">Pick up by <b>{fmtTime(o.pickup_end)}</b> · <Countdown until={o.pickup_end} /></div>
                 )}

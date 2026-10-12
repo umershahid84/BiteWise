@@ -1,6 +1,7 @@
 import 'server-only';
 import { serverEnv } from '@/lib/env';
 import type { Receipt } from '@/lib/receipts/data';
+import { cityLine } from '@/lib/regions';
 
 // Bite Wise emails the app sends itself, in the same style as the sign-up email (supabase/templates/confirmation.html):
 // tables and inline styles, so they look right in Gmail, Outlook and on phones.
@@ -302,7 +303,7 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
       body: `<p style="margin:0 0 16px;">Here is your invoice for the order you picked up${rc.pickedUpAtText ? ` on ${esc(rc.pickedUpAtText)}` : ''}.${it.savingsCents > 0 ? ` You saved <b style="color:#3E8230;">${usd(it.savingsCents)}</b> and kept good food from going to waste. 💚` : ''}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;margin:0 0 4px;">
           ${row('Invoice', esc(rc.receiptNumber))}
-          ${row('Restaurant', esc(r.name), { sub: `${esc(r.address)}, ${esc(r.city)} ${esc(r.zip)}` })}
+          ${row('Restaurant', esc(r.name), { sub: `${esc(r.address)}, ${esc(cityLine(r))}` })}
         </table>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
           ${row(`${it.quantity} × ${esc(it.title)}`, usd(it.lineOriginalCents), { sub: `${usd(it.originalUnitCents)} each` })}
@@ -318,7 +319,7 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
         ${button(o.receiptUrl, 'View my receipt', '#14284B')}`,
     }),
     text: `Bite Wise invoice ${rc.receiptNumber} (order #${rc.orderId})
-${r.name}, ${r.address}, ${r.city} ${r.zip}
+${r.name}, ${r.address}, ${cityLine(r)}
 
 ${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
 ${rc.coupon?.discountCents ? `Coupon ${rc.coupon.code}: -${usd(rc.coupon.discountCents)}\n` : ''}Subtotal: ${usd(rc.subtotalCents)}${rc.coupon?.feeWaivedCents ? `\nService fee waived (coupon ${rc.coupon.code})` : ''}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}

@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 // Members Discount) and the total. Shown at /restaurant/invoices/[id], emailed, and as a PDF.
 
 type Payment = Database['public']['Tables']['subscription_payments']['Row'];
-type Restaurant = Pick<Database['public']['Tables']['restaurants']['Row'], 'name' | 'address' | 'city' | 'zip' | 'phone'>;
+type Restaurant = Pick<Database['public']['Tables']['restaurants']['Row'], 'name' | 'address' | 'city' | 'state' | 'zip' | 'phone' | 'country'>;
 
 const NAMES = { founding: 'Pioneer', monthly: 'Monthly', annual: 'Annual' } as const;
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: serverEnv.timeZone }) : '–');
@@ -47,6 +47,6 @@ export function planInvoice(x: Payment, restaurant: Restaurant) {
 
 // By invoice number, read with full rights (for emails).
 export async function planInvoiceByNumber(invoiceNumber: string) {
-  const x = must(await supabaseAdmin().from('subscription_payments').select('*, restaurants(name, address, city, zip, phone)').eq('invoice_number', invoiceNumber).single());
+  const x = must(await supabaseAdmin().from('subscription_payments').select('*, restaurants(name, address, city, state, zip, phone, country)').eq('invoice_number', invoiceNumber).single());
   return planInvoice(x, x.restaurants!);
 }
