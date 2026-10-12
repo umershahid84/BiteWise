@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/field';
 import { EmptyState, Spinner } from '@/components/ui/misc';
 import { DIETARY_TAGS } from '@/lib/constants';
+import { distanceUnit, KM_PER_MILE } from '@/lib/format';
 import type { Country } from '@/lib/regions';
 import { supabaseBrowser } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -57,6 +58,7 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
   // the area).
   const [homeSpot] = useState<Origin | null>(() => (home && home.lat !== null && home.lng !== null ? { lat: home.lat, lng: home.lng, label: `Near ${home.postalCode}` } : null));
   const homeArea = home && !homeSpot ? (country === 'CA' ? home.postalCode.slice(0, 3) : home.postalCode.slice(0, 5)) : '';
+  const unit = distanceUnit(country); // miles in the US, kilometres in Canada
   const supabase = supabaseBrowser();
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<Filters>({ q: '', area: homeArea, dietary: '', sort: '', radius: '' });
@@ -98,9 +100,11 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
         }
       }
       const center = place ?? origin;
-      const radius = f.radius ? Number(f.radius) : place ? 10 : undefined;
+      // The filter is in the customer's units (miles, or kilometres in Canada); the search takes miles.
+      const radius = f.radius ? Number(f.radius) : place ? (unit === 'km' ? 15 : 10) : undefined;
+      const radiusMiles = radius === undefined ? undefined : unit === 'km' ? radius / KM_PER_MILE : radius;
       const { data, error } = await supabase.rpc('search_offers', {
-        p_lat: center?.lat, p_lng: center?.lng, p_radius_miles: radius, p_query: f.q.trim() || undefined,
+        p_lat: center?.lat, p_lng: center?.lng, p_radius_miles: radiusMiles, p_query: f.q.trim() || undefined,
         p_area_text: f.area.trim() && !place ? f.area.trim() : undefined, p_dietary: f.dietary || undefined, p_sort: f.sort || undefined,
       });
       if (error) throw new Error(error.message);
@@ -214,7 +218,7 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
         </Select>
         <Select aria-label="Distance" value={filters.radius} onChange={set('radius')}>
           <option value="">Any distance</option>
-          {[2, 5, 10, 25, 50].map((m) => <option key={m} value={m}>Within {m} mi</option>)}
+          {(unit === 'km' ? [3, 5, 10, 25, 50, 80] : [2, 5, 10, 25, 50]).map((d) => <option key={d} value={d}>Within {d} {unit}</option>)}
         </Select>
         <Select aria-label="Sort" value={filters.sort} onChange={set('sort')}>
           <option value="">Best match</option>
@@ -229,7 +233,7 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
       </form>
       {offers.data?.place && (
         <p className="mb-3 text-sm text-muted">
-          Showing deals within {offers.data.radius} miles of {offers.data.place.label}. Change the distance filter to widen the search.
+          Showing deals within {offers.data.radius} {unit === 'km' ? 'km' : 'miles'} of {offers.data.place.label}. Change the distance filter to widen the search.
         </p>
       )}
       {!offers.data?.place && origin && origin === homeSpot && home && (
@@ -241,14 +245,14 @@ export function OffersBrowser({ map, payments, country, home }: { map: MapConfig
       {offers.error && <Alert tone="error" className="mb-3">{offers.error.message}</Alert>}
 
       {view === 'map' && (
-        <OffersMap offers={list} origin={offers.data?.center ?? null} config={map} fitKey={fitKey} onOpen={(id) => setSelected(list.find((o) => o.id === id) ?? null)} />
+        <OffersMap offers={list} origin={offers.data?.center ?? null} config={map} unit={unit} fitKey={fitKey} onOpen={(id) => setSelected(list.find((o) => o.id === id) ?? null)} />
       )}
       {view === 'list' && (
         offers.isLoading ? (
           <div className="grid place-items-center py-20"><Spinner /></div>
         ) : list.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {list.map((o) => <OfferCard key={o.id} offer={o} onOrder={() => setSelected(o)} />)}
+            {list.map((o) => <OfferCard key={o.id} offer={o} unit={unit} onOrder={() => setSelected(o)} />)}
           </div>
         ) : (
           <EmptyState title="No deals match right now">New surplus food is posted throughout the day. Check back soon or widen your search.</EmptyState>

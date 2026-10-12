@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { cuisineEmoji } from '@/lib/constants';
-import { currencyOf, money, timeLeft } from '@/lib/format';
+import { currencyOf, money, timeLeft, distanceText, type DistanceUnit } from '@/lib/format';
 import { distanceMiles, REGION_CENTER, REGION_ZOOM } from '@/lib/geo';
 
 // How far from the customer the map's first view reaches.
@@ -15,8 +15,9 @@ const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '
 
 // Zoomable map of live deals: one pin per restaurant showing its best discount; the popup lists its
 // deals, and "View" opens checkout.
-export default function OffersMap({ offers, origin, config, fitKey, onOpen }: {
+export default function OffersMap({ offers, origin, config, unit = 'mi', fitKey, onOpen }: {
   offers: OfferRow[];
+  unit?: DistanceUnit;
   origin: Origin | null;
   config: MapConfig;
   fitKey: string | null; // null while a new search is loading
@@ -82,7 +83,7 @@ export default function OffersMap({ offers, origin, config, fitKey, onOpen }: {
               ${o.image_url ? `<img src="${esc(o.image_url)}" alt="" style="width:48px;height:48px;border-radius:10px;object-fit:cover">` : `<div style="width:48px;height:48px;border-radius:10px;display:grid;place-items:center;font-size:24px;background:var(--color-surface-2)">${cuisineEmoji(o.cuisine)}</div>`}
               <div style="flex:1;min-width:0"><b style="font-size:13px">${esc(o.title)}</b>
                 <div style="font-size:13px"><b style="color:var(--color-primary-ink)">${money(o.price_cents, currencyOf(o.country))}</b> <s style="color:var(--color-muted)">${money(o.original_price_cents, currencyOf(o.country))}</s> <b style="color:var(--color-accent-ink)">-${o.discount_pct}%</b></div>
-                <div style="font-size:11px;color:var(--color-muted)">${o.quantity_available} left · ⏳ ${timeLeft(o.pickup_end)}${o.distance_miles != null ? ` · ${o.distance_miles} mi` : ''}</div></div>
+                <div style="font-size:11px;color:var(--color-muted)">${o.quantity_available} left · ⏳ ${timeLeft(o.pickup_end)}${o.distance_miles != null ? ` · ${distanceText(o.distance_miles, unit)}` : ''}</div></div>
               <button data-open="${o.id}" style="border:0;border-radius:999px;padding:6px 12px;font-weight:700;background:linear-gradient(135deg,#34d399,#059669);color:#04130d;cursor:pointer">View</button>
             </div>`).join('')}
         </div>`;
@@ -108,7 +109,7 @@ export default function OffersMap({ offers, origin, config, fitKey, onOpen }: {
       } else if (points.length > 1) m.fitBounds(points, { padding: [40, 40], maxZoom: 14, animate: false });
       else if (points.length === 1) m.setView(points[0], 13, { animate: false });
     }
-  }, [offers, origin, fitKey]);
+  }, [offers, origin, fitKey, unit]);
 
   return (
     <div className="mb-6 overflow-hidden rounded-card border border-line shadow-card">

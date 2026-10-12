@@ -38,3 +38,10 @@ export function timeLeft(iso: string, now = Date.now()) {
 }
 
 export const dollarsToCents = (value: string | number) => Math.round(Number(String(value).replace(/[$,\s]/g, '')) * 100);
+
+// Distances in the customer's own units: miles in the United States, kilometres in Canada ("0.4 mi", "0.6 km").
+export const KM_PER_MILE = 1.609344;
+export type DistanceUnit = 'mi' | 'km';
+export const distanceUnit = (country?: string | null): DistanceUnit => (country === 'CA' ? 'km' : 'mi');
+export const distanceText = (miles: number, unit: DistanceUnit) =>
+  `${(unit === 'km' ? miles * KM_PER_MILE : miles).toFixed(1)} ${unit}`;

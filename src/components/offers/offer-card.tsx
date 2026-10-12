@@ -6,7 +6,7 @@ import { Countdown } from '@/components/app/countdown';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cuisineEmoji, cuisineHue, OFFER_REASONS } from '@/lib/constants';
-import { fmtTime, currencyOf, money } from '@/lib/format';
+import { fmtTime, currencyOf, money, distanceText, type DistanceUnit } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { OfferRow } from './types';
 
@@ -28,7 +28,7 @@ export function OfferImage({ offer, className, children }: { offer: Pick<OfferRo
   );
 }
 
-export function OfferCard({ offer, onOrder }: { offer: OfferRow; onOrder: () => void }) {
+export function OfferCard({ offer, unit = 'mi', onOrder }: { offer: OfferRow; unit?: DistanceUnit; onOrder: () => void }) {
   const [expired, setExpired] = useState(false);
   return (
     <article className={cn('flex flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card transition hover:-translate-y-0.5', expired && 'opacity-50 grayscale')}>
@@ -46,7 +46,7 @@ export function OfferCard({ offer, onOrder }: { offer: OfferRow; onOrder: () => 
         <div className="text-sm text-muted">{offer.restaurant_name} · {offer.city}</div>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-2">
           <span className="inline-flex items-center gap-1"><Clock className="size-3.5" /> Pick up by {fmtTime(offer.pickup_end)}</span>
-          {offer.distance_miles != null && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {offer.distance_miles} mi</span>}
+          {offer.distance_miles != null && <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" /> {distanceText(offer.distance_miles, unit)}</span>}
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
           <Badge tone="amber">{OFFER_REASONS[offer.reason]}</Badge>

@@ -143,3 +143,12 @@ describe('postal codes', () => {
     expect(formatPostalInput('CA', 'M5V 3')).toBe('M5V 3');
   });
 });
+
+describe('distances', () => {
+  it('shows miles in the US and kilometres in Canada', async () => {
+    const { distanceText, distanceUnit } = await import('@/lib/format');
+    expect(distanceText(0.4, distanceUnit('US'))).toBe('0.4 mi');
+    expect(distanceText(0.4, distanceUnit('CA'))).toBe('0.6 km');
+    expect(distanceText(10, distanceUnit('CA'))).toBe('16.1 km');
+  });
+});

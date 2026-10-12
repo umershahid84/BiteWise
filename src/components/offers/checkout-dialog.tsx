@@ -17,7 +17,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Checkbox, Input } from '@/components/ui/field';
 import { SectionLabel } from '@/components/ui/misc';
 import { MIN_CARD_CHARGE_CENTS, OFFER_REASONS } from '@/lib/constants';
-import { currencyOf, fmtTime, money } from '@/lib/format';
+import { currencyOf, distanceText, distanceUnit, fmtTime, money } from '@/lib/format';
 import type { Country } from '@/lib/regions';
 import { salesTaxLabel, serviceFeeLabel } from '@/lib/service-fee';
 import { distanceMiles } from '@/lib/geo';
@@ -167,7 +167,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
       <p className="mb-3 text-sm text-muted">
         {offer.address}, {offer.city}, WA {offer.zip} · <a href={mapUrl} target="_blank" rel="noopener">Map</a>
         {offer.phone && <> · <a href={`tel:${offer.phone.replace(/[^\d+]/g, '')}`}>{displayPhone(offer.phone)}</a></>}
-        {away != null && <> · {away.toFixed(1)} mi away</>}
+        {away != null && <> · {distanceText(away, distanceUnit(homeCountry))} away</>}
       </p>
       {offer.description && <p className="mb-3 text-ink-2">{offer.description}</p>}
       <div className="mb-3 flex flex-wrap gap-1.5">
