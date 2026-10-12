@@ -9,11 +9,13 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 // Listen to "Connected accounts" events: account.updated; and "Your account" events:
 // payment_intent.amount_capturable_updated, payment_intent.payment_failed.
 // The US and Canadian Stripe accounts each send their events here, signed with their own secret
-// (STRIPE_WEBHOOK_SECRET and STRIPE_WEBHOOK_SECRET_CA).
+// (STRIPE_WEBHOOK_SECRET and STRIPE_WEBHOOK_SECRET_CA). Each account's two endpoints ("Your account" and
+// "Connected accounts") may have different signing secrets: list them separated by commas.
+const secrets = (v: string) => v.split(',').map((x) => x.trim()).filter(Boolean);
 export async function POST(req: NextRequest) {
   const accounts = [
-    [serverEnv.stripeSecretKey, serverEnv.stripeWebhookSecret],
-    [serverEnv.stripeSecretKeyCa, serverEnv.stripeWebhookSecretCa],
+    ...secrets(serverEnv.stripeWebhookSecret).map((secret) => [serverEnv.stripeSecretKey, secret]),
+    ...secrets(serverEnv.stripeWebhookSecretCa).map((secret) => [serverEnv.stripeSecretKeyCa, secret]),
   ].filter(([key, secret]) => key && secret);
   if (!accounts.length) return NextResponse.json({ error: 'Stripe webhooks are not configured.' }, { status: 501 });
   const body = await req.text();
