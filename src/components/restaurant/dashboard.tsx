@@ -1,6 +1,7 @@
 'use client';
 
 import type { PaymentConfig } from '@/components/payments/card-entry';
+import type { ServiceFee } from '@/lib/service-fee';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -33,10 +34,10 @@ const OWNER_TABS = ['payouts', 'kiosk', 'plan', 'profile', 'staff'];
 
 // The restaurant portal, for the owner and their staff. Staff (`staff` set) get Verify pickup, Offers, Menu and
 // Orders, without sales amounts; payouts, kiosk, plan, profile and staff accounts are the owner's.
-export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, payment, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
+export function RestaurantDashboard({ restaurant, staff, serviceFee, map, payment, planNotice, hasPlan, pioneerSpotsLeft, initialTab, stripeReturn }: {
   restaurant: Restaurant;
   staff: { fullName: string; title: string } | null;
-  serviceFeeBps: number;
+  serviceFee: ServiceFee;
   map: MapConfig;
   // The Stripe account of the restaurant's country (US dollars or Canadian dollars).
   payment: PaymentConfig;
@@ -56,7 +57,7 @@ export function RestaurantDashboard({ restaurant, staff, serviceFeeBps, map, pay
   const [soundOn, setSoundOn] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
   const seen = useRef(new Set<number>());
-  const ctx: Ctx = { restaurant, serviceFeeBps, map, paymentMode: payment.mode };
+  const ctx: Ctx = { restaurant, serviceFee, map, paymentMode: payment.mode };
 
   const stats = useQuery({
     queryKey: ['restaurant-stats'],

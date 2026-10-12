@@ -181,7 +181,10 @@ export async function updateSettings(input: unknown) {
     const me = await requireAdmin();
     const d = parse(
       z.object({
+        // A percentage of the food subtotal, or a fixed amount per order (same number in USD and CAD).
+        serviceFeeMode: z.enum(['percent', 'fixed']).optional(),
         serviceFeePct: z.coerce.number().min(0, 'Service fee must be 0% to 30%.').max(30, 'Service fee must be 0% to 30%.'),
+        serviceFeeFixed: z.coerce.number().min(0, 'The fixed service fee must be $0 to $20.').max(20, 'The fixed service fee must be $0 to $20.').optional(),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
         // true: restaurants get the sales tax on their food and remit it; false: Bite Wise keeps and remits it.
@@ -196,6 +199,8 @@ export async function updateSettings(input: unknown) {
     if (unknown.length) throw new AppError(400, `Unknown state code: ${unknown.join(', ')}. Use two-letter codes like WA, NY.`);
     const values = {
       service_fee_bps: Math.round(d.serviceFeePct * 100),
+      ...(d.serviceFeeMode ? { service_fee_mode: d.serviceFeeMode } : {}),
+      ...(d.serviceFeeFixed !== undefined ? { service_fee_fixed_cents: Math.round(d.serviceFeeFixed * 100) } : {}),
       default_tax_rate_bps: Math.round(d.defaultTaxRatePct * 100),
       require_restaurant_approval: d.requireRestaurantApproval,
       ...(d.orderTaxToRestaurant !== undefined ? { order_tax_to_restaurant: d.orderTaxToRestaurant } : {}),

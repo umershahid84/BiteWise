@@ -11,7 +11,7 @@ import { Spinner } from '@/components/ui/misc';
 import { run, useAdmin, LoadError } from './shared';
 
 type S = {
-  settings: { serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; planTaxStates: string };
+  settings: { serviceFeeMode: 'percent' | 'fixed'; serviceFeeFixed: number; serviceFeePct: number; defaultTaxRatePct: number; requireRestaurantApproval: boolean; orderTaxToRestaurant: boolean; planTaxStates: string };
   paymentMode: Mode;
   paymentModeCa: Mode;
 };
@@ -29,7 +29,9 @@ export function SettingsPanel() {
 
 function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
   const [f, setF] = useState({
+    serviceFeeMode: data.settings.serviceFeeMode,
     serviceFeePct: String(data.settings.serviceFeePct),
+    serviceFeeFixed: data.settings.serviceFeeFixed.toFixed(2),
     defaultTaxRatePct: String(data.settings.defaultTaxRatePct),
     requireRestaurantApproval: data.settings.requireRestaurantApproval,
     orderTaxToRestaurant: data.settings.orderTaxToRestaurant,
@@ -39,7 +41,25 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
     <div className="grid max-w-2xl gap-5">
       <Card>
         <CardTitle>Business settings</CardTitle>
-        <Field label="Customer service fee (%)" htmlFor="s-fee" hint="Added to every new order. Existing orders keep the fee they were quoted. Shown in the Customer Terms."><Input id="s-fee" inputMode="decimal" className="max-w-40" value={f.serviceFeePct} onChange={(e) => setF({ ...f, serviceFeePct: e.target.value })} /></Field>
+        <fieldset className="mb-4 rounded-xl border border-line p-3">
+          <legend className="px-1 text-sm font-bold">Customer service fee</legend>
+          <label className="flex cursor-pointer flex-wrap items-center gap-2.5 py-1.5">
+            <input type="radio" name="fee-mode" className="accent-[var(--color-primary)]" checked={f.serviceFeeMode === 'percent'} onChange={() => setF({ ...f, serviceFeeMode: 'percent' })} />
+            <span className="text-sm"><b>Percentage</b> of the food subtotal</span>
+            <Input aria-label="Service fee percentage" inputMode="decimal" className="h-9 w-24" value={f.serviceFeePct} disabled={f.serviceFeeMode !== 'percent'} onChange={(e) => setF({ ...f, serviceFeePct: e.target.value })} />
+            <span className="text-sm text-muted">%</span>
+          </label>
+          <label className="flex cursor-pointer flex-wrap items-center gap-2.5 py-1.5">
+            <input type="radio" name="fee-mode" className="accent-[var(--color-primary)]" checked={f.serviceFeeMode === 'fixed'} onChange={() => setF({ ...f, serviceFeeMode: 'fixed' })} />
+            <span className="text-sm"><b>Fixed fee</b> per order</span>
+            <span className="text-sm text-muted">$</span>
+            <Input aria-label="Fixed service fee" inputMode="decimal" className="h-9 w-24" value={f.serviceFeeFixed} disabled={f.serviceFeeMode !== 'fixed'} onChange={(e) => setF({ ...f, serviceFeeFixed: e.target.value })} />
+          </label>
+          <p className="mt-1 mb-0 text-xs text-muted">
+            The selected one is added to every new order (existing orders keep the fee they were quoted) and shown in the Customer Terms.
+            A fixed fee is charged once per order, whatever the quantity: in US dollars in the US and the same amount in Canadian dollars in Canada.
+          </p>
+        </fieldset>
         <Field label="Starting sales tax for new restaurants (%)" htmlFor="s-tax" hint="Used only until a new restaurant's rate is looked up from its address (usually straight away). Set a restaurant's rate by hand in the Restaurants tab."><Input id="s-tax" inputMode="decimal" className="max-w-40" value={f.defaultTaxRatePct} onChange={(e) => setF({ ...f, defaultTaxRatePct: e.target.value })} /></Field>
         <Field label="States where plan fees are taxed" htmlFor="s-plan-tax" hint="Two-letter codes, e.g. WA, NY. Restaurants in these states pay sales tax on their Bite Wise plan, at their location's rate. Add a state once Bite Wise is registered there and your accountant confirms software subscriptions are taxable in it."><Input id="s-plan-tax" className="max-w-72" value={f.planTaxStates} onChange={(e) => setF({ ...f, planTaxStates: e.target.value })} placeholder="WA" /></Field>
         <fieldset className="mb-4 rounded-xl border border-line p-3">

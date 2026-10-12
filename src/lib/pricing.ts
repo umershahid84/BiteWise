@@ -25,12 +25,15 @@ export function quote(q: {
   discountPct: number;
   quantity: number;
   serviceFeeBps: number;
+  // A fixed fee per order instead of the percentage (then serviceFeeBps is ignored and recorded as 0).
+  serviceFeeFixedCents?: number | null;
   taxRateBps: number;
   taxServiceFee?: boolean;
 }): Quote {
   const unitPriceCents = discountedUnitPrice(q.originalUnitCents, q.discountPct);
   const subtotalCents = unitPriceCents * q.quantity;
-  const serviceFeeCents = roundHalfUp((subtotalCents * q.serviceFeeBps) / 10000);
+  const fixed = q.serviceFeeFixedCents != null;
+  const serviceFeeCents = fixed ? q.serviceFeeFixedCents! : roundHalfUp((subtotalCents * q.serviceFeeBps) / 10000);
   const taxableCents = subtotalCents + (q.taxServiceFee ? serviceFeeCents : 0);
   const taxCents = roundHalfUp((taxableCents * q.taxRateBps) / 10000);
   return {
@@ -40,7 +43,7 @@ export function quote(q: {
     unitPriceCents,
     subtotalCents,
     savingsCents: (q.originalUnitCents - unitPriceCents) * q.quantity,
-    serviceFeeBps: q.serviceFeeBps,
+    serviceFeeBps: fixed ? 0 : q.serviceFeeBps,
     serviceFeeCents,
     taxRateBps: q.taxRateBps,
     taxCents,

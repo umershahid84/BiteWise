@@ -123,7 +123,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   row('MENU VALUE', money(it.lineOriginalCents));
   row(`DISCOUNT ${it.discountPct}%`, money(-it.savingsCents));
   row('SUBTOTAL', money(rc.subtotalCents));
-  row(`SERVICE FEE ${rc.serviceFeePct}%`, money(rc.serviceFeeCents));
+  row(rc.serviceFeeLabel.toUpperCase(), money(rc.serviceFeeCents));
   row(`SALES TAX ${pct(rc.taxRateBps)}`, money(rc.taxCents));
   double();
   row('TOTAL', money(rc.totalCents), { bold: true, size: 11.5, after: 3 });

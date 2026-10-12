@@ -12,15 +12,19 @@
 
 import type { Role } from '@/lib/constants';
 import type { Country } from '@/lib/regions';
+import { describeServiceFee, type ServiceFee } from '@/lib/service-fee';
 
 export const LEGAL_VERSION = '2026-10-19.1';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
-  entity: string; email: string; address: string; serviceFeePct: number; graceMinutes: number;
+  entity: string; email: string; address: string; serviceFee: ServiceFee; graceMinutes: number;
   // Restaurant subscription: prices in dollars, and how many Pioneer Member (free) spots there are.
   monthlyPrice: number; annualPrice: number; foundingSpots: number;
 };
+
+// The customer service fee as set in Settings: "5% of the food subtotal" or "$0.99 per order" (CA$ in Canada).
+const feeText = (c: Company, j: Jur) => describeServiceFee(c.serviceFee, j.ca ? 'cad' : 'usd');
 
 const usd = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 
@@ -86,7 +90,7 @@ your order, it is yours as is (Section 6).</p>
 
 <h2>4. Ordering, pricing and payment</h2>
 <p>4.1 <b>Prices.</b> Before you place an order, we show you the item's original price, the Restaurant's discount, the discounted
-price, a Bite Wise service fee (currently ${c.serviceFeePct}% of the food subtotal), applicable sales tax, and the total.
+price, a Bite Wise service fee (currently ${feeText(c, j)}), applicable sales tax, and the total.
 Orders are charged in the currency of the Restaurant's country: U.S. dollars at Restaurants in the United States and Canadian
 dollars at Restaurants in Canada. If your card is in another currency, your card issuer may charge its own conversion fees.</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold
@@ -320,8 +324,8 @@ will cancel through Bite Wise support so the customer's payment hold is released
 behalf as your limited payment collection agent. A customer's payment to Bite Wise satisfies the customer's obligation to you.</p>
 <p>5.2 <b>Your proceeds.</b> For each completed order you are entitled to the food subtotal (the discounted price times quantity)
 <b>plus the sales tax charged on that food</b>, unless Bite Wise collects and remits that tax under Section 5.4.
-Bite Wise charges Partners <b>no commission</b> on orders. Customers pay a separate Bite Wise service fee (currently ${c.serviceFeePct}% of
-the food subtotal), which Bite Wise keeps and which is <b>not refundable</b> to the customer, whether or not the order is picked up.
+Bite Wise charges Partners <b>no commission</b> on orders. Customers pay a separate Bite Wise service fee (currently
+${feeText(c, j)}), which Bite Wise keeps and which is <b>not refundable</b> to the customer, whether or not the order is picked up.
 Partners pay the subscription fee in Section 5.6. We will give you at least 30 days'
 written notice before introducing or changing any fee charged to Partners.</p>
 <p>5.3 <b>Payouts through Stripe Connect.</b> Payouts are made through Stripe Connect. To be paid, you must create and verify a

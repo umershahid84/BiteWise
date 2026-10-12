@@ -491,7 +491,9 @@ export async function settings() {
   const rows = must(await db().from('settings').select('key, value'));
   const get = (k: string) => rows.find((r) => r.key === k)?.value;
   return {
+    serviceFeeMode: get('service_fee_mode') === 'fixed' ? 'fixed' : 'percent',
     serviceFeePct: Number(get('service_fee_bps') ?? 500) / 100,
+    serviceFeeFixed: Number(get('service_fee_fixed_cents') ?? 99) / 100,
     defaultTaxRatePct: Number(get('default_tax_rate_bps') ?? 1035) / 100,
     requireRestaurantApproval: get('require_restaurant_approval') !== false,
     orderTaxToRestaurant: get('order_tax_to_restaurant') !== false,

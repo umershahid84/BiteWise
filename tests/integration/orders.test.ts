@@ -213,3 +213,29 @@ describe.skipIf(!available)('cleanup sweep', () => {
     expect((await db().from('offers').select('status').eq('id', shop.offer.id).single()).data!.status).toBe('ended');
   });
 });
+
+describe.skipIf(!available)('fixed service fee', () => {
+  it('charges the fixed fee per order when the admin picks it, and the percentage otherwise', async () => {
+    const setting = async (key: string, value: string | number) => db().from('settings').upsert({ key, value });
+    const before = String((await db().from('settings').select('value').eq('key', 'service_fee_mode').single()).data!.value);
+    try {
+      await setting('service_fee_mode', 'fixed');
+      await setting('service_fee_fixed_cents', 150);
+      const shop = await restaurantWithOffer({ quantity: 5 });
+      const c = await signUp('customer');
+      const res = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 3, creditCents: 0, newCard: visa });
+      const o = await orders.getOrder(res.orderId);
+      expect(o.service_fee_cents).toBe(150); // once per order, not per item
+      expect(o.service_fee_bps).toBe(0);
+      expect(o.total_cents).toBe(1500 + 150 + 155); // food tax only (10.35% of $15.00)
+
+      await setting('service_fee_mode', 'percent');
+      const res2 = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 0, newCard: visa });
+      const o2 = await orders.getOrder(res2.orderId);
+      expect(o2.service_fee_bps).toBe(500);
+      expect(o2.service_fee_cents).toBe(25);
+    } finally {
+      await setting('service_fee_mode', before);
+    }
+  });
+});

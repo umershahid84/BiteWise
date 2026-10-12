@@ -12,6 +12,14 @@ describe('pricing', () => {
     expect(q).toMatchObject({ unitPriceCents: 848, subtotalCents: 1696, savingsCents: 1694, serviceFeeCents: 85, taxCents: 176, totalCents: 1957 });
   });
 
+  it('charges a fixed service fee once per order instead of the percentage', () => {
+    const q = quote({ originalUnitCents: 1000, discountPct: 50, quantity: 3, serviceFeeBps: 500, serviceFeeFixedCents: 99, taxRateBps: 1000 });
+    expect(q.subtotalCents).toBe(1500);
+    expect(q.serviceFeeCents).toBe(99);
+    expect(q.serviceFeeBps).toBe(0);
+    expect(q.totalCents).toBe(1500 + 99 + 150);
+  });
+
   it('can tax the service fee when configured', () => {
     const q = quote({ originalUnitCents: 1000, discountPct: 50, quantity: 1, serviceFeeBps: 500, taxRateBps: 1000, taxServiceFee: true });
     expect(q.taxCents).toBe(Math.floor((500 + 25) * 0.1 + 0.5));

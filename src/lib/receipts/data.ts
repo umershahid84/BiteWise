@@ -6,6 +6,7 @@ import { serverEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
 import { currencyOf, money as fmtMoney } from '@/lib/format';
 import { refundableTotalCents } from '@/lib/pricing';
+import { serviceFeeLabel } from '@/lib/service-fee';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import { dayRange, formatDateTime, formatTime } from './time';
 
@@ -76,7 +77,7 @@ export async function receiptData(order: Order) {
     },
     subtotalCents: order.subtotal_cents,
     serviceFeeCents: order.service_fee_cents,
-    serviceFeePct: order.service_fee_bps / 100,
+    serviceFeeLabel: serviceFeeLabel(order.service_fee_bps),
     taxRateBps: order.tax_rate_bps,
     taxCents: order.tax_cents,
     totalCents: order.total_cents,

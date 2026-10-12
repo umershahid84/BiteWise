@@ -19,6 +19,7 @@ import { SectionLabel } from '@/components/ui/misc';
 import { MIN_CARD_CHARGE_CENTS, OFFER_REASONS } from '@/lib/constants';
 import { currencyOf, fmtTime, money, pct } from '@/lib/format';
 import type { Country } from '@/lib/regions';
+import { serviceFeeLabel } from '@/lib/service-fee';
 import { distanceMiles } from '@/lib/geo';
 import type { Quote } from '@/lib/pricing';
 import { supabaseBrowser } from '@/lib/supabase/client';
@@ -186,7 +187,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
             <tbody>
               <tr><td>{q.quantity} × {offer.title} <span className="text-muted line-through">{m(q.originalUnitCents)}</span> {m(q.unitPriceCents)}</td><td>{m(q.subtotalCents)}</td></tr>
               <tr><td colSpan={2} className="text-primary-ink">You save {m(q.savingsCents)} ({q.discountPct}% off)</td></tr>
-              <tr><td>Service fee ({pct(q.serviceFeeBps)}) <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>
+              <tr><td>{serviceFeeLabel(q.serviceFeeBps)} <span className="text-xs text-muted">· non-refundable</span></td><td>{m(q.serviceFeeCents)}</td></tr>
               <tr><td>Sales tax ({pct(q.taxRateBps)})</td><td>{m(q.taxCents)}</td></tr>
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{m(q.totalCents)}</td></tr>
               {creditCents > 0 && (

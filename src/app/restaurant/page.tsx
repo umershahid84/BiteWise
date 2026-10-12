@@ -3,6 +3,7 @@ import { RestaurantDashboard } from '@/components/restaurant/dashboard';
 import { requirePageViewer } from '@/lib/auth';
 import { paymentConfig, publicEnv } from '@/lib/env';
 import { must } from '@/lib/errors';
+import { SERVICE_FEE_KEYS, serviceFeeFrom } from '@/lib/service-fee';
 import { prices } from '@/lib/subscriptions';
 import { supabaseServer } from '@/lib/supabase/server';
 
@@ -17,7 +18,7 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
   const supabase = await supabaseServer();
   const restaurant = must(await supabase.from('restaurants').select('*').eq('id', viewer.restaurant!.id).single());
   const [{ data: fee }, { data: planOk }, { data: sub }] = await Promise.all([
-    supabase.from('settings').select('value').eq('key', 'service_fee_bps').single(),
+    supabase.from('settings').select('key, value').in('key', SERVICE_FEE_KEYS),
     supabase.rpc('restaurant_plan_ok', { p_restaurant_id: restaurant.id }),
     supabase.from('restaurant_subscriptions').select('status').eq('restaurant_id', restaurant.id).maybeSingle(),
   ]);
@@ -27,7 +28,7 @@ export default async function RestaurantPage({ searchParams }: PageProps<'/resta
     <RestaurantDashboard
       restaurant={restaurant}
       staff={viewer.staff}
-      serviceFeeBps={Number(fee?.value ?? 500)}
+      serviceFee={serviceFeeFrom(fee)}
       map={publicEnv.map}
       payment={paymentConfig(viewer.restaurant!.country)}
       planNotice={planOk ? null : sub?.status === 'past_due' ? 'delinquent' : 'choose'}

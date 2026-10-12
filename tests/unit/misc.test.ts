@@ -44,7 +44,7 @@ describe('Pacific time days', () => {
 });
 
 describe('legal documents', () => {
-  const company = { entity: 'Bite Wise <LLC>', email: 'help@example.com', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
+  const company = { entity: 'Bite Wise <LLC>', email: 'help@example.com', address: 'Seattle', serviceFee: { mode: 'percent' as const, bps: 500, fixedCents: 99 }, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
   it('lists what each role must accept', () => {
     expect(requiredDocuments('customer').map((d) => d.id)).toEqual(['customer-terms', 'privacy']);
     expect(requiredDocuments('restaurant').map((d) => d.id)).toEqual(['restaurant-agreement', 'privacy']);
@@ -91,7 +91,7 @@ describe('password reset email', () => {
 });
 
 describe('United States and Canada', () => {
-  const company = { entity: 'Bite Wise', email: 'support@bitewise.app', address: 'Seattle', serviceFeePct: 5, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
+  const company = { entity: 'Bite Wise', email: 'support@bitewise.app', address: 'Seattle', serviceFee: { mode: 'percent' as const, bps: 500, fixedCents: 99 }, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
   it('asks people to accept the documents of their country', async () => {
     const { requiredDocuments } = await import('@/lib/legal/documents');
     expect(requiredDocuments('customer', 'CA').map((d) => d.id)).toEqual(['customer-terms-ca', 'privacy-ca']);
