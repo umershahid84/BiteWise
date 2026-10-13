@@ -102,7 +102,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
             Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. Food is sold as is and all sales are final: picked-up orders are not refundable. The service fee is not
             refundable: if an order is cancelled by you or not picked up, only the service fee is charged. Times in Pacific Time.
           </p>
-          <div className="small-print">support@bitewise.app</div>
+          <div className="small-print">support@bite-wise.org</div>
         </div>
       </article>
     </div>

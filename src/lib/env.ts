@@ -29,7 +29,7 @@ export const serverEnv = {
   timeZone: process.env.TIME_ZONE || 'America/Los_Angeles',
   legal: {
     entity: process.env.LEGAL_ENTITY_NAME || 'Bite Wise',
-    email: process.env.SUPPORT_EMAIL || 'support@bitewise.app',
+    email: process.env.SUPPORT_EMAIL || 'support@bite-wise.org',
     address: process.env.LEGAL_ADDRESS || 'Seattle, Washington',
   },
   // Emails the app sends itself (restaurant application pending, welcome with the signed agreement). Use the same
@@ -40,7 +40,7 @@ export const serverEnv = {
     user: process.env.SMTP_USER ?? '',
     // Gmail shows app passwords in groups of four ("abcd efgh ijkl mnop"); the spaces aren't part of it.
     password: (process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s+/g, ''),
-    from: process.env.EMAIL_FROM || (process.env.SMTP_USER ? `Bite Wise <${process.env.SMTP_USER}>` : 'Bite Wise <no-reply@bitewise.app>'),
+    from: process.env.EMAIL_FROM || (process.env.SMTP_USER ? `Bite Wise <${process.env.SMTP_USER}>` : 'Bite Wise <no-reply@bite-wise.org>'),
   },
   // Orders not picked up are released (never charged) this long after the discard timer ends.
   pickupGraceMinutes: int(process.env.PICKUP_GRACE_MINUTES, 10),
