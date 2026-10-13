@@ -108,11 +108,16 @@ export function RestaurantDashboard({ restaurant, staff, serviceFee, map, paymen
   }, []);
 
   useEffect(() => {
+    // Orders already waiting when the dashboard opens aren't new: later changes to them (e.g. staff starting the
+    // handover) must not ring the bell.
+    void supabase.from('orders').select('id').eq('restaurant_id', restaurant.id).eq('status', 'reserved')
+      .then(({ data }) => data?.forEach((o) => seen.current.add(o.id)));
     const channel = supabase
       .channel(`restaurant-orders-${restaurant.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${restaurant.id}` }, (payload) => {
-        const row = payload.new as NewOrder & { status: string };
-        if (row?.status === 'reserved' && !seen.current.has(row.id)) {
+        const row = payload.new as NewOrder & { status: string; capture_started_at?: string | null };
+        // A new order: one that just became "awaiting pickup". capture_started_at is set when staff hand it over.
+        if (row?.status === 'reserved' && !row.capture_started_at && !seen.current.has(row.id)) {
           seen.current.add(row.id);
           announce(row);
         }

@@ -504,6 +504,7 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 | Payouts not arriving | Restaurant hasn't connected Stripe, or Stripe account incomplete | Restaurant → Payouts tab → finish Stripe setup; Admin → Payouts for manual payouts |
 | No "Order placed" email | Email not set up, or the hold never succeeded | Check the SMTP settings and Resend logs; the order's `placed_email_at` column shows if it was sent |
 | Drive to Restaurant opens the wrong place | Restaurant's address is wrong | Directions use the typed address (not the map pin): fix it in the restaurant's Profile tab |
+| "New order!" bell rings when handing over food | Fixed 2026-10-13 (the handover update was mistaken for a new order) | Redeploy if still seen; logic in `src/components/restaurant/dashboard.tsx` (Live order alerts) |
 | Menu import finds nothing | Unusual website layout | Try the spreadsheet import, or set `ANTHROPIC_API_KEY` |
 
 ---
@@ -538,6 +539,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-13 | Fix: the new-order bell no longer rings when staff hand over an order | `src/components/restaurant/dashboard.tsx` |
 | 2026-10-13 | Order placed email (hold receipt, PIN, Drive to Restaurant button); pickup email renamed Payment confirmed | `src/lib/email/templates.ts`, `src/lib/orders.ts`, `src/app/directions/[restaurantId]/route.ts`, `src/lib/regions.ts`, migration `20261023000100_order_placed_email.sql` |
 | 2026-10-13 | Canadian legal documents and signed agreements show Bite Wise (St. John's, Newfoundland and Labrador) | `src/lib/env.ts` (`LEGAL_ADDRESS_CA`), `src/lib/legal/documents.ts`, `src/lib/legal/agreement-pdf.ts` |
 | 2026-10-13 | Company address in legal documents: Federal Way, Washington (was Seattle) | `src/lib/env.ts` (`LEGAL_ADDRESS`), `.env.example` |
