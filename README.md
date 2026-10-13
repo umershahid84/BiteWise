@@ -7,6 +7,8 @@
 
 # Bite Wise: Reduce Food Waste
 
+> **Running or troubleshooting the platform?** Start with the [Operations & Troubleshooting Guide](docs/TROUBLESHOOTING-GUIDE.md): where everything lives, every setting, and fixes for common problems.
+
 Bite Wise is a marketplace, launching across the United States and Canada, where restaurants sell food that would otherwise be thrown away (wrong orders, delayed deliveries, orders nobody picked up, end-of-day surplus) at a discount they choose. Customers reserve it online, pay with a card hold, and pick it up with a 4-digit PIN. The card is charged only when the restaurant enters the PIN.
 
 ## Tech stack
