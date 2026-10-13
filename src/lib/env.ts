@@ -30,7 +30,7 @@ export const serverEnv = {
   legal: {
     entity: process.env.LEGAL_ENTITY_NAME || 'Bite Wise',
     email: process.env.SUPPORT_EMAIL || 'support@bite-wise.org',
-    address: process.env.LEGAL_ADDRESS || 'Seattle, Washington',
+    address: process.env.LEGAL_ADDRESS || 'Federal Way, Washington',
   },
   // Emails the app sends itself (restaurant application pending, welcome with the signed agreement). Use the same
   // SMTP account as Supabase Auth (e.g. Gmail with an app password). Without SMTP_HOST, emails are only logged.

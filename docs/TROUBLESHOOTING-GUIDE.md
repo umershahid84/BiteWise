@@ -159,7 +159,7 @@ No Stripe keys at all = built-in **test mode** (nothing is charged; test card `4
 |---|---|
 | `LEGAL_ENTITY_NAME` | `Bite Wise` |
 | `SUPPORT_EMAIL` | `support@bite-wise.org` |
-| `LEGAL_ADDRESS` | `Seattle, Washington` |
+| `LEGAL_ADDRESS` | `Federal Way, Washington` (shown as "Bite Wise (Federal Way, Washington)" in the agreements and on legal pages) |
 
 ### Optional switches
 
@@ -532,6 +532,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-13 | Company address in legal documents: Federal Way, Washington (was Seattle) | `src/lib/env.ts` (`LEGAL_ADDRESS`), `.env.example` |
 | 2026-10-13 | Created this guide | `docs/TROUBLESHOOTING-GUIDE.md` |
 | 2026-10-13 | Support email `support@bite-wise.org`, website `www.bite-wise.org` | `src/lib/env.ts`, receipts, `supabase/templates/confirmation.html`, `.env.example`, sales deck |
 | 2026-10-13 | Restaurant sales pitch deck (PowerPoint + PDF) | `docs/business/` |
