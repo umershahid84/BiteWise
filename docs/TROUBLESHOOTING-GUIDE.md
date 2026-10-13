@@ -291,6 +291,7 @@ Log in at `/admin/login` → **Settings** tab (admins only). These are stored in
 | `/admin` | admin team | Console: Overview, Income, Alerts, Restaurants, Plans, Coupons, Customers, Orders, Live offers, Payouts, Sales tax, Settings, Team, Audit log |
 | `/legal/customer-terms`, `/legal/restaurant-agreement`, `/legal/privacy` (add `-ca` for Canada) | everyone | Legal documents |
 | `/auth/confirm` | email links | Confirms sign-up emails |
+| `/directions/[restaurantId]` | email button | **Drive to Restaurant**: sends iPhones/iPads/Macs to Apple Maps and everything else to Google Maps, with driving directions to the restaurant's address (`directionsUrl` in `src/lib/regions.ts`) |
 | `/api/stripe/webhook` | Stripe | Payment updates |
 | `/api/cron/sweep` | Vercel cron | Scheduled jobs |
 
@@ -302,6 +303,7 @@ Log in at `/admin/login` → **Settings** tab (admins only). These are stored in
 - **Sign-up:** email, user name, password, country, state/province and ZIP/postal code; must accept Terms and Privacy Policy (declining creates no account). Disposable/fake email domains are refused (`src/lib/email-domain.ts`). A confirmation email is sent; after confirming they get the **welcome email** and the **$10 welcome bonus**.
 - **Deals page:** nearest deals to their ZIP/postal code first; list or map; search by dish/restaurant/city/code; filters for diet, distance (miles in the US, km in Canada) and sort. The city/code suggestions list places that have restaurants in the customer's own country.
 - **Checkout:** quantity, coupon code, platform credit, saved or new card. Totals: food, service fee, one combined **Sales tax** line, total. The card is only **held**; it's charged at pickup.
+- **Emails:** when the order is placed, an **Order placed** email (hold receipt PDF, PIN, pick-up-by time, address, **Drive to Restaurant** button). At pickup, a **Payment confirmed** receipt (PDF) without directions.
 - **Pickup:** 4-digit PIN shown at the counter.
 - **Cancelling / missed pickups:** cancelling before pickup or missing the pickup charges only the service fee (non-refundable). **3 missed pickups in a row → 30-day suspension; the next one after that → permanent ban.** Emails are sent each time; admins get an alert.
 - **Auto log-out** after 10 minutes without activity (kiosk excluded).
@@ -374,7 +376,8 @@ The customer sees the two taxes added together as **one "Sales tax" line**. Curr
 | Restaurant application pending | `applicationPendingEmail` |
 | Restaurant welcome (agreement PDF, kiosk link) | `welcomeEmail` |
 | Customer welcome (install app, bonus) | `customerWelcomeEmail` |
-| Order receipt (PDF attached) | `orderInvoiceEmail` |
+| **Order placed**: hold receipt (PDF attached), pickup PIN, pickup deadline, restaurant address and phone, **Drive to Restaurant** button. Sent once, when the card hold succeeds (`orders.placed_email_at`). | `orderPlacedEmail`, sent by `emailOrderPlaced` in `src/lib/orders.ts` |
+| **Payment confirmed**: payment receipt at pickup (PDF attached), no directions | `orderInvoiceEmail`, sent by `emailInvoice` in `src/lib/orders.ts` |
 | Plan receipt / invoice | `subscriptionReceiptEmail` |
 | Plan payment declined | `paymentFailedEmail` |
 | Plan renewal reminder | `renewalReminderEmail` |
@@ -499,6 +502,8 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 | Admin can't see some restaurants/customers | Admin is in the other country | Each admin sees only their country; change it in Admin → Team |
 | Kiosk link stopped working | A new link was generated | Restaurant → Kiosk tab → copy the current link |
 | Payouts not arriving | Restaurant hasn't connected Stripe, or Stripe account incomplete | Restaurant → Payouts tab → finish Stripe setup; Admin → Payouts for manual payouts |
+| No "Order placed" email | Email not set up, or the hold never succeeded | Check the SMTP settings and Resend logs; the order's `placed_email_at` column shows if it was sent |
+| Drive to Restaurant opens the wrong place | Restaurant's address is wrong | Directions use the typed address (not the map pin): fix it in the restaurant's Profile tab |
 | Menu import finds nothing | Unusual website layout | Try the spreadsheet import, or set `ANTHROPIC_API_KEY` |
 
 ---
@@ -533,6 +538,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-13 | Order placed email (hold receipt, PIN, Drive to Restaurant button); pickup email renamed Payment confirmed | `src/lib/email/templates.ts`, `src/lib/orders.ts`, `src/app/directions/[restaurantId]/route.ts`, `src/lib/regions.ts`, migration `20261023000100_order_placed_email.sql` |
 | 2026-10-13 | Canadian legal documents and signed agreements show Bite Wise (St. John's, Newfoundland and Labrador) | `src/lib/env.ts` (`LEGAL_ADDRESS_CA`), `src/lib/legal/documents.ts`, `src/lib/legal/agreement-pdf.ts` |
 | 2026-10-13 | Company address in legal documents: Federal Way, Washington (was Seattle) | `src/lib/env.ts` (`LEGAL_ADDRESS`), `.env.example` |
 | 2026-10-13 | Created this guide | `docs/TROUBLESHOOTING-GUIDE.md` |

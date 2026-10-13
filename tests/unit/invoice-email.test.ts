@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { orderInvoiceEmail, subscriptionReceiptEmail } from '@/lib/email/templates';
+import { orderInvoiceEmail, orderPlacedEmail, subscriptionReceiptEmail } from '@/lib/email/templates';
+import { directionsUrl } from '@/lib/regions';
 import type { Receipt } from '@/lib/receipts/data';
 
 const receipt = {
@@ -13,12 +14,34 @@ const receipt = {
 describe('invoice emails', () => {
   it('itemizes a customer order: price, discount, fee, tax, total and how it was paid', () => {
     const e = orderInvoiceEmail(receipt, { receiptUrl: 'https://bitewise.app/orders/42/receipt' });
-    expect(e.subject).toBe('Your Bite Wise invoice BW-20261006-000042: $17.30 at Pho & Co');
+    expect(e.subject).toBe('Payment confirmed: your Bite Wise receipt BW-20261006-000042 ($17.30 at Pho & Co)');
+    expect(e.html).not.toContain('Drive to Restaurant');
     expect(e.html).toContain('Pho &amp; Co');
     for (const s of ['$30.00', '−$15.00', '$0.75', '$1.55', '$17.30', '$12.30 on VISA •••• 4242 + $5.00 in Bite Wise credit', 'https://bitewise.app/orders/42/receipt']) {
       expect(e.html).toContain(s);
     }
     expect(e.text).toContain('Paid with: $12.30 on VISA •••• 4242 + $5.00 in Bite Wise credit');
+  });
+
+  it('sends the hold receipt with the PIN, pickup deadline, address and a Drive to Restaurant button', () => {
+    const placed = { ...receipt, status: 'reserved', pin: '4827', pickupByText: 'Oct 6, 2026, 8:00 PM', amountChargedCents: 0,
+      restaurant: { ...receipt.restaurant, state: 'WA', phone: '(206) 555-0101' } } as unknown as Receipt;
+    const e = orderPlacedEmail(placed, { directionsUrl: 'https://x.test/directions/7', ordersUrl: 'https://x.test/orders', receiptUrl: 'https://x.test/orders/42/receipt' });
+    expect(e.subject).toBe('Order placed: 2 × Pho at Pho & Co (PIN 4827)');
+    for (const s of ['4827', 'Oct 6, 2026, 8:00 PM', '1 Main St, Seattle, WA 98101', '(206) 555-0101', 'Drive to Restaurant', 'https://x.test/directions/7',
+      '$17.30', '$12.30 held on VISA •••• 4242 + $5.00 in Bite Wise credit', 'charged when you pick up']) {
+      expect(e.html).toContain(s);
+    }
+    expect(e.text).toContain('YOUR PICKUP PIN: 4827');
+    expect(e.text).toContain('Drive to Restaurant: https://x.test/directions/7');
+  });
+
+  it('opens directions in Apple Maps on Apple devices and Google Maps elsewhere', () => {
+    const r = { address: '3 Sumac Street', city: "St. John's", state: 'NL', zip: 'A1H 0G5', country: 'CA' };
+    const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148';
+    const android = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36';
+    expect(directionsUrl(r, iphone)).toBe("https://maps.apple.com/?daddr=3%20Sumac%20Street%2C%20St.%20John's%2C%20NL%20A1H%200G5%2C%20Canada&dirflg=d");
+    expect(directionsUrl(r, android)).toBe("https://www.google.com/maps/dir/?api=1&destination=3%20Sumac%20Street%2C%20St.%20John's%2C%20NL%20A1H%200G5%2C%20Canada&travelmode=driving");
   });
 
   it('shows a Pioneer invoice as the price, minus the discount, for $0.00, with a link to the invoice', () => {

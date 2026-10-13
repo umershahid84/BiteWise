@@ -283,48 +283,117 @@ Your plan: ${o.planUrl}`,
 }
 
 // A customer's invoice, sent the moment the order is paid (charged at pickup), with the PDF receipt attached.
+// The lines of an order (food, discount, coupon, fee, tax, total), for the order emails.
+function orderRow(k: string, v: string, o: { strong?: boolean; color?: string; sub?: string } = {}) {
+  return `<tr><td style="padding:7px 0;font:${o.strong ? '800 15px' : '14px'} ${FONT};color:${o.color ?? (o.strong ? '#1E293B' : '#64748B')};">${k}${o.sub ? `<div style="font:12px ${FONT};color:#94A3B8;">${o.sub}</div>` : ''}</td>
+      <td align="right" valign="top" style="padding:7px 0;font:${o.strong ? '800 16px' : '700 14px'} ${FONT};color:${o.color ?? '#1E293B'};">${v}</td></tr>`;
+}
+function orderLines(rc: Receipt, totalLabel: string) {
+  const usd = amounts(rc.currency);
+  const it = rc.item;
+  return {
+    html: `${orderRow(`${it.quantity} × ${esc(it.title)}`, usd(it.lineOriginalCents), { sub: `${usd(it.originalUnitCents)} each` })}
+          ${it.savingsCents > 0 ? orderRow(`Bite Wise discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
+          ${rc.coupon?.discountCents ? orderRow(`Coupon ${esc(rc.coupon.code)}`, `−${usd(rc.coupon.discountCents)}`, { color: '#3E8230' }) : ''}
+          ${orderRow('Subtotal', usd(rc.subtotalCents))}
+          ${rc.coupon?.feeWaivedCents ? orderRow(`Service fee waived (coupon ${esc(rc.coupon.code)})`, usd(0), { color: '#3E8230' }) : rc.serviceFeeCents ? orderRow(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
+          ${orderRow(rc.salesTaxLabel, usd(rc.taxCents))}
+          ${orderRow(totalLabel, usd(rc.totalCents), { strong: true })}`,
+    text: `${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
+${rc.coupon?.discountCents ? `Coupon ${rc.coupon.code}: -${usd(rc.coupon.discountCents)}\n` : ''}Subtotal: ${usd(rc.subtotalCents)}${rc.coupon?.feeWaivedCents ? `\nService fee waived (coupon ${rc.coupon.code})` : ''}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
+${rc.salesTaxLabel}: ${usd(rc.taxCents)}
+${totalLabel}: ${usd(rc.totalCents)}`,
+  };
+}
+
+// Sent when an order is placed (its card hold succeeded): the pickup PIN, the pickup deadline, the restaurant's address
+// with a Drive to Restaurant button (directions in the phone's maps app), and the hold receipt (PDF attached).
+export function orderPlacedEmail(rc: Receipt, o: { directionsUrl: string; ordersUrl: string; receiptUrl: string }) {
+  const usd = amounts(rc.currency);
+  const it = rc.item;
+  const r = rc.restaurant;
+  const where = `${r.address}, ${cityLine(r)}`;
+  const held = rc.totalCents - rc.creditAppliedCents;
+  const hold = [held > 0 && `${usd(held)} held on ${rc.card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in Bite Wise credit`].filter(Boolean).join(' + ');
+  const lines = orderLines(rc, 'Order total');
+  const pin = rc.pin
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:16px;margin:0 0 18px;"><tr><td align="center" style="padding:16px 18px;">
+        <div style="font:800 12px ${FONT};letter-spacing:2px;color:#64748B;">YOUR PICKUP PIN</div>
+        <div style="font:800 40px/1.2 ${FONT};letter-spacing:10px;color:#065F46;">${esc(rc.pin)}</div>
+        <div style="font:14px ${FONT};color:#475569;">Show it at the counter${rc.pickupByText ? `. Pick up by <b>${esc(rc.pickupByText)}</b>` : ''}.</div>
+      </td></tr></table>`
+    : '';
+  return {
+    subject: `Order placed: ${it.quantity} × ${it.title} at ${r.name}${rc.pin ? ` (PIN ${rc.pin})` : ''}`,
+    html: layout({
+      preview: `Your PIN is ${rc.pin ?? 'in the app'}. Pick up${rc.pickupByText ? ` by ${rc.pickupByText}` : ''} at ${where}.`,
+      emoji: '🎉',
+      title: 'Your order is placed!',
+      subtitle: `${esc(r.name)} · Order #${rc.orderId}`,
+      body: `<p style="margin:0 0 16px;">Head to the restaurant and show your PIN at the counter. <b>Your card is only held for now: it is charged when you pick up your food.</b></p>
+        ${pin}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;margin:0 0 18px;">
+          ${orderRow('Restaurant', esc(r.name), { sub: `${esc(where)}${r.phone ? ` · ${esc(r.phone)}` : ''}` })}
+          ${rc.pickupByText ? orderRow('Pick up by', esc(rc.pickupByText), { color: '#B45309' }) : ''}
+        </table>
+        ${button(o.directionsUrl, '🚗&nbsp; Drive to Restaurant', '#EA580C')}
+        <p style="margin:10px 0 22px;text-align:center;font-size:13px;color:#64748B;">Opens directions in your phone's maps app.</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
+          ${orderRow('Hold receipt', esc(rc.receiptNumber))}
+          ${lines.html}
+          ${hold ? orderRow('Payment', esc(hold), { sub: 'A hold, not a charge. Charged at pickup.' }) : ''}
+        </table>
+        <p style="margin:0 0 18px;font-size:14px;color:#475569;">Your hold receipt is attached as a PDF. Can't make it? Cancel in <a href="${esc(o.ordersUrl)}" style="color:#14284B;">My orders</a> before the pickup time: only the non-refundable service fee is charged. Missed pickups count toward your account limits.</p>
+        ${button(o.ordersUrl, 'My orders', '#14284B')}`,
+    }),
+    text: `Your Bite Wise order is placed! (order #${rc.orderId}, hold receipt ${rc.receiptNumber})
+${rc.pin ? `\nYOUR PICKUP PIN: ${rc.pin}\nShow it at the counter.` : ''}${rc.pickupByText ? `\nPick up by: ${rc.pickupByText}` : ''}
+
+${r.name}
+${where}${r.phone ? `\n${r.phone}` : ''}
+Drive to Restaurant: ${o.directionsUrl}
+
+${lines.text}${hold ? `\nPayment: ${hold} (a hold, not a charge; charged at pickup)` : ''}
+
+Your card is only held for now: it is charged when you pick up your food.
+Cancel before the pickup time in My orders (only the non-refundable service fee is charged): ${o.ordersUrl}
+Hold receipt: ${o.receiptUrl}`,
+  };
+}
+
+// Sent when the order is picked up and the card is charged: the confirmed payment receipt (PDF attached). No
+// directions: the customer already has the food.
 export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
   const usd = amounts(rc.currency);
-  const row = (k: string, v: string, o2: { strong?: boolean; color?: string; sub?: string } = {}) =>
-    `<tr><td style="padding:7px 0;font:${o2.strong ? '800 15px' : '14px'} ${FONT};color:${o2.color ?? (o2.strong ? '#1E293B' : '#64748B')};">${k}${o2.sub ? `<div style="font:12px ${FONT};color:#94A3B8;">${o2.sub}</div>` : ''}</td>
-      <td align="right" valign="top" style="padding:7px 0;font:${o2.strong ? '800 16px' : '700 14px'} ${FONT};color:${o2.color ?? '#1E293B'};">${v}</td></tr>`;
   const it = rc.item;
   const r = rc.restaurant;
   const charged = rc.amountChargedCents;
   const paid = (card: string) => [charged > 0 && `${usd(charged)} on ${card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in Bite Wise credit`].filter(Boolean).join(' + ');
   const paidWith = paid(esc(rc.card));
+  const lines = orderLines(rc, 'Total paid');
   return {
-    subject: `Your Bite Wise invoice ${rc.receiptNumber}: ${usd(rc.totalCents)} at ${r.name}`,
+    subject: `Payment confirmed: your Bite Wise receipt ${rc.receiptNumber} (${usd(rc.totalCents)} at ${r.name})`,
     html: layout({
       preview: `Paid ${usd(rc.totalCents)} for ${it.quantity} × ${it.title}. You saved ${usd(it.savingsCents)}.`,
       emoji: '🧾',
-      title: 'Thanks for rescuing food!',
+      title: 'Payment confirmed. Enjoy!',
       subtitle: `${esc(r.name)} · Order #${rc.orderId}`,
-      body: `<p style="margin:0 0 16px;">Here is your invoice for the order you picked up${rc.pickedUpAtText ? ` on ${esc(rc.pickedUpAtText)}` : ''}.${it.savingsCents > 0 ? ` You saved <b style="color:#3E8230;">${usd(it.savingsCents)}</b> and kept good food from going to waste. 💚` : ''}</p>
+      body: `<p style="margin:0 0 16px;">Thanks for rescuing food! Here is your payment receipt for the order you picked up${rc.pickedUpAtText ? ` on ${esc(rc.pickedUpAtText)}` : ''}.${it.savingsCents > 0 ? ` You saved <b style="color:#3E8230;">${usd(it.savingsCents)}</b> and kept good food from going to waste. 💚` : ''}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;margin:0 0 4px;">
-          ${row('Invoice', esc(rc.receiptNumber))}
-          ${row('Restaurant', esc(r.name), { sub: `${esc(r.address)}, ${esc(cityLine(r))}` })}
+          ${orderRow('Invoice', esc(rc.receiptNumber))}
+          ${orderRow('Restaurant', esc(r.name), { sub: `${esc(r.address)}, ${esc(cityLine(r))}` })}
         </table>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E2E8F0;border-bottom:1px solid #E2E8F0;margin:0 0 18px;">
-          ${row(`${it.quantity} × ${esc(it.title)}`, usd(it.lineOriginalCents), { sub: `${usd(it.originalUnitCents)} each` })}
-          ${it.savingsCents > 0 ? row(`Bite Wise discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
-          ${rc.coupon?.discountCents ? row(`Coupon ${esc(rc.coupon.code)}`, `−${usd(rc.coupon.discountCents)}`, { color: '#3E8230' }) : ''}
-          ${row('Subtotal', usd(rc.subtotalCents))}
-          ${rc.coupon?.feeWaivedCents ? row(`Service fee waived (coupon ${esc(rc.coupon.code)})`, usd(0), { color: '#3E8230' }) : rc.serviceFeeCents ? row(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
-          ${row(rc.salesTaxLabel, usd(rc.taxCents))}
-          ${row('Total paid', usd(rc.totalCents), { strong: true })}
-          ${paidWith ? row('Paid with', paidWith) : ''}
+          ${lines.html}
+          ${paidWith ? orderRow('Paid with', paidWith) : ''}
         </table>
         <p style="margin:0 0 18px;font-size:14px;color:#475569;">Your receipt is attached as a PDF. You can also view or print it any time:</p>
         ${button(o.receiptUrl, 'View my receipt', '#14284B')}`,
     }),
-    text: `Bite Wise invoice ${rc.receiptNumber} (order #${rc.orderId})
+    text: `Bite Wise payment receipt ${rc.receiptNumber} (order #${rc.orderId})
 ${r.name}, ${r.address}, ${cityLine(r)}
 
-${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
-${rc.coupon?.discountCents ? `Coupon ${rc.coupon.code}: -${usd(rc.coupon.discountCents)}\n` : ''}Subtotal: ${usd(rc.subtotalCents)}${rc.coupon?.feeWaivedCents ? `\nService fee waived (coupon ${rc.coupon.code})` : ''}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
-${rc.salesTaxLabel}: ${usd(rc.taxCents)}
-Total paid: ${usd(rc.totalCents)}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
+${lines.text}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
 
 Your receipt: ${o.receiptUrl}`,
   };

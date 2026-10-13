@@ -55,3 +55,14 @@ export const mapUrl = (r: Place & { name?: string; address: string }) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     [r.name, r.address, cityLine(r), r.country === 'CA' ? 'Canada' : 'USA'].filter(Boolean).join(', '),
   )}`;
+// Driving directions to a place in the phone's own maps app: Apple Maps on iPhones, iPads and Macs (their built-in
+// maps), Google Maps everywhere else (Android's default; on a computer it opens in the browser). Both start from
+// where the person is now. The address is used rather than the map pin, so a pin placed at the middle of a ZIP code
+// never sends anyone to the wrong place.
+export const isApple = (userAgent: string) => /iPhone|iPad|iPod|Macintosh/i.test(userAgent);
+export function directionsUrl(r: Place & { address: string }, userAgent = '') {
+  const to = encodeURIComponent([r.address, cityLine(r), r.country === 'CA' ? 'Canada' : 'USA'].filter(Boolean).join(', '));
+  return isApple(userAgent)
+    ? `https://maps.apple.com/?daddr=${to}&dirflg=d`
+    : `https://www.google.com/maps/dir/?api=1&destination=${to}&travelmode=driving`;
+}

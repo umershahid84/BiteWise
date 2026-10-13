@@ -42,7 +42,10 @@ export async function POST(req: NextRequest) {
     // Card hold confirmed after 3-D Secure (in case the browser never came back).
     case 'payment_intent.amount_capturable_updated': {
       const orderId = Number(event.data.object.metadata?.order_id);
-      if (orderId) await db.rpc('mark_order_reserved', { p_order_id: orderId });
+      if (orderId) {
+        await db.rpc('mark_order_reserved', { p_order_id: orderId });
+        await orders.emailOrderPlaced(orderId); // unless the app already sent it
+      }
       break;
     }
     case 'payment_intent.payment_failed': {

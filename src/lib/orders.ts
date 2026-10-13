@@ -3,7 +3,7 @@ import { after } from 'next/server';
 import type { Database } from '@/lib/database.types';
 import { isTestStripeAccount } from '@/lib/constants';
 import { AppError, check, maybe, must } from '@/lib/errors';
-import { orderInvoiceEmail } from '@/lib/email/templates';
+import { orderInvoiceEmail, orderPlacedEmail } from '@/lib/email/templates';
 import { sendEmail } from '@/lib/email/send';
 import { countryOfCurrency, payments, PaymentError } from '@/lib/payments';
 import { paymentMode, publicEnv } from '@/lib/env';
@@ -172,6 +172,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
   if (cardCents === 0) {
     // Paid entirely with platform credit: nothing to authorize.
     check(await db().rpc('mark_order_reserved', { p_order_id: order.id }));
+    emailOrderPlacedAfterResponse(order.id);
     return { orderId: order.id, requiresAction: false as const };
   }
 
@@ -194,7 +195,10 @@ export async function checkout(userId: string, input: CheckoutInput) {
     throw err;
   }
   check(await db().rpc('set_order_payment', { p_order_id: order.id, p_payment_ref: result.ref, p_destination: destination?.id ?? '' }));
-  if (result.status === 'authorized') check(await db().rpc('mark_order_reserved', { p_order_id: order.id }));
+  if (result.status === 'authorized') {
+    check(await db().rpc('mark_order_reserved', { p_order_id: order.id }));
+    emailOrderPlacedAfterResponse(order.id);
+  }
   return result.status === 'requires_action'
     ? { orderId: order.id, requiresAction: true as const, clientSecret: result.clientSecret ?? '' }
     : { orderId: order.id, requiresAction: false as const };
@@ -206,8 +210,10 @@ export async function confirmAuthorization(userId: string, orderId: number) {
   if (order.user_id !== userId) throw new AppError(404, 'Order not found.');
   if (order.status !== 'pending_payment' || !order.payment_ref) return order.status;
   const status = await payments(countryOfCurrency(order.currency)).authorizationStatus(order.payment_ref);
-  if (status === 'authorized') check(await db().rpc('mark_order_reserved', { p_order_id: order.id }));
-  else if (status === 'failed') {
+  if (status === 'authorized') {
+    check(await db().rpc('mark_order_reserved', { p_order_id: order.id }));
+    emailOrderPlacedAfterResponse(order.id);
+  } else if (status === 'failed') {
     await release(order.id, 'pending_payment', 'failed', true);
     throw new AppError(402, 'Your card could not be authorized.');
   }
@@ -305,6 +311,41 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
     console.error(`Payout for order ${order.id} failed; it stays owed.`, err);
   }
   return done;
+}
+
+// The "order placed" email (hold receipt, pickup PIN, Drive to Restaurant button), once the response is sent.
+export function emailOrderPlacedAfterResponse(orderId: number) {
+  try {
+    after(() => emailOrderPlaced(orderId));
+  } catch {
+    void emailOrderPlaced(orderId);
+  }
+}
+
+// Emails the customer that their order is placed, once per order (orders.placed_email_at), as soon as its card hold
+// succeeded: from checkout, after 3-D Secure, or from Stripe's webhook, whichever comes first. Never throws.
+export async function emailOrderPlaced(orderId: number) {
+  try {
+    const claimed = maybe(await db().from('orders').update({ placed_email_at: new Date().toISOString() })
+      .eq('id', orderId).eq('status', 'reserved').is('placed_email_at', null).select('id').maybeSingle());
+    if (!claimed) return false; // already sent, or the order isn't placed
+    const order = await getOrder(orderId);
+    const rc = await receiptData(order);
+    const sent = !!rc.customer.email && await sendEmail({
+      to: rc.customer.email,
+      ...orderPlacedEmail(rc, {
+        directionsUrl: `${publicEnv.siteUrl}/directions/${order.restaurant_id}`,
+        ordersUrl: `${publicEnv.siteUrl}/orders`,
+        receiptUrl: `${publicEnv.siteUrl}/orders/${orderId}/receipt`,
+      }),
+      attachments: [{ filename: `Bite-Wise-hold-receipt-${rc.receiptNumber}.pdf`, content: await receiptPdf(rc), contentType: 'application/pdf' }],
+    });
+    if (!sent) await db().from('orders').update({ placed_email_at: null }).eq('id', orderId);
+    return sent;
+  } catch (err) {
+    console.error(`Order placed email for order ${orderId} failed:`, err instanceof Error ? err.message : err);
+    return false;
+  }
 }
 
 // Emails the invoice once the response is sent, so handing over the food doesn't wait for the email. (Outside a
