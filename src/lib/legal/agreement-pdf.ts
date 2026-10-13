@@ -66,7 +66,7 @@ export async function signedAgreementPdf(restaurantId: number, approvedAt?: stri
     .text(`Version ${doc.version} · Effective ${doc.effective} · Electronically signed copy`, { width: W });
   pdf.moveDown(0.8);
   pdf.font('bold').fontSize(10).fillColor('#111').text('Between ', { continued: true })
-    .font('regular').text(`${serverEnv.legal.entity} (${serverEnv.legal.address}) and ${r.name}, ${r.address}, ${cityLine(r)}.`, { width: W });
+    .font('regular').text(`${serverEnv.legal.entity} (${r.country === 'CA' ? serverEnv.legal.addressCa : serverEnv.legal.address}) and ${r.name}, ${r.address}, ${cityLine(r)}.`, { width: W });
   pdf.moveTo(L, pdf.y + 10).lineTo(L + W, pdf.y + 10).strokeColor(LINE).lineWidth(1).stroke();
   pdf.moveDown(1.4);
 

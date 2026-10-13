@@ -58,6 +58,16 @@ describe('legal documents', () => {
     expect(renderDocument('restaurant-agreement', company)!.html).toMatch(/\$15 per month[^]*\$150 per year[^]*\$30 less/);
     expect(renderDocument('nope', company)).toBeNull();
   });
+  it('shows Bite Wise\'s US location in US documents and its Canadian one in Canadian documents', () => {
+    const both = { ...company, address: 'Federal Way, Washington', addressCa: "St. John's, Newfoundland and Labrador" };
+    expect(renderDocument('restaurant-agreement', both)!.html).toContain('Federal Way, Washington');
+    expect(renderDocument('restaurant-agreement', both)!.html).not.toContain('Newfoundland and Labrador');
+    const ca = renderDocument('restaurant-agreement-ca', both)!.html;
+    expect(ca).toContain('St. John&#39;s, Newfoundland and Labrador');
+    expect(ca).not.toContain('Federal Way');
+    // Without a Canadian address, the Canadian documents use the US one.
+    expect(renderDocument('privacy-ca', company)!.html).toContain('Seattle');
+  });
 });
 
 describe('test-payments Stripe accounts', async () => {

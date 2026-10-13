@@ -18,7 +18,8 @@ export const LEGAL_VERSION = '2026-10-21.1';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
-  entity: string; email: string; address: string; serviceFee: ServiceFee; graceMinutes: number;
+  // address: Bite Wise's location in the US documents; addressCa in the Canadian ones (the US one when not given).
+  entity: string; email: string; address: string; addressCa?: string; serviceFee: ServiceFee; graceMinutes: number;
   // Restaurant subscription: prices in dollars, and how many Pioneer Member (free) spots there are.
   monthlyPrice: number; annualPrice: number; foundingSpots: number;
 };
@@ -628,7 +629,8 @@ export type LegalDocument = { id: DocumentId; title: string; version: string; ef
 export function renderDocument(id: string, company: Company): LegalDocument | null {
   if (!(id in DOCUMENTS)) return null;
   const def = DOCUMENTS[id as DocumentId];
-  const c = { ...company, entity: esc(company.entity), email: esc(company.email), address: esc(company.address) };
+  const address = def.country === 'CA' ? company.addressCa || company.address : company.address;
+  const c = { ...company, entity: esc(company.entity), email: esc(company.email), address: esc(address) };
   return { id: id as DocumentId, title: def.title, version: LEGAL_VERSION, effective: EFFECTIVE, html: def.render(c), country: def.country };
 }
 
