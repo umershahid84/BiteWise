@@ -20,11 +20,11 @@ export function TaxPanel({ range, setRange }: { range: Range; setRange: (r: Rang
       <div className="flex flex-wrap items-start"><RangePicker range={range} onChange={setRange} /><span className="flex-1" />
         {/* The whole tab (totals and both tables) as one PDF. */}
         <DownloadIcons what="the sales tax report" pdf={exportHref('tax', range, 'pdf')} /></div>
-      <p className="mb-4 text-sm text-muted">Sales tax that <b>Bite Wise</b> collected and must remit, on completed orders (less refunds) and on restaurant plan fees, by restaurant location. Use it for your excise tax return. Sales tax on food that was paid to restaurants is theirs to report and remit, and is not in these tables.</p>
+      <p className="mb-4 text-sm text-muted">Sales tax that <b>ResDish</b> collected and must remit, on completed orders (less refunds) and on restaurant plan fees, by restaurant location. Use it for your excise tax return. Sales tax on food that was paid to restaurants is theirs to report and remit, and is not in these tables.</p>
       {isLoading || !data ? <Spinner /> : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Kpi value={money(data.allTotals.taxCents)} label={`Bite Wise remits (${money(data.allTotals.taxableCents)} taxable)`} />
+            <Kpi value={money(data.allTotals.taxCents)} label={`ResDish remits (${money(data.allTotals.taxableCents)} taxable)`} />
             <Kpi value={money(data.totals.taxCents)} label={`On food orders (${money(data.totals.taxableCents)} taxable)`} />
             <Kpi value={money(data.planTotals.taxCents)} label={`On plan fees (${money(data.planTotals.taxableCents)} taxable)`} />
             <Kpi value={money(data.paidToRestaurantsCents)} label="Tax on food paid to restaurants (they remit it)" />

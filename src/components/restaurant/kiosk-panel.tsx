@@ -43,7 +43,7 @@ export function KioskPanel({ approved }: { approved: boolean }) {
     return (
       <Card className="p-6">
         <h2 className="mt-0 text-xl font-extrabold">Your counter kiosk</h2>
-        <p className="text-ink-2">Once Bite Wise approves your restaurant, you get your own kiosk link here (and by email): a full-screen page for the tablet at your counter that shows new orders and lets staff hand them over with the customer&apos;s PIN.</p>
+        <p className="text-ink-2">Once ResDish approves your restaurant, you get your own kiosk link here (and by email): a full-screen page for the tablet at your counter that shows new orders and lets staff hand them over with the customer&apos;s PIN.</p>
         {agreement}
       </Card>
     );
@@ -67,7 +67,7 @@ export function KioskPanel({ approved }: { approved: boolean }) {
           <li><b>Android tablet</b> (Chrome): tap <b>Add to home screen</b> on the kiosk, then <b>Install</b>.</li>
           <li><b>iPad</b> (Safari): tap the Share button, then <b>Add to Home Screen</b>, then <b>Add</b>.</li>
           <li><b>Windows computer</b> (Edge or Chrome): open <a href={kiosk.windowsUrl} target="_blank" rel="noopener">the kiosk on the computer</a> and click <b>Install on this computer</b> (Edge: menu → <b>Apps</b> → <b>Install this site as an app</b>).</li>
-          <li>Open the kiosk any time from the <b>Bite Wise Kiosk</b> icon on the home screen (or the Start menu on Windows). It opens full-screen.</li>
+          <li>Open the kiosk any time from the <b>ResDish Kiosk</b> icon on the home screen (or the Start menu on Windows). It opens full-screen.</li>
         </ol>
         <div className="mt-5 flex flex-wrap gap-2">
           {agreement}

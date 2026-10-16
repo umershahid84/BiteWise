@@ -24,13 +24,13 @@ if (!url || !key) throw new Error('Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SEC
 const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 
 const BUCKET = 'brand';
-const SENDER_NAME = 'Bite Wise';
+const SENDER_NAME = 'ResDish';
 // The logo's name includes a fingerprint of the file, so a new logo gets a new address: email apps (Gmail's image proxy)
 // and the storage CDN keep showing a cached image for an address they have seen before.
 const logoFile = fs.readFileSync('public/assets/email-logo.png');
 const LOGO = `email-logo-${createHash('sha256').update(logoFile).digest('hex').slice(0, 10)}.png`;
 const OUT = 'confirm-signup-email.html';
-const SUBJECT = 'Confirm your email for Bite Wise 🍃';
+const SUBJECT = 'Confirm your email for ResDish 🍃';
 
 async function main() {
   const bucket = await db.storage.getBucket(BUCKET);
@@ -56,7 +56,7 @@ async function main() {
       body: JSON.stringify({ mailer_subjects_confirmation: SUBJECT, mailer_templates_confirmation_content: html }),
     });
     if (res.ok) {
-      console.log(`Installed the "Confirm signup" email in project ${ref}. New sign-ups get the Bite Wise email from now on.
+      console.log(`Installed the "Confirm signup" email in project ${ref}. New sign-ups get the ResDish email from now on.
 The button links to your Site URL (Authentication → URL Configuration), so keep that set to your site's address.`);
       // The "from" name of Supabase's emails is a separate setting of its SMTP connection.
       const sender = await fetch(`https://api.supabase.com/v1/projects/${ref}/config/auth`, {

@@ -62,15 +62,15 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
             A fixed fee is charged once per order, whatever the quantity: in US dollars in the US and the same amount in Canadian dollars in Canada.
           </p>
         </fieldset>
-        <Field label="Welcome bonus for new customers ($)" htmlFor="s-welcome" hint="Platform credit each new customer gets once, when they confirm their email (the same number in Canadian dollars in Canada). Bite Wise pays for it; 0 turns it off.">
+        <Field label="Welcome bonus for new customers ($)" htmlFor="s-welcome" hint="Platform credit each new customer gets once, when they confirm their email (the same number in Canadian dollars in Canada). ResDish pays for it; 0 turns it off.">
           <Input id="s-welcome" inputMode="decimal" className="max-w-40" value={f.welcomeCredit} onChange={(e) => setF({ ...f, welcomeCredit: e.target.value })} />
         </Field>
         <Field label="Starting sales tax for new restaurants (%)" htmlFor="s-tax" hint="Used only until a new restaurant's rate is looked up from its address (usually straight away). Set a restaurant's rate by hand in the Restaurants tab."><Input id="s-tax" inputMode="decimal" className="max-w-40" value={f.defaultTaxRatePct} onChange={(e) => setF({ ...f, defaultTaxRatePct: e.target.value })} /></Field>
         <Field
-          label={`Tax on Bite Wise's fees (${data.settings.country === 'CA' ? 'Canada' : 'United States'})`} htmlFor="s-plan-tax"
+          label={`Tax on ResDish's fees (${data.settings.country === 'CA' ? 'Canada' : 'United States'})`} htmlFor="s-plan-tax"
           hint={data.settings.country === 'CA'
-            ? 'Charged on the customer service fee of every order in Canada and on Canadian restaurants\' plan fees, at Bite Wise\'s Newfoundland and Labrador rate (HST 15%). New orders and plan payments use it.'
-            : 'Charged on the customer service fee of every order in the US and on US restaurants\' plan fees, at the rate of Bite Wise\'s Washington location. New orders and plan payments use it.'}
+            ? 'Charged on the customer service fee of every order in Canada and on Canadian restaurants\' plan fees, at ResDish\'s Newfoundland and Labrador rate (HST 15%). New orders and plan payments use it.'
+            : 'Charged on the customer service fee of every order in the US and on US restaurants\' plan fees, at the rate of ResDish\'s Washington location. New orders and plan payments use it.'}
         >
           <div className="flex flex-wrap items-center gap-2">
             <Input id="s-plan-tax" inputMode="decimal" className="w-24" value={f.platformTaxPct} onChange={(e) => setF({ ...f, platformTaxPct: e.target.value })} />
@@ -81,8 +81,8 @@ function SettingsForm({ data, onSaved }: { data: S; onSaved: () => void }) {
         <fieldset className="mb-4 rounded-xl border border-line p-3">
           <legend className="px-1 text-sm font-bold">Sales tax on orders</legend>
           {([
-            [true, 'Paid to the restaurant (it reports and remits the tax)', 'The restaurant gets the food price plus its sales tax at pickup. Bite Wise keeps only the service fee.'],
-            [false, 'Kept by Bite Wise (Bite Wise remits it as marketplace facilitator)', 'The restaurant gets the food price only; Bite Wise keeps the tax and files it. Use this once your accountant says Bite Wise must collect sales tax in your state.'],
+            [true, 'Paid to the restaurant (it reports and remits the tax)', 'The restaurant gets the food price plus its sales tax at pickup. ResDish keeps only the service fee.'],
+            [false, 'Kept by ResDish (ResDish remits it as marketplace facilitator)', 'The restaurant gets the food price only; ResDish keeps the tax and files it. Use this once your accountant says ResDish must collect sales tax in your state.'],
           ] as const).map(([v, label, hint]) => (
             <label key={String(v)} className="flex cursor-pointer gap-2.5 py-1.5">
               <input type="radio" name="tax-to" className="mt-1 accent-[var(--color-primary)]" checked={f.orderTaxToRestaurant === v} onChange={() => setF({ ...f, orderTaxToRestaurant: v })} />

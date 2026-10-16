@@ -99,7 +99,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
 
   return (
     <>
-      <AuthTitle>{role === 'restaurant' ? 'Join Bite Wise' : 'Create your free account'}</AuthTitle>
+      <AuthTitle>{role === 'restaurant' ? 'Join ResDish' : 'Create your free account'}</AuthTitle>
       <RoleSwitch value={role} onChange={(r) => { setRole(r); setError(null); }} labels={{ customer: 'I\'m a customer', restaurant: 'I\'m a restaurant' }} />
       {role === 'restaurant' && <p className="-mt-2 mb-5 text-center text-sm text-muted">Sell your surplus food to customers nearby, instead of throwing it away.</p>}
       {notice}
@@ -167,7 +167,7 @@ export function SignupForm({ initialRole }: { initialRole: Role }) {
         role={role}
         country={country}
         title={role === 'restaurant' ? 'Restaurant Partner Agreement' : 'Terms of Service'}
-        intro="Please read and accept these terms to create your Bite Wise account. If you decline, no account will be created."
+        intro="Please read and accept these terms to create your ResDish account. If you decline, no account will be created."
         acceptLabel="Accept & create account"
         busy={pending}
         onResult={onAgreement}

@@ -3,7 +3,7 @@ import { serverEnv } from '@/lib/env';
 import type { Receipt } from '@/lib/receipts/data';
 import { cityLine } from '@/lib/regions';
 
-// Bite Wise emails the app sends itself, in the same style as the sign-up email (supabase/templates/confirmation.html):
+// ResDish emails the app sends itself, in the same style as the sign-up email (supabase/templates/confirmation.html):
 // tables and inline styles, so they look right in Gmail, Outlook and on phones.
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -23,7 +23,7 @@ function layout(o: { preview: string; emoji: string; title: string; subtitle: st
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${esc(o.preview)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F5F9;"><tr><td align="center" style="padding:32px 12px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;">
-    <tr><td align="center" style="padding:0 0 22px;"><img src="cid:logo" width="240" alt="Bite Wise" style="display:block;width:240px;height:auto;border:0;font:800 26px ${FONT};color:#14284B;"></td></tr>
+    <tr><td align="center" style="padding:0 0 22px;"><img src="cid:logo" width="240" alt="ResDish" style="display:block;width:240px;height:auto;border:0;font:800 26px ${FONT};color:#14284B;"></td></tr>
     <tr><td style="background:#FFFFFF;border-radius:24px;overflow:hidden;box-shadow:0 8px 30px rgba(20,40,75,.10);">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr><td bgcolor="#14284B" style="background:#14284B;background-image:linear-gradient(135deg,#1F3A66 0%,#14284B 60%,#0B1730 100%);border-radius:24px 24px 0 0;padding:34px 32px 30px;text-align:center;">
@@ -35,7 +35,7 @@ function layout(o: { preview: string; emoji: string; title: string; subtitle: st
       </table>
     </td></tr>
     <tr><td align="center" style="padding:22px 20px 0;font:12px/1.6 ${FONT};color:#94A3B8;">
-      <b style="color:#64748B;">Bite Wise</b> · Eat well, waste less · United States &amp; Canada<br>
+      <b style="color:#64748B;">ResDish</b> · Eat well, waste less · United States &amp; Canada<br>
       Questions? <a href="mailto:${esc(serverEnv.legal.email)}" style="color:#94A3B8;">${esc(serverEnv.legal.email)}</a>
     </td></tr>
   </table>
@@ -51,13 +51,13 @@ export function applicationPendingEmail(o: { restaurant: string; dashboardUrl: s
       emoji: '⏳',
       title: 'Your application is in review',
       subtitle: 'Thanks for confirming your email.',
-      body: `<p style="margin:0 0 14px;">Thanks for signing up <b>${r}</b> with Bite Wise. Your email address is confirmed, and your application
+      body: `<p style="margin:0 0 14px;">Thanks for signing up <b>${r}</b> with ResDish. Your email address is confirmed, and your application
         is now <b>waiting for approval</b> by our team. This usually takes about one business day.</p>
         <p style="margin:0 0 14px;">In the meantime you can log in to set up your menu and photos. Customers will see your offers as soon as
         you're approved, and we'll email you your welcome pack: your signed Restaurant Partner Agreement and your restaurant's own kiosk link.</p>
         <div style="padding:10px 0 4px;">${button(o.dashboardUrl, 'Set up my menu')}</div>`,
     }),
-    text: `Thanks for signing up ${o.restaurant} with Bite Wise. Your email is confirmed and your application is waiting for approval (usually about one business day).
+    text: `Thanks for signing up ${o.restaurant} with ResDish. Your email is confirmed and your application is waiting for approval (usually about one business day).
 Meanwhile you can set up your menu: ${o.dashboardUrl}
 We'll email you once you're approved.`,
   };
@@ -100,12 +100,12 @@ export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidU
   const planUrl = `${o.dashboardUrl}?tab=plan`;
   const step = (n: number, html: string) => `<tr><td width="34" valign="top" style="padding:6px 0;"><div style="width:26px;height:26px;border-radius:13px;background:#E8F5E1;color:#3E8230;font:800 14px/26px ${FONT};text-align:center;">${n}</div></td><td style="padding:6px 0;font:15px/1.5 ${FONT};color:#334155;">${html}</td></tr>`;
   return {
-    subject: `Welcome to Bite Wise, ${o.restaurant}! Your kiosk is ready`,
+    subject: `Welcome to ResDish, ${o.restaurant}! Your kiosk is ready`,
     html: layout({
       preview: 'You are approved. Your signed agreement and your kiosk link are inside.',
       emoji: '🎉',
       title: `Welcome aboard, ${r}!`,
-      subtitle: 'Your restaurant is approved and live on Bite Wise.',
+      subtitle: 'Your restaurant is approved and live on ResDish.',
       body: `<p style="margin:0 0 14px;">Great news: <b>${r}</b> is approved. Customers nearby can now see and order the surplus food you post.</p>
         <p style="margin:0 0 20px;">📎 Attached is your <b>electronically signed Restaurant Partner Agreement</b> (PDF) for your records.</p>
         ${planBox(o.plan, planUrl)}
@@ -122,14 +122,14 @@ export function welcomeEmail(o: { restaurant: string; kioskUrl: string; androidU
           </tr></table>
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;">
             ${step(1, 'The kiosk opens with an install guide for your device.')}
-            ${step(2, 'Confirm, and a <b>Bite Wise Kiosk</b> icon appears on the tablet\'s home screen (or in the Start menu and on the desktop on Windows).')}
+            ${step(2, 'Confirm, and a <b>ResDish Kiosk</b> icon appears on the tablet\'s home screen (or in the Start menu and on the desktop on Windows).')}
             ${step(3, 'Open the icon any time to start your kiosk.')}
           </table>
         </div>
         <p style="margin:22px 0 10px;">Next steps: post your first offer, and connect Stripe in the <b>Payouts</b> tab so you're paid at every pickup.</p>
         <div style="padding:6px 0 0;">${button(o.dashboardUrl, 'Open my dashboard', '#14284B')}</div>`,
     }),
-    text: `Welcome to Bite Wise, ${o.restaurant}! You're approved and live.
+    text: `Welcome to ResDish, ${o.restaurant}! You're approved and live.
 Your electronically signed Restaurant Partner Agreement is attached.
 ${o.plan.founding ? `You're Pioneer Member #${o.plan.founding}: your subscription is FREE ($0.00 invoices).` : o.plan.hasPlan ? '' : `Choose your plan (${usd(o.plan.monthlyCents)} a month or ${usd(o.plan.annualCents)} a year${o.plan.pioneerSpotsLeft ? `; FREE for the next ${o.plan.pioneerSpotsLeft} Pioneer Members` : ''}): ${planUrl}`}
 
@@ -162,8 +162,8 @@ export function subscriptionReceiptEmail(o: {
   const next = free ? `Your next free period starts on ${date(o.periodEnd)}` : o.autoRenew ? `Renews automatically on ${date(o.periodEnd)}` : `Ends on ${date(o.periodEnd)} (auto-renewal is off)`;
   return {
     subject: free
-      ? `Your Bite Wise invoice ${o.invoiceNumber}: $0.00 (FREE Pioneer membership)`
-      : `${o.renewal ? 'Your Bite Wise plan renewed' : 'Your Bite Wise plan is active'}: ${usd(o.amountCents)} (${o.invoiceNumber})`,
+      ? `Your ResDish invoice ${o.invoiceNumber}: $0.00 (FREE Pioneer membership)`
+      : `${o.renewal ? 'Your ResDish plan renewed' : 'Your ResDish plan is active'}: ${usd(o.amountCents)} (${o.invoiceNumber})`,
     html: layout({
       preview: free ? `${PLAN_NAMES[o.plan]} plan, ${usd(list)} − ${o.discountLabel} = $0.00.` : `${PLAN_NAMES[o.plan]} plan, ${usd(o.amountCents)}. ${next}.`,
       emoji: free ? '🎉' : '🧾',
@@ -183,7 +183,7 @@ export function subscriptionReceiptEmail(o: {
         <p style="margin:0 0 18px;font-size:15px;color:#475569;">${next}.${free ? ' Nothing to pay, and no card needed.' : ' You can change your plan, card or auto-renewal in the Plan tab.'}${o.invoiceUrl ? ' Your invoice is attached as a PDF.' : ''}</p>
         ${o.invoiceUrl ? button(o.invoiceUrl, 'View my invoice', '#14284B') : button(o.planUrl, 'View my plan', '#14284B')}`,
     }),
-    text: `Bite Wise invoice ${o.invoiceNumber} for ${o.restaurant} (${period})
+    text: `ResDish invoice ${o.invoiceNumber} for ${o.restaurant} (${period})
 ${PLAN_NAMES[o.plan]} plan: ${usd(list)}${discount ? `\n${o.discountLabel || 'Discount'}: -${usd(discount)}` : ''}${tax ? `\nSubtotal: ${usd(list - discount)}\n${taxLabel}: ${usd(tax)}` : ''}
 ${free ? `Total due: ${usd(0)} (FREE)` : `Amount paid: ${usd(o.amountCents)} with ${o.cardLabel}`}
 ${next}.
@@ -195,19 +195,19 @@ ${o.invoiceUrl ? `Your invoice: ${o.invoiceUrl}\n` : ''}Your plan: ${o.planUrl}`
 export function paymentFailedEmail(o: { restaurant: string; amountCents: number; error: string; planUrl: string; currency?: string }) {
   const usd = amounts(o.currency);
   return {
-    subject: `Your Bite Wise account is delinquent: please renew your plan`,
+    subject: `Your ResDish account is delinquent: please renew your plan`,
     html: layout({
       preview: 'Your payment was declined. You can\'t post new offers until your plan is paid.',
       emoji: '⚠️',
       title: 'Your account is now delinquent',
       subtitle: esc(o.restaurant),
-      body: `<p style="margin:0 0 14px;">We couldn't charge <b>${usd(o.amountCents)}</b> for your Bite Wise plan${o.error ? `: ${esc(o.error)}` : ''}.</p>
+      body: `<p style="margin:0 0 14px;">We couldn't charge <b>${usd(o.amountCents)}</b> for your ResDish plan${o.error ? `: ${esc(o.error)}` : ''}.</p>
         <p style="margin:0 0 14px;">Your account is now <b>delinquent</b>. Your live offers are paused, and you <b>won't be able to post new offers until the payment is made</b>.</p>
         <p style="margin:0 0 18px;">Renew now with the card on file or another card. As soon as the payment goes through, you can post offers again.</p>
         ${button(o.planUrl, `Renew now: ${usd(o.amountCents)}`, '#D97706')}
         <p style="margin:16px 0 0;font:13px/1.5 ${FONT};color:#64748B;">Renewal link: <a href="${esc(o.planUrl)}" style="color:#2563EB;word-break:break-all;">${esc(o.planUrl)}</a></p>`,
     }),
-    text: `Your Bite Wise account (${o.restaurant}) is now delinquent: we couldn't charge ${usd(o.amountCents)}${o.error ? ` (${o.error})` : ''}.
+    text: `Your ResDish account (${o.restaurant}) is now delinquent: we couldn't charge ${usd(o.amountCents)}${o.error ? ` (${o.error})` : ''}.
 Your offers are paused and you won't be able to post new offers until the payment is made.
 Renew now: ${o.planUrl}`,
   };
@@ -220,13 +220,13 @@ export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 
   const when = date(o.renewsOn);
   const plan = o.plan === 'annual' ? 'annual' : 'monthly';
   return {
-    subject: `Your Bite Wise plan renews on ${when}: ${usd(o.amountCents)} will be charged`,
+    subject: `Your ResDish plan renews on ${when}: ${usd(o.amountCents)} will be charged`,
     html: layout({
       preview: `${usd(o.amountCents)} will be charged to ${o.cardLabel} on ${when}.`,
       emoji: '🔔',
       title: 'Your plan renews soon',
       subtitle: esc(o.restaurant),
-      body: `<p style="margin:0 0 16px;">This is a friendly reminder that your Bite Wise ${plan} plan renews automatically on <b>${when}</b>.</p>
+      body: `<p style="margin:0 0 16px;">This is a friendly reminder that your ResDish ${plan} plan renews automatically on <b>${when}</b>.</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:16px;margin:0 0 18px;">
           <tr><td style="padding:16px 20px;font:15px/1.7 ${FONT};color:#334155;">
             <b style="color:#14284B;">Amount:</b> ${usd(o.amountCents)} (including any sales tax)<br>
@@ -237,7 +237,7 @@ export function renewalReminderEmail(o: { restaurant: string; plan: 'monthly' | 
         <p style="margin:0 0 18px;">Nothing to do if you'd like to continue. To change your card, switch plans or turn off auto-renewal, open the Plan tab before then.</p>
         ${button(o.planUrl, 'Manage my plan', '#14284B')}`,
     }),
-    text: `Your Bite Wise ${plan} plan for ${o.restaurant} renews automatically on ${when}.
+    text: `Your ResDish ${plan} plan for ${o.restaurant} renews automatically on ${when}.
 Your card on file (${o.cardLabel}) will be charged ${usd(o.amountCents)} (including any sales tax) on ${when}.
 Manage your plan: ${o.planUrl}`,
   };
@@ -293,13 +293,13 @@ function orderLines(rc: Receipt, totalLabel: string) {
   const it = rc.item;
   return {
     html: `${orderRow(`${it.quantity} × ${esc(it.title)}`, usd(it.lineOriginalCents), { sub: `${usd(it.originalUnitCents)} each` })}
-          ${it.savingsCents > 0 ? orderRow(`Bite Wise discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
+          ${it.savingsCents > 0 ? orderRow(`ResDish discount (${it.discountPct}% off)`, `−${usd(it.savingsCents)}`, { color: '#3E8230' }) : ''}
           ${rc.coupon?.discountCents ? orderRow(`Coupon ${esc(rc.coupon.code)}`, `−${usd(rc.coupon.discountCents)}`, { color: '#3E8230' }) : ''}
           ${orderRow('Subtotal', usd(rc.subtotalCents))}
           ${rc.coupon?.feeWaivedCents ? orderRow(`Service fee waived (coupon ${esc(rc.coupon.code)})`, usd(0), { color: '#3E8230' }) : rc.serviceFeeCents ? orderRow(rc.serviceFeeLabel, usd(rc.serviceFeeCents)) : ''}
           ${orderRow(rc.salesTaxLabel, usd(rc.taxCents))}
           ${orderRow(totalLabel, usd(rc.totalCents), { strong: true })}`,
-    text: `${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nBite Wise discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
+    text: `${it.quantity} x ${it.title}: ${usd(it.lineOriginalCents)}${it.savingsCents > 0 ? `\nResDish discount (${it.discountPct}% off): -${usd(it.savingsCents)}` : ''}
 ${rc.coupon?.discountCents ? `Coupon ${rc.coupon.code}: -${usd(rc.coupon.discountCents)}\n` : ''}Subtotal: ${usd(rc.subtotalCents)}${rc.coupon?.feeWaivedCents ? `\nService fee waived (coupon ${rc.coupon.code})` : ''}${rc.serviceFeeCents ? `\n${rc.serviceFeeLabel}: ${usd(rc.serviceFeeCents)}` : ''}
 ${rc.salesTaxLabel}: ${usd(rc.taxCents)}
 ${totalLabel}: ${usd(rc.totalCents)}`,
@@ -314,7 +314,7 @@ export function orderPlacedEmail(rc: Receipt, o: { directionsUrl: string; orders
   const r = rc.restaurant;
   const where = `${r.address}, ${cityLine(r)}`;
   const held = rc.totalCents - rc.creditAppliedCents;
-  const hold = [held > 0 && `${usd(held)} held on ${rc.card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in Bite Wise credit`].filter(Boolean).join(' + ');
+  const hold = [held > 0 && `${usd(held)} held on ${rc.card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in ResDish credit`].filter(Boolean).join(' + ');
   const lines = orderLines(rc, 'Order total');
   const pin = rc.pin
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:16px;margin:0 0 18px;"><tr><td align="center" style="padding:16px 18px;">
@@ -346,7 +346,7 @@ export function orderPlacedEmail(rc: Receipt, o: { directionsUrl: string; orders
         <p style="margin:0 0 18px;font-size:14px;color:#475569;">Your hold receipt is attached as a PDF. Can't make it? Cancel in <a href="${esc(o.ordersUrl)}" style="color:#14284B;">My orders</a> before the pickup time: only the non-refundable service fee is charged. Missed pickups count toward your account limits.</p>
         ${button(o.ordersUrl, 'My orders', '#14284B')}`,
     }),
-    text: `Your Bite Wise order is placed! (order #${rc.orderId}, hold receipt ${rc.receiptNumber})
+    text: `Your ResDish order is placed! (order #${rc.orderId}, hold receipt ${rc.receiptNumber})
 ${rc.pin ? `\nYOUR PICKUP PIN: ${rc.pin}\nShow it at the counter.` : ''}${rc.pickupByText ? `\nPick up by: ${rc.pickupByText}` : ''}
 
 ${r.name}
@@ -368,11 +368,11 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
   const it = rc.item;
   const r = rc.restaurant;
   const charged = rc.amountChargedCents;
-  const paid = (card: string) => [charged > 0 && `${usd(charged)} on ${card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in Bite Wise credit`].filter(Boolean).join(' + ');
+  const paid = (card: string) => [charged > 0 && `${usd(charged)} on ${card}`, rc.creditAppliedCents > 0 && `${usd(rc.creditAppliedCents)} in ResDish credit`].filter(Boolean).join(' + ');
   const paidWith = paid(esc(rc.card));
   const lines = orderLines(rc, 'Total paid');
   return {
-    subject: `Payment confirmed: your Bite Wise receipt ${rc.receiptNumber} (${usd(rc.totalCents)} at ${r.name})`,
+    subject: `Payment confirmed: your ResDish receipt ${rc.receiptNumber} (${usd(rc.totalCents)} at ${r.name})`,
     html: layout({
       preview: `Paid ${usd(rc.totalCents)} for ${it.quantity} × ${it.title}. You saved ${usd(it.savingsCents)}.`,
       emoji: '🧾',
@@ -390,7 +390,7 @@ export function orderInvoiceEmail(rc: Receipt, o: { receiptUrl: string }) {
         <p style="margin:0 0 18px;font-size:14px;color:#475569;">Your receipt is attached as a PDF. You can also view or print it any time:</p>
         ${button(o.receiptUrl, 'View my receipt', '#14284B')}`,
     }),
-    text: `Bite Wise payment receipt ${rc.receiptNumber} (order #${rc.orderId})
+    text: `ResDish payment receipt ${rc.receiptNumber} (order #${rc.orderId})
 ${r.name}, ${r.address}, ${cityLine(r)}
 
 ${lines.text}${paidWith ? `\nPaid with: ${paid(rc.card)}` : ''}
@@ -415,7 +415,7 @@ export function noShowWarningEmail(o: { username: string; orderId: number; item:
       ? `<b>One more missed pickup in a row and your account will be suspended for 30 days.</b>`
       : `If you miss ${left} more pickups in a row, your account will be suspended for 30 days.`;
   return {
-    subject: `You missed your Bite Wise pickup (order #${o.orderId})`,
+    subject: `You missed your ResDish pickup (order #${o.orderId})`,
     html: layout({
       preview: `Order #${o.orderId} at ${o.restaurant} wasn't picked up. ${charged}.`,
       emoji: '⏰',
@@ -436,7 +436,7 @@ ${o.ordersUrl}`,
 
 export function noShowSuspendedEmail(o: { username: string; strikes: number; days: number; until: string }) {
   return {
-    subject: `Your Bite Wise account is suspended for ${o.days} days`,
+    subject: `Your ResDish account is suspended for ${o.days} days`,
     html: layout({
       preview: `${o.strikes} missed pickups in a row: suspended until ${date(o.until)}.`,
       emoji: '⏸️',
@@ -448,7 +448,7 @@ export function noShowSuspendedEmail(o: { username: string; strikes: number; day
         ${box('<b>When the suspension ends, your account is reactivated automatically.</b> After that, the first missed pickup closes your account permanently.', '#FEE2E2', '#FCA5A5')}
         <p style="margin:0;font-size:15px;color:#475569;">If you think this is a mistake, reply to this email or write to <a href="mailto:${esc(serverEnv.legal.email)}">${esc(serverEnv.legal.email)}</a>.</p>`,
     }),
-    text: `Hi ${o.username}, you missed ${o.strikes} pickups in a row, so your Bite Wise account is suspended automatically for ${o.days} days, until ${date(o.until)} (Customer Terms, Section 5.4). Open orders were cancelled without charge.
+    text: `Hi ${o.username}, you missed ${o.strikes} pickups in a row, so your ResDish account is suspended automatically for ${o.days} days, until ${date(o.until)} (Customer Terms, Section 5.4). Open orders were cancelled without charge.
 When the suspension ends, your account is reactivated automatically. After that, the first missed pickup closes your account permanently.
 Questions: ${serverEnv.legal.email}`,
   };
@@ -456,18 +456,18 @@ Questions: ${serverEnv.legal.email}`,
 
 export function noShowBannedEmail(o: { username: string }) {
   return {
-    subject: 'Your Bite Wise account has been closed',
+    subject: 'Your ResDish account has been closed',
     html: layout({
       preview: 'Another missed pickup after a suspension: your account is closed permanently.',
       emoji: '🚫',
       title: 'Your account has been closed',
       subtitle: 'Missed pickup after a suspension',
       body: `<p style="margin:0 0 14px;">Hi ${esc(o.username)}, your account was suspended earlier for missed pickups, and you have missed another one. As our
-        Customer Terms (Section 5.4) explain, your Bite Wise account has been <b>closed permanently</b>. Any open orders were cancelled without
+        Customer Terms (Section 5.4) explain, your ResDish account has been <b>closed permanently</b>. Any open orders were cancelled without
         charge, and this email address can't be used to open a new account.</p>
         <p style="margin:0;font-size:15px;color:#475569;">If you think this is a mistake, write to <a href="mailto:${esc(serverEnv.legal.email)}">${esc(serverEnv.legal.email)}</a>.</p>`,
     }),
-    text: `Hi ${o.username}, your account was suspended earlier for missed pickups and you have missed another one, so your Bite Wise account has been closed permanently (Customer Terms, Section 5.4). Open orders were cancelled without charge.
+    text: `Hi ${o.username}, your account was suspended earlier for missed pickups and you have missed another one, so your ResDish account has been closed permanently (Customer Terms, Section 5.4). Open orders were cancelled without charge.
 Questions: ${serverEnv.legal.email}`,
   };
 }
@@ -475,7 +475,7 @@ Questions: ${serverEnv.legal.email}`,
 // Tells the admins the platform suspended or banned a customer.
 export function adminAlertEmail(o: { title: string; message: string; customer: string; email: string; noShowsTotal: number; consoleUrl: string }) {
   return {
-    subject: `Bite Wise alert: ${o.title}`,
+    subject: `ResDish alert: ${o.title}`,
     html: layout({
       preview: o.message,
       emoji: '🚨',
@@ -493,36 +493,36 @@ export function adminAlertEmail(o: { title: string; message: string; customer: s
 export function passwordResetEmail(o: { username: string; code: string; minutes: number }) {
   const digits = o.code.split('').map((d) => `<td style="padding:0 3px;"><div style="width:42px;height:54px;border-radius:12px;background:#F1F5F9;border:1px solid #E2E8F0;font:800 28px/54px ${FONT};color:#14284B;text-align:center;">${esc(d)}</div></td>`).join('');
   return {
-    subject: `${o.code} is your Bite Wise password reset code`,
+    subject: `${o.code} is your ResDish password reset code`,
     html: layout({
       preview: `Your code is ${o.code}. It works for ${o.minutes} minutes.`,
       emoji: '🔑',
       title: 'Reset your password',
       subtitle: `Your ${o.code.length}-digit code`,
-      body: `<p style="margin:0 0 18px;">Hi ${esc(o.username)}, enter this code on the Bite Wise reset screen, then choose your new password:</p>
+      body: `<p style="margin:0 0 18px;">Hi ${esc(o.username)}, enter this code on the ResDish reset screen, then choose your new password:</p>
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 18px;"><tr>${digits}</tr></table>
-        <p style="margin:0 0 10px;font-size:15px;color:#475569;">The code works for <b>${o.minutes} minutes</b> and only once. Never share it: Bite Wise will never ask you for it.</p>
+        <p style="margin:0 0 10px;font-size:15px;color:#475569;">The code works for <b>${o.minutes} minutes</b> and only once. Never share it: ResDish will never ask you for it.</p>
         <p style="margin:0;font-size:15px;color:#475569;">Didn't ask to reset your password? You can ignore this email; your password stays the same.</p>`,
     }),
-    text: `Hi ${o.username}, your Bite Wise password reset code is ${o.code}. Enter it on the reset screen, then choose your new password.
+    text: `Hi ${o.username}, your ResDish password reset code is ${o.code}. Enter it on the reset screen, then choose your new password.
 The code works for ${o.minutes} minutes and only once. Didn't ask for it? Ignore this email; your password stays the same.`,
   };
 }
 
-// A customer who just confirmed their email: congratulations, and buttons to put Bite Wise on their phone's home screen.
+// A customer who just confirmed their email: congratulations, and buttons to put ResDish on their phone's home screen.
 export function customerWelcomeEmail(o: { username: string; androidUrl: string; iphoneUrl: string; windowsUrl: string; dealsUrl: string; welcomeCredit?: string | null }) {
   return {
     subject: `Congratulations, ${o.username}! You're ready to rescue food 🎉`,
     html: layout({
-      preview: 'Your Bite Wise account is confirmed. Put Bite Wise on your phone in one tap.',
+      preview: 'Your ResDish account is confirmed. Put ResDish on your phone in one tap.',
       emoji: '🎉',
       title: `Congratulations, ${esc(o.username)}!`,
       subtitle: 'Your account is confirmed',
-      body: `<p style="margin:0 0 14px;">Welcome to Bite Wise! Restaurants near you post their surplus food at big discounts, and you pick it up before it goes to waste.</p>
+      body: `<p style="margin:0 0 14px;">Welcome to ResDish! Restaurants near you post their surplus food at big discounts, and you pick it up before it goes to waste.</p>
         ${o.welcomeCredit ? `<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:14px;padding:14px 18px;margin:0 0 16px;font:15px/1.5 ${FONT};color:#065F46;">🎁 <b>${esc(o.welcomeCredit)} welcome bonus</b> is waiting in your account. Use it at checkout on your first orders.</div>` : ''}
         <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:18px;padding:22px 22px 16px;">
-          <h2 style="margin:0 0 6px;font:800 19px ${FONT};color:#14284B;">📲 Get Bite Wise on your phone</h2>
-          <p style="margin:0 0 16px;font:15px/1.55 ${FONT};color:#475569;">Open this email on your phone and tap your phone below. A <b>Bite Wise</b> icon appears on
+          <h2 style="margin:0 0 6px;font:800 19px ${FONT};color:#14284B;">📲 Get ResDish on your phone</h2>
+          <p style="margin:0 0 16px;font:15px/1.55 ${FONT};color:#475569;">Open this email on your phone and tap your phone below. A <b>ResDish</b> icon appears on
             your home screen, so the best deals near you are always one tap away.</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
             <td width="33%" style="padding:0 4px 8px 0;">${button(o.androidUrl, '🤖 Android', '#3E8230')}</td>
@@ -533,8 +533,8 @@ export function customerWelcomeEmail(o: { username: string; androidUrl: string; 
         <p style="margin:22px 0 10px;">How it works: find a deal, order and pay in the app, then show your 4-digit PIN at the restaurant. Your card is only charged when you pick up.</p>
         <div style="padding:6px 0 0;">${button(o.dealsUrl, 'Find deals near me', '#14284B')}</div>`,
     }),
-    text: `Congratulations, ${o.username}! Your Bite Wise account is confirmed.
-${o.welcomeCredit ? `A ${o.welcomeCredit} welcome bonus is waiting in your account, to use at checkout.\n` : ''}Get Bite Wise on your phone (open this on your phone):
+    text: `Congratulations, ${o.username}! Your ResDish account is confirmed.
+${o.welcomeCredit ? `A ${o.welcomeCredit} welcome bonus is waiting in your account, to use at checkout.\n` : ''}Get ResDish on your phone (open this on your phone):
 Android: ${o.androidUrl}
 iPhone: ${o.iphoneUrl}
 Windows: ${o.windowsUrl}
@@ -546,12 +546,12 @@ Find deals near you: ${o.dealsUrl}`,
 // A new admin or admin employee: where to log in, and what they can do. The password is never emailed.
 export function teamWelcomeEmail(o: { username: string; role: 'admin' | 'support'; canRefund: boolean; loginUrl: string }) {
   const what = o.role === 'admin'
-    ? 'You have <b>full admin access</b> to the Bite Wise owner console.'
-    : `You can look after customer and restaurant accounts in the Bite Wise owner console: Alerts, Restaurants, Customers, Orders and Live offers${o.canRefund ? ', including giving customers platform credit' : ''}.`;
+    ? 'You have <b>full admin access</b> to the ResDish owner console.'
+    : `You can look after customer and restaurant accounts in the ResDish owner console: Alerts, Restaurants, Customers, Orders and Live offers${o.canRefund ? ', including giving customers platform credit' : ''}.`;
   return {
-    subject: `You've been added to the Bite Wise ${o.role === 'admin' ? 'admin' : 'support'} team`,
+    subject: `You've been added to the ResDish ${o.role === 'admin' ? 'admin' : 'support'} team`,
     html: layout({
-      preview: 'Your Bite Wise owner console account is ready.',
+      preview: 'Your ResDish owner console account is ready.',
       emoji: '🛡️',
       title: `Welcome to the team, ${esc(o.username)}!`,
       subtitle: o.role === 'admin' ? 'Admin' : 'Support team',
@@ -560,7 +560,7 @@ export function teamWelcomeEmail(o: { username: string; role: 'admin' | 'support
           password; you can also choose your own with <b>Forgot password</b> on the log-in page.</p>
         <div style="padding:6px 0 0;">${button(o.loginUrl, 'Open the owner console', '#14284B')}</div>`,
     }),
-    text: `You've been added to the Bite Wise ${o.role === 'admin' ? 'admin' : 'support'} team, ${o.username}.
+    text: `You've been added to the ResDish ${o.role === 'admin' ? 'admin' : 'support'} team, ${o.username}.
 Log in at ${o.loginUrl} with your user name or this email. Your admin will give you your password, or use "Forgot password" to choose your own.`,
   };
 }
@@ -569,24 +569,24 @@ Log in at ${o.loginUrl} with your user name or this email. Your admin will give 
 export function teamPasswordEmail(o: { username: string; password: string; temporary: boolean; loginUrl: string }) {
   const after = o.temporary ? 'It is a <b>temporary password</b>: you will be asked to choose your own as soon as you log in.' : 'Keep it private.';
   return {
-    subject: o.temporary ? 'Your temporary Bite Wise password' : 'Your new Bite Wise password',
+    subject: o.temporary ? 'Your temporary ResDish password' : 'Your new ResDish password',
     html: layout({
-      preview: 'An admin set a new password for your Bite Wise owner console account.',
+      preview: 'An admin set a new password for your ResDish owner console account.',
       emoji: '🔑',
       title: o.temporary ? 'Your temporary password' : 'Your new password',
       subtitle: `Owner console · ${esc(o.username)}`,
-      body: `<p style="margin:0 0 14px;">An admin set a new password for your Bite Wise account <b>${esc(o.username)}</b>:</p>
+      body: `<p style="margin:0 0 14px;">An admin set a new password for your ResDish account <b>${esc(o.username)}</b>:</p>
         ${box(`<span style="font:700 20px/1.4 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;">${esc(o.password)}</span>`, '#F1F5F9', '#CBD5E1')}
-        <p style="margin:0 0 20px;">${after} If you didn't expect this, tell your Bite Wise admin.</p>
+        <p style="margin:0 0 20px;">${after} If you didn't expect this, tell your ResDish admin.</p>
         <div style="padding:6px 0 0;">${button(o.loginUrl, 'Log in to the owner console', '#14284B')}</div>`,
     }),
-    text: `An admin set a new password for your Bite Wise account ${o.username}: ${o.password}
+    text: `An admin set a new password for your ResDish account ${o.username}: ${o.password}
 ${o.temporary ? 'It is temporary: you will be asked to choose your own when you log in.' : 'Keep it private.'}
 Log in: ${o.loginUrl}`,
   };
 }
 
-// A coupon from Bite Wise, sent to every customer in the coupon's country. The subject and text come from a coupon
+// A coupon from ResDish, sent to every customer in the coupon's country. The subject and text come from a coupon
 // email template the admin chose and edited (placeholders already filled in); the code box and button are added here.
 export function couponEmail(o: { subject: string; body: string; code: string; offer: string; expires: string; dealsUrl: string }) {
   const paragraphs = o.body.trim().split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);

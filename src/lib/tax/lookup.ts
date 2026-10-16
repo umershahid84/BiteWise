@@ -2,13 +2,13 @@ import Stripe from 'stripe';
 import { provinceByCode } from './provinces';
 import { stateByCode } from './states';
 
-// Finds the sales tax rate for a restaurant's street address. Food on Bite Wise is always picked up at the
+// Finds the sales tax rate for a restaurant's street address. Food on ResDish is always picked up at the
 // restaurant, so the sale takes place there and the restaurant's address sets the rate (state, county, city and any
 // special districts). Plan fees are paid by the restaurant at the same address.
 //
 // Sources, best first:
 //   1. Stripe Tax (STRIPE_TAX=on and a Stripe secret key): any US address, rate for prepared food, and only in states
-//      where Bite Wise has added a tax registration in the Stripe dashboard.
+//      where ResDish has added a tax registration in the Stripe dashboard.
 //   2. Washington State Department of Revenue's free address rate lookup, for WA addresses.
 //   3. The state's own rate (an estimate: local taxes missing). Flagged for an admin to check.
 // TAX_LOOKUP=off skips 1 and 2 (tests and offline development).
@@ -37,7 +37,7 @@ const title = (s: string) => s.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUppe
 
 export function stripeTaxClient(): StripeTaxClient | null {
   const key = process.env.STRIPE_SECRET_KEY;
-  return process.env.STRIPE_TAX === 'on' && key ? new Stripe(key, { appInfo: { name: 'Bite Wise' } }) : null;
+  return process.env.STRIPE_TAX === 'on' && key ? new Stripe(key, { appInfo: { name: 'ResDish' } }) : null;
 }
 
 // Stripe Tax: the tax on $100.00 of prepared food at the address, in cents, is the rate in basis points.
@@ -52,7 +52,7 @@ async function stripeTax(a: TaxAddress, stripe: StripeTaxClient): Promise<TaxRat
   });
   const reasons = calc.tax_breakdown.map((b) => b.taxability_reason);
   if (reasons.includes('not_collecting')) {
-    return { skip: `Bite Wise has no ${a.state} tax registration in Stripe Tax, so Stripe doesn't calculate tax there.` };
+    return { skip: `ResDish has no ${a.state} tax registration in Stripe Tax, so Stripe doesn't calculate tax there.` };
   }
   return { rateBps: calc.tax_amount_exclusive, jurisdiction: `${title(a.city)}, ${a.state} (Stripe Tax)`, accuracy: 'address' };
 }

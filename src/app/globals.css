@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Bite Wise design tokens. Each part of the site has its own look (data-theme on <html>, set from the address by
+/* ResDish design tokens. Each part of the site has its own look (data-theme on <html>, set from the address by
    src/proxy.ts): warm for customers, a kitchen dashboard for restaurants, a corporate console for the admin team.
    Each look has a light and a dark version (data-mode, see src/lib/theme.ts): by default customers and admins see
    light and restaurants dark, and anyone can switch in the header. Components only use these tokens, so they follow. */

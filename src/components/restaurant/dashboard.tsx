@@ -98,7 +98,7 @@ export function RestaurantDashboard({ restaurant, staff, serviceFee, map, paymen
     let on = false;
     let n = 0;
     const flash = setInterval(() => {
-      document.title = (on = !on) ? '🔔 New order! · Bite Wise' : base;
+      document.title = (on = !on) ? '🔔 New order! · ResDish' : base;
       if (++n > 12 || document.hasFocus()) {
         clearInterval(flash);
         document.title = base;
@@ -147,7 +147,7 @@ export function RestaurantDashboard({ restaurant, staff, serviceFee, map, paymen
     <main className="container-page py-8">
       {restaurant.status === 'pending' && (
         <Alert tone="warn" className="mb-5">
-          ⏳ <b>Your restaurant is waiting for approval.</b> You can set up your menu and offers now; customers will see them once Bite Wise approves
+          ⏳ <b>Your restaurant is waiting for approval.</b> You can set up your menu and offers now; customers will see them once ResDish approves
           your account (usually within 1 business day).
         </Alert>
       )}
@@ -166,11 +166,11 @@ export function RestaurantDashboard({ restaurant, staff, serviceFee, map, paymen
       {restaurant.status === 'suspended' && (
         <Alert tone="error" className="mb-5">
           ⛔ <b>Your restaurant is suspended{restaurant.suspended_until ? ` until ${fmtDay(restaurant.suspended_until)}` : ''}.</b> Your offers are hidden and you can&apos;t post
-          new ones. You can still verify pickups for existing orders. Contact Bite Wise support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
+          new ones. You can still verify pickups for existing orders. Contact ResDish support.{restaurant.admin_note && <> Note: {restaurant.admin_note}</>}
         </Alert>
       )}
       {!owner && restaurant.status === 'approved' && planNotice && (
-        <Alert tone="warn" className="mb-5">⭐ <b>New offers can&apos;t be posted right now:</b> the restaurant&apos;s Bite Wise plan needs attention. Please let the owner know.</Alert>
+        <Alert tone="warn" className="mb-5">⭐ <b>New offers can&apos;t be posted right now:</b> the restaurant&apos;s ResDish plan needs attention. Please let the owner know.</Alert>
       )}
       {owner && restaurant.status === 'approved' && planNotice === 'delinquent' && tab !== 'plan' && (
         <Alert tone="error" className="mb-5">
@@ -180,7 +180,7 @@ export function RestaurantDashboard({ restaurant, staff, serviceFee, map, paymen
       )}
       {owner && restaurant.status === 'approved' && planNotice === 'choose' && tab !== 'plan' && (
         <Alert tone="warn" className="mb-5">
-          ⭐ <b>Choose your Bite Wise plan to post offers{pioneerSpotsLeft > 0 ? `: it's FREE for the next ${pioneerSpotsLeft} Pioneer Members` : ''}.</b>{' '}
+          ⭐ <b>Choose your ResDish plan to post offers{pioneerSpotsLeft > 0 ? `: it's FREE for the next ${pioneerSpotsLeft} Pioneer Members` : ''}.</b>{' '}
           <button type="button" className="font-bold underline" onClick={() => changeTab('plan')}>See plans</button>
         </Alert>
       )}

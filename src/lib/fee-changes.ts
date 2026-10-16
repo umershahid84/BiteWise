@@ -114,7 +114,7 @@ export type FeeChangeInput = {
 
 type Recipient = { restaurantId: number; name: string; email: string; sub: Sub | null };
 
-// Restaurants that are told about a fee change: everyone still on Bite Wise (not banned or deleted), except Pioneer
+// Restaurants that are told about a fee change: everyone still on ResDish (not banned or deleted), except Pioneer
 // Partners unless asked (their plan stays free).
 async function recipients(includeFounding: boolean): Promise<Recipient[]> {
   const rows = must(await db().from('restaurants').select('id, name, status, profiles!restaurants_owner_id_fkey(email, status), restaurant_subscriptions(*)')

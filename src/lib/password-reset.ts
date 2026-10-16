@@ -10,7 +10,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Forgot password: the user types their email (or user name), gets a code by email, and types the code with
 // a new password. Supabase Auth makes and checks the code (a password recovery one-time code, valid for an hour);
-// Bite Wise sends it in its own email. Limits: one code a minute, and 5 wrong tries per code.
+// ResDish sends it in its own email. Limits: one code a minute, and 5 wrong tries per code.
 // Staff accounts have no email address of their own: the restaurant owner resets their password.
 
 const RESEND_SECONDS = 60;
@@ -43,7 +43,7 @@ export async function requestPasswordReset(login: string) {
   await sendEmail({ to: account.email, ...passwordResetEmail({ username: account.username, code: data.properties.email_otp, minutes: CODE_MINUTES }) });
 }
 
-const WRONG = 'That code is wrong or has expired. Check the latest email from Bite Wise, or ask for a new code.';
+const WRONG = 'That code is wrong or has expired. Check the latest email from ResDish, or ask for a new code.';
 
 // Checks the code and sets the new password. Returns the page to log in on.
 export async function resetPassword(login: string, code: string, password: string): Promise<Portal> {

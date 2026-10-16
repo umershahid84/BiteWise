@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps<'/kiosk/[token]'>):
     referrer: 'no-referrer',
     ...(k && {
       manifest: `/kiosk/${token}/manifest.webmanifest`,
-      appleWebApp: { capable: true, title: 'Bite Wise Kiosk', statusBarStyle: 'black-translucent' },
+      appleWebApp: { capable: true, title: 'ResDish Kiosk', statusBarStyle: 'black-translucent' },
     }),
   };
 }
@@ -29,7 +29,7 @@ export default async function KioskPage({ params, searchParams }: PageProps<'/ki
       <div className="fixed inset-0 z-[2000] grid place-items-center bg-bg p-6 text-center text-ink">
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo-dark.svg" alt="Bite Wise" className="mx-auto mb-8 h-20" />
+          <img src="/assets/logo-dark.svg" alt="ResDish" className="mx-auto mb-8 h-20" />
           <h1 className="font-heading text-3xl font-extrabold">This kiosk link isn&apos;t valid any more</h1>
           <p className="mx-auto max-w-lg text-ink-2">The restaurant may have replaced it. Open the current kiosk link from the restaurant dashboard (Kiosk tab).</p>
         </div>

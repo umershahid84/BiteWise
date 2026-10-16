@@ -15,7 +15,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 //
 // refunded_cents = refunds to the customer's ORIGINAL payment: the restaurant gives up its share of the
 // food subtotal (and the food's sales tax goes back). The service fee is never refunded. credited_cents = refunds
-// issued as PLATFORM CREDIT, funded by Bite Wise; the restaurant keeps its full food sales.
+// issued as PLATFORM CREDIT, funded by ResDish; the restaurant keeps its full food sales.
 // Orders that weren't picked up (missed or cancelled by the customer) still bring in the service fee: kept_fee_cents
 // (and kept_tax_cents, the sales tax on the fee when the fee is taxed).
 
@@ -30,7 +30,7 @@ const foodRefund = (o: Order) => {
 const feeRefund = (o: Order) => Math.max(0, o.refunded_cents - refundableTotalCents(o)); // only on refunds made before the fee was non-refundable
 const taxRefund = (o: Order) => (o.refunded_cents ? o.refunded_cents - foodRefund(o) - feeRefund(o) : 0);
 // Whether the restaurant was paid the sales tax on its food (and reports and remits it itself), and the part of an
-// order's sales tax (after refunds) that Bite Wise keeps and must remit: all of it, or only the tax on the service fee.
+// order's sales tax (after refunds) that ResDish keeps and must remit: all of it, or only the tax on the service fee.
 const taxToRestaurant = (o: Order) => o.restaurant_share_cents > o.subtotal_cents;
 const bitewiseTax = (o: Order) => (taxToRestaurant(o) ? feeTaxCents(o) : o.tax_cents - taxRefund(o));
 const restaurantTax = (o: Order) => (taxToRestaurant(o) ? o.tax_cents - taxRefund(o) - feeTaxCents(o) : 0);
@@ -363,7 +363,7 @@ export async function payouts(params: URLSearchParams) {
 
 // ---------------------------------------------------------------- sales tax
 
-// Retail sales tax Bite Wise collected and must remit, on completed orders and on restaurant plan fees, by restaurant
+// Retail sales tax ResDish collected and must remit, on completed orders and on restaurant plan fees, by restaurant
 // location (for the excise tax return). Tax on food that was paid to the restaurant (which remits it) is only totalled.
 export async function tax(params: URLSearchParams) {
   const r = range(params, 30);
@@ -385,7 +385,7 @@ export async function tax(params: URLSearchParams) {
     const key = `${l.city}|${l.zip}|${o.tax_rate_bps}`;
     const g = groups.get(key) ?? { city: l.city, zip: l.zip, rateBps: o.tax_rate_bps, orders: 0, taxableCents: 0, taxCents: 0 };
     g.orders += 1;
-    // Bite Wise's taxable sale: the food (when it remits the food's tax), or just the taxed service fee.
+    // ResDish's taxable sale: the food (when it remits the food's tax), or just the taxed service fee.
     g.taxableCents += taxToRestaurant(o) ? o.service_fee_cents : o.subtotal_cents - foodRefund(o);
     g.taxCents += mine;
     groups.set(key, g);
@@ -524,11 +524,11 @@ export async function log(adminId: string, action: string, targetType: string, t
 
 // ---------------------------------------------------------------- platform income
 
-// What Bite Wise itself earns, by day, month or year, for a date range (Pacific Time):
+// What ResDish itself earns, by day, month or year, for a date range (Pacific Time):
 //   + service fees on completed orders (by pickup date; the fee is never refunded)
 //   + service fees kept on orders that weren't picked up (missed, or cancelled by the customer; by the day they closed)
 //   + restaurant plan fees (by payment date; without sales tax; Pioneer Members pay $0.00)
-//   - platform credit Bite Wise funds: refunds issued as credit and goodwill credit (by the date it was issued)
+//   - platform credit ResDish funds: refunds issued as credit and goodwill credit (by the date it was issued)
 //   = net income (before payment processing fees).
 // Sales tax (on orders and plan fees) is collected for Washington State and is not income; it is shown separately.
 // Also returns today, this month and this year, whatever range is chosen, and income by restaurant.
@@ -645,7 +645,7 @@ const incomeHead = ['Orders', 'Meals', 'Total charged to customers', 'Service fe
   'Platform credit cost', 'Net income', 'Sales tax on orders', 'Sales tax on plans'];
 const incomeVals = (l: IncomeLine) => [l.orders, l.meals, dollars(l.gmvCents), dollars(l.serviceFeesCents), dollars(l.planFeesCents), l.planInvoices,
   dollars(l.pioneerDiscountsCents), dollars(l.creditCostCents), dollars(l.netCents), dollars(l.orderTaxCents), dollars(l.planTaxCents)];
-export const INCOME_NOTE = 'Net income = service fees (including fees kept on missed and customer-cancelled orders; service fees are not refundable) + plan fees - platform credit Bite Wise funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is not income: tax on food is paid to restaurants (they remit it) unless Bite Wise remits it; the sales tax columns show what Bite Wise remits.';
+export const INCOME_NOTE = 'Net income = service fees (including fees kept on missed and customer-cancelled orders; service fees are not refundable) + plan fees - platform credit ResDish funded (refunds as credit, goodwill). Before payment processing fees. Sales tax is not income: tax on food is paid to restaurants (they remit it) unless ResDish remits it; the sales tax columns show what ResDish remits.';
 
 // ?section=periods (income per day/month/year), restaurants (income by restaurant) or all (both).
 export async function incomeCsv(params: URLSearchParams) {
@@ -660,7 +660,7 @@ export async function incomeCsv(params: URLSearchParams) {
   const rows = section === 'periods' ? periods : section === 'restaurants' ? restaurants : [...periods, [], ['Income by restaurant'], ...restaurants];
   const what = section === 'restaurants' ? 'income-by-restaurant' : `income-by-${x.by}`;
   return {
-    name: `BiteWise-${what}-${x.range.from}-to-${x.range.to}.csv`,
+    name: `ResDish-${what}-${x.range.from}-to-${x.range.to}.csv`,
     csv: toCsv([...rows, [], [INCOME_NOTE]]),
   };
 }

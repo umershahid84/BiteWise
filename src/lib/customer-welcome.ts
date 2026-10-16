@@ -6,7 +6,7 @@ import { check } from '@/lib/errors';
 import { currencyOf, money } from '@/lib/format';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 
-// The congratulations email a customer gets once their email address is confirmed, with buttons to put Bite Wise
+// The congratulations email a customer gets once their email address is confirmed, with buttons to put ResDish
 // on their phone (/app?device=...). Sent once; an admin can send it again (`resend`).
 export type CustomerWelcome = { sent: true; to: string } | { sent: false; reason: 'not_found' | 'not_customer' | 'not_confirmed' | 'already_sent' | 'failed'; to?: string };
 

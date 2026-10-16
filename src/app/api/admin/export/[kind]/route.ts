@@ -36,8 +36,8 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/export
     if (hasReport(kind)) {
       const { report: r } = await report(kind, p);
       return p.get('format') === 'pdf'
-        ? pdfResponse(await listReportPdf(r, { generatedAt, text: (c) => cellText(c, false) }), `BiteWise-${r.file}.pdf`)
-        : csvResponse(reportCsv(r), `BiteWise-${r.file}.csv`);
+        ? pdfResponse(await listReportPdf(r, { generatedAt, text: (c) => cellText(c, false) }), `ResDish-${r.file}.pdf`)
+        : csvResponse(reportCsv(r), `ResDish-${r.file}.csv`);
     }
     if (kind === 'income') {
       const file = await admin.incomeCsv(p);
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/admin/export
       const section = admin.incomeSection(p);
       const pdf = await incomePdf(x, section, { generatedAt, note: admin.INCOME_NOTE });
       const what = section === 'restaurants' ? 'income-by-restaurant' : section === 'periods' ? `income-by-${x.by}` : 'income-report';
-      return pdfResponse(pdf, `BiteWise-${what}-${x.range.from}-to-${x.range.to}.pdf`);
+      return pdfResponse(pdf, `ResDish-${what}-${x.range.from}-to-${x.range.to}.pdf`);
     }
     throw new AppError(404, 'Not found.');
   } catch (err) {

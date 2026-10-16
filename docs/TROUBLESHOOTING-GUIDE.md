@@ -1,10 +1,10 @@
-# Bite Wise: Operations & Troubleshooting Guide
+# ResDish: Operations & Troubleshooting Guide
 
-This guide covers everything on the Bite Wise platform: where each thing lives, how to change it, and what to do when something goes wrong. Use it if you are taking over the platform, filling in for the owner, or just need to make a quick change.
+This guide covers everything on the ResDish platform: where each thing lives, how to change it, and what to do when something goes wrong. Use it if you are taking over the platform, filling in for the owner, or just need to make a quick change.
 
 > **Keep this guide current.** Whenever a feature, setting, service, email, file or fix is added or changed, update the matching section here **in the same commit**, and add a line to the [Change log](#21-change-log) at the bottom.
 
-**Last updated:** 2026-10-13
+**Last updated:** 2026-10-16
 
 ---
 
@@ -38,7 +38,7 @@ This guide covers everything on the Bite Wise platform: where each thing lives, 
 
 | | |
 |---|---|
-| **Product** | Bite Wise: restaurants sell surplus food at a discount; customers order, pay with a card hold, and pick up with a 4-digit PIN. The card is charged only at pickup. |
+| **Product** | ResDish: restaurants sell surplus food at a discount; customers order, pay with a card hold, and pick up with a 4-digit PIN. The card is charged only at pickup. |
 | **Countries** | United States (US dollars, miles, ZIP codes) and Canada (Canadian dollars, kilometres, postal codes) |
 | **Website** | https://www.bite-wise.org |
 | **Support email** | support@bite-wise.org |
@@ -87,8 +87,8 @@ The support email comes from the `SUPPORT_EMAIL` setting (see [section 4](#4-env
 | `src/lib/receipts/pdf.ts` (line ~189) | Bottom of the PDF receipt |
 | `supabase/templates/confirmation.html` (line ~122) | The "confirm your email" sign-up email |
 | `.env.example` | Example settings file |
-| `docs/business/Bite-Wise-Restaurant-Sales-Pitch.pptx` / `.pdf` | Sales deck (closing slide) |
-| `docs/business/Bite-Wise-Restaurant-Partnership-Proposal.docx` / `.pdf` | Partnership proposal. **Still says the old `bitewise.app`, needs updating.** |
+| `docs/business/ResDish-Restaurant-Sales-Pitch.pptx` / `.pdf` | Sales deck (closing slide) |
+| `docs/business/ResDish-Restaurant-Partnership-Proposal.docx` / `.pdf` | Partnership proposal (closing details) |
 
 Places that use the setting (no edit needed): `src/lib/email/templates.ts`, `src/lib/legal/documents.ts`, `src/lib/legal/agreement-pdf.ts`, `src/lib/geocode.ts`.
 
@@ -100,7 +100,7 @@ The same approach works for anything else: search for the text you see on the sc
 
 > Never write passwords or secret keys in this file, in the code, or in chat. They belong only in Vercel's Environment Variables (and your password manager).
 
-| Service | What it does for Bite Wise | Where to manage it |
+| Service | What it does for ResDish | Where to manage it |
 |---|---|---|
 | **GitHub** (`umershahid84/RescueBites`) | Stores the code. Every push to `main` deploys the site. | github.com |
 | **Vercel** (project `bite-wise`) | Runs the website, holds all secret settings, runs the daily scheduled job | vercel.com → bite-wise → Settings → Environment Variables / Domains / Deployments |
@@ -150,16 +150,16 @@ No Stripe keys at all = built-in **test mode** (nothing is charged; test card `4
 | `SMTP_PORT` | `465` |
 | `SMTP_USER` | `resend` |
 | `SMTP_PASSWORD` | the Resend API key |
-| `EMAIL_FROM` | `Bite Wise <no-reply@bite-wise.org>` (must be on the verified domain) |
+| `EMAIL_FROM` | `ResDish <no-reply@bite-wise.org>` (must be on the verified domain) |
 | `SUPPORT_EMAIL` | `support@bite-wise.org` |
 
 ### Company details
 
 | Variable | Default |
 |---|---|
-| `LEGAL_ENTITY_NAME` | `Bite Wise` |
+| `LEGAL_ENTITY_NAME` | `ResDish` |
 | `SUPPORT_EMAIL` | `support@bite-wise.org` |
-| `LEGAL_ADDRESS` | `Federal Way, Washington`: Bite Wise's location in the **US** documents ("Bite Wise (Federal Way, Washington)" in the US agreement, its signed PDF and the US legal pages) |
+| `LEGAL_ADDRESS` | `Federal Way, Washington`: ResDish's location in the **US** documents ("ResDish (Federal Way, Washington)" in the US agreement, its signed PDF and the US legal pages) |
 | `LEGAL_ADDRESS_CA` | `St. John's, Newfoundland and Labrador`: the same, in the **Canadian** documents |
 
 ### Optional switches
@@ -283,7 +283,7 @@ Log in at `/admin/login` → **Settings** tab (admins only). These are stored in
 | `/offers` | customers | Deals near you (list / map) |
 | `/orders`, `/orders/[id]/receipt` | customers | My orders, receipts |
 | `/account` | customers | ZIP/postal code, saved cards, credit, password |
-| `/app` | customers | Install Bite Wise on Android / iPhone / Windows |
+| `/app` | customers | Install ResDish on Android / iPhone / Windows |
 | `/restaurant` | restaurants | Dashboard: Verify pickup, Offers, Menu, Orders, Payouts, Kiosk, Plan, Staff, Profile |
 | `/restaurant/report` | restaurant owners | Daily sales report (print, PDF, CSV) |
 | `/restaurant/invoices/[id]` | restaurant owners | Plan invoice |
@@ -331,28 +331,28 @@ All amounts are stored in **cents**; rates in **basis points** (1035 = 10.35%). 
 |---|---|---|
 | Food (discounted price × quantity, minus any food coupon) | set by the restaurant | **Restaurant** |
 | Sales tax on the food | restaurant's own rate (from its address) | **Restaurant** (setting `order_tax_to_restaurant`) |
-| Service fee (also called the platform fee) | 5% of the food, or a fixed amount (admin setting) | **Bite Wise** (non-refundable) |
-| Tax on the service fee | US: Washington rate (10.35%); Canada: NL HST (15%), admin setting | **Bite Wise** (must remit it) |
+| Service fee (also called the platform fee) | 5% of the food, or a fixed amount (admin setting) | **ResDish** (non-refundable) |
+| Tax on the service fee | US: Washington rate (10.35%); Canada: NL HST (15%), admin setting | **ResDish** (must remit it) |
 
 The customer sees the two taxes added together as **one "Sales tax" line**. Currency follows the **restaurant's country** (US$ or CA$), and the charge goes to that country's Stripe account.
 
 **Coupons** (admin → Coupons tab; `src/lib/coupons.ts`):
-- **No service fee:** waives the fee and its tax. **Paid by Bite Wise.**
+- **No service fee:** waives the fee and its tax. **Paid by ResDish.**
 - **Fixed amount** off the food, or **percentage** off the food. **Paid by the restaurant** (its food amount is lower). Explained in the Restaurant Partner Agreement.
 - Each coupon has an expiry date, works only in its country, once per customer, one per order. Admins can email a coupon to all customers in their country using editable templates.
 
-**Platform credit:** welcome bonus ($10 default), goodwill credit and refunds-as-credit. The restaurant is still paid in full; Bite Wise pays for the credit.
+**Platform credit:** welcome bonus ($10 default), goodwill credit and refunds-as-credit. The restaurant is still paid in full; ResDish pays for the credit.
 
 **Refunds:** food is sold as is and all sales are final; admins may give courtesy refunds (10/25/50/75/100% or an amount, to the card or as credit). The service fee is never refunded.
 
-**Restaurant plans:** $15/month or $150/year (+ sales tax in states listed in `plan_tax_states`); first 50 restaurants free for life (Pioneer Members, $0 invoices). Invoice numbers look like `BW-SUB-000001`.
+**Restaurant plans:** $15/month or $150/year (+ sales tax in states listed in `plan_tax_states`); first 50 restaurants free for life (Pioneer Members, $0 invoices). Invoice numbers look like `RD-SUB-000001`.
 
 ---
 
 ## 10. Payments: Stripe US and Canada
 
 - **Which account is used:** the **restaurant's country**. US restaurant → US Stripe account, US dollars. Canadian restaurant → Canada Stripe account, Canadian dollars. Customers never choose.
-- **How a charge works:** at order time a **hold** is placed (manual capture). At pickup (PIN entered) the hold is captured; Stripe sends the food + its tax to the restaurant's connected account (destination charge) and keeps the fee + fee tax for Bite Wise (application fee).
+- **How a charge works:** at order time a **hold** is placed (manual capture). At pickup (PIN entered) the hold is captured; Stripe sends the food + its tax to the restaurant's connected account (destination charge) and keeps the fee + fee tax for ResDish (application fee).
 - **Restaurants connect** their own Stripe account in Dashboard → **Payouts** (Stripe Express). Until then they're paid manually from Admin → Payouts.
 - **Test (sandbox) mode:** currently both accounts use Stripe **Sandbox** keys. Test cards: `4242 4242 4242 4242` (US Visa), `4000 0012 4000 0000` (Canadian Visa), `4000 0000 0000 0002` (declined); any future date, any CVC.
 - **Postal code on the card form:** for Canadian purchases the app shows its own **Postal code** box (Stripe's own box says "ZIP" for US cards).
@@ -365,7 +365,7 @@ The customer sees the two taxes added together as **one "Sales tax" line**. Curr
 ## 11. Email
 
 **Two senders:**
-1. **The app** sends everything it can itself through SMTP (`src/lib/email/send.ts`): sign-up confirmation (Bite Wise design), welcome emails, receipts with PDF, plan invoices, renewal reminders, declined-payment notices, fee-change announcements, missed-pickup warnings/suspensions/bans, admin alerts, password-reset codes, team welcomes, coupons.
+1. **The app** sends everything it can itself through SMTP (`src/lib/email/send.ts`): sign-up confirmation (ResDish design), welcome emails, receipts with PDF, plan invoices, renewal reminders, declined-payment notices, fee-change announcements, missed-pickup warnings/suspensions/bans, admin alerts, password-reset codes, team welcomes, coupons.
 2. **Supabase** sends its own stored email only as a fallback when the app can't send.
 
 **Email list** (all in `src/lib/email/templates.ts` unless noted):
@@ -427,7 +427,7 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 
 ## 14. Legal documents
 
-- Text: `src/lib/legal/documents.ts` (Customer Terms, Restaurant Partner Agreement, Privacy Policy, each with US and Canada versions). Current version: **`LEGAL_VERSION = '2026-10-21.1'`**.
+- Text: `src/lib/legal/documents.ts` (Customer Terms, Restaurant Partner Agreement, Privacy Policy, each with US and Canada versions). Current version: **`LEGAL_VERSION = '2026-10-24.1'`** (the rename to ResDish).
 - Company name/email/address come from `LEGAL_ENTITY_NAME`, `SUPPORT_EMAIL`, `LEGAL_ADDRESS` (US documents) and `LEGAL_ADDRESS_CA` (Canadian documents); fees and prices come from the live settings.
 - **When you change the text:** bump `LEGAL_VERSION`, and add a migration that updates `legal_documents` to the same version (a test checks they match). Users are then asked to accept the new version at their next sign-in.
 - Signed restaurant agreements: PDF generated by `src/lib/legal/agreement-pdf.ts`, downloadable in the restaurant's Kiosk tab.
@@ -437,9 +437,10 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 
 ## 15. Branding, text and images
 
-- **Name and tagline:** "Bite Wise", "Eat well · Waste less". Search with `git grep -n "Bite Wise"` / `git grep -n "Eat well"`.
+- **Name:** "ResDish" (renamed from Bite Wise on 2026-10-16). Logo tagline "FOOD RESCUE"; slogan in emails and footers "Eat well · Waste less". Search with `git grep -n "ResDish"` / `git grep -n "Eat well"`.
+- **Technical names that still say bitewise** (on purpose, nobody sees them, and changing them would log people out or break logins): the server service `bitewise`, the npm package name, the database job `bitewise-sweep`, browser storage keys `bitewise.*`, the local Supabase project id, staff login emails `@staff.bitewise.invalid`, demo accounts `@bitewise.test` and the demo password `BiteWise123`. The domain stays **bite-wise.org** until a new one is chosen.
 - **Colors:** `src/app/globals.css` (orange `#ea580c`, green `#4e9f3d`, dark ink `#2a1a0e`). Three looks: customer (warm), restaurant (dark kitchen), admin (corporate). Chosen in `src/lib/theme.ts`.
-- **Logos and icons:** `public/assets/`. App install manifest: `src/app/app.webmanifest/route.ts`.
+- **Logos and icons:** `public/assets/` (`logo.svg` with tagline, `logo-compact.svg` without, `-dark` versions for dark backgrounds, `logo-mark.svg` the mascot alone, `logo.png` for PDFs, `email-logo.png` for emails, `app-icon-*` / `kiosk-icon-*` / `apple-touch-icon.png` for phones), plus `src/app/icon.svg` (browser tab) and `src/app/apple-icon.png`. All are made from the original artwork `assets/brand/resdish-logo-original.jpg` by `scripts/make-logo.py` (instructions at the top of the script). Logo colors: radish red `#D63B4B`, teal `#13827C`. App install manifest: `src/app/app.webmanifest/route.ts`.
 - **About us photos:** `public/about/` with the names shown on the page placeholders.
 - **Demo food images:** `public/assets/demo-food/`.
 
@@ -449,6 +450,7 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 
 - Videos: `public/videos/customer-tour.*` and `restaurant-tour.*` (mp4, webm, poster jpg, subtitles vtt). Shown on the home page, deals page ("How it works") and restaurant dashboard ("Watch the tour").
 - **Version tag:** `src/components/app/demo-video-version.json` adds `?v=…` to the video links so browsers fetch new versions. Update it whenever videos change.
+- **Pronunciation:** the narrator says "ResDish" as "Rez dish" (`pronounce` in `scripts/demo-video/narration.json`).
 - **Re-recording:** follow `scripts/demo-video/README.md` (narration text in `narration.json`, cartoon story in `story.html`, recording in `record.mjs`). It resets and seeds a local database first.
 
 ---
@@ -457,9 +459,9 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 
 | File | What |
 |---|---|
-| `docs/business/Bite-Wise-Restaurant-Sales-Pitch.pptx` / `.pdf` | 10-slide sales pitch for restaurants, with speaker notes |
-| `docs/business/Bite-Wise-Restaurant-Partnership-Proposal.docx` / `.pdf` | Detailed partnership proposal (**still says bitewise.app; update to bite-wise.org**) |
-| `docs/production/Bite-Wise-Going-Live-Checklist.docx` / `.pdf` | Production go-live checklist |
+| `docs/business/ResDish-Restaurant-Sales-Pitch.pptx` / `.pdf` | 10-slide sales pitch for restaurants, with speaker notes |
+| `docs/business/ResDish-Restaurant-Partnership-Proposal.docx` / `.pdf` | Detailed partnership proposal. Its wording still uses the older "Founding Partner" name for Pioneer Members and describes greater Seattle only. |
+| `docs/production/ResDish-Going-Live-Checklist.docx` / `.pdf` | Production go-live checklist |
 | `docs/TROUBLESHOOTING-GUIDE.md` | This guide |
 | `README.md` | Developer overview (some parts older than this guide; this guide wins if they disagree) |
 
@@ -482,7 +484,7 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | **No emails arrive** | `SMTP_HOST` not set in Vercel, or domain not verified in Resend | Set the SMTP variables ([section 4](#4-environment-variables-vercel-settings)), verify the domain in Resend, redeploy. Check Resend → Emails/Logs. |
-| Emails rejected "domain not verified" | `EMAIL_FROM` isn't an `@bite-wise.org` address, or DNS records missing | Use `Bite Wise <no-reply@bite-wise.org>`; finish Resend DNS verification |
+| Emails rejected "domain not verified" | `EMAIL_FROM` isn't an `@bite-wise.org` address, or DNS records missing | Use `ResDish <no-reply@bite-wise.org>`; finish Resend DNS verification |
 | Sign-up/confirm links go to the wrong site | `NEXT_PUBLIC_SITE_URL` or Supabase Site URL wrong | Set both to `https://www.bite-wise.org`; add `/auth/confirm` redirect in Supabase |
 | "Card payments for this country aren't available yet" | That country's Stripe keys are missing | Add `STRIPE_SECRET_KEY(_CA)` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY(_CA)`, redeploy |
 | Canadian customer asked for a "ZIP code" | Old version before the fix | Fixed: Canadian purchases show a Postal code box. Redeploy if still seen. |
@@ -539,9 +541,10 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-16 | **Renamed Bite Wise → ResDish** everywhere (site, emails, receipts, PDFs, legal documents v2026-10-24.1, videos, business documents) with the new mascot logo; receipts `RD-`, plan invoices `RD-SUB-` | all files; migration `20261024000100_resdish_name.sql`; logos `public/assets/`, `scripts/make-logo.py` |
 | 2026-10-13 | Fix: the new-order bell no longer rings when staff hand over an order | `src/components/restaurant/dashboard.tsx` |
 | 2026-10-13 | Order placed email (hold receipt, PIN, Drive to Restaurant button); pickup email renamed Payment confirmed | `src/lib/email/templates.ts`, `src/lib/orders.ts`, `src/app/directions/[restaurantId]/route.ts`, `src/lib/regions.ts`, migration `20261023000100_order_placed_email.sql` |
-| 2026-10-13 | Canadian legal documents and signed agreements show Bite Wise (St. John's, Newfoundland and Labrador) | `src/lib/env.ts` (`LEGAL_ADDRESS_CA`), `src/lib/legal/documents.ts`, `src/lib/legal/agreement-pdf.ts` |
+| 2026-10-13 | Canadian legal documents and signed agreements show ResDish (St. John's, Newfoundland and Labrador) | `src/lib/env.ts` (`LEGAL_ADDRESS_CA`), `src/lib/legal/documents.ts`, `src/lib/legal/agreement-pdf.ts` |
 | 2026-10-13 | Company address in legal documents: Federal Way, Washington (was Seattle) | `src/lib/env.ts` (`LEGAL_ADDRESS`), `.env.example` |
 | 2026-10-13 | Created this guide | `docs/TROUBLESHOOTING-GUIDE.md` |
 | 2026-10-13 | Support email `support@bite-wise.org`, website `www.bite-wise.org` | `src/lib/env.ts`, receipts, `supabase/templates/confirmation.html`, `.env.example`, sales deck |

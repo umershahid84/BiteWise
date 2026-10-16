@@ -13,7 +13,7 @@ import { dedupe, itemsFromHtml, itemsFromSpreadsheet, pageForAi, type ImportItem
 
 // Menu import, for restaurants (owners and staff) and admins: 1) find the items on the restaurant's website (its menu
 // page, an embedded menu, or a PDF or picture of the menu it links to), in a photo or PDF, or in a spreadsheet, and
-// show them for review, 2) save the ones chosen, with their photos copied into Bite Wise.
+// show them for review, 2) save the ones chosen, with their photos copied into ResDish.
 
 export type Preview = { items: ImportItem[]; source: 'ai' | 'page' | 'spreadsheet' | 'file'; problems: string[] };
 const MAX_PAGE = 5 * 1024 * 1024;
@@ -21,7 +21,7 @@ const MAX_FILE = 15 * 1024 * 1024;
 const MAX_ITEMS = 300;
 const valid = (x: ImportItem) => x.name.length >= 2 && x.priceCents >= 50 && x.priceCents <= 100000;
 
-const NO_AI = 'To read a menu that is a picture or a PDF, Bite Wise needs its AI menu reader, which isn\'t switched on yet (the site owner adds '
+const NO_AI = 'To read a menu that is a picture or a PDF, ResDish needs its AI menu reader, which isn\'t switched on yet (the site owner adds '
   + 'ANTHROPIC_API_KEY). For now, type the items into a spreadsheet and use "From a spreadsheet".';
 const BROWSER_ONLY = 'This website builds its menu inside the browser (common with Wix, Squarespace, Toast, Square and DoorDash pages), so the '
   + 'menu isn\'t in the page we receive. If the site has a PDF of the menu, paste that link instead, or use "From a photo or PDF" or "From a spreadsheet".';

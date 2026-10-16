@@ -55,7 +55,7 @@ async function assertAvailable(email: string, username: string) {
     admin.from('profiles').select('id').eq('username', username).maybeSingle(),
     checkEmailDomain(email),
   ]);
-  if (byEmail.data?.status === 'banned') throw new AppError(403, 'This email address can\'t be used to create a Bite Wise account.');
+  if (byEmail.data?.status === 'banned') throw new AppError(403, 'This email address can\'t be used to create a ResDish account.');
   if (byEmail.data) throw new AppError(409, 'An account with this email already exists.');
   if (!domain.ok) throw new AppError(400, domain.reason);
   if (byName.data) throw new AppError(409, 'That user name is taken.');
@@ -80,7 +80,7 @@ async function sendConfirmation(email: string, tokenHash: string, meta: Record<s
   }
 }
 
-const BANNED = 'This account has been permanently closed for breaking the Bite Wise terms. Contact Bite Wise support if you think this is a mistake.';
+const BANNED = 'This account has been permanently closed for breaking the ResDish terms. Contact ResDish support if you think this is a mistake.';
 
 // Checks the sign-up form before the agreement is shown, without creating anything.
 export async function validateSignup(input: unknown) {
@@ -142,7 +142,7 @@ export async function signUp(input: unknown) {
       return new AppError(400, error.message.includes('Database error') ? 'We could not create your account. Please check your details.' : error.message);
     };
 
-    // The app sends the Bite Wise confirmation email itself (see src/lib/email/confirmation.ts).
+    // The app sends the ResDish confirmation email itself (see src/lib/email/confirmation.ts).
     if (await sendsOwnConfirmation()) {
       const { data: link, error } = await supabaseAdmin().auth.admin.generateLink({
         type: 'signup', email: data.email, password: data.password, options: { data: metadata, redirectTo: CONFIRM_URL() },
@@ -209,7 +209,7 @@ export async function signIn(input: unknown) {
         const { data: p } = await supabaseAdmin().from('profiles').select('status, suspended_until, role').eq('email', email).maybeSingle();
         if (p?.status === 'banned') throw new AppError(403, BANNED);
         if (p?.role === 'staff') throw new AppError(403, 'Your restaurant owner has paused your account. Ask them to turn it back on.');
-        throw new AppError(403, `This account has been suspended${untilText(p?.suspended_until)}. Contact Bite Wise support for help.`);
+        throw new AppError(403, `This account has been suspended${untilText(p?.suspended_until)}. Contact ResDish support for help.`);
       }
       if (/not confirmed/i.test(error.message)) throw new AppError(403, 'Please confirm your email address first. Check your inbox for the link.');
       throw new AppError(401, 'Email/user name or password is incorrect.');
@@ -223,7 +223,7 @@ export async function signIn(input: unknown) {
     if (!profile || profile.status !== 'active') {
       await supabase.auth.signOut();
       if (profile?.status === 'banned') throw new AppError(403, BANNED);
-      throw new AppError(403, `This account has been suspended${untilText(profile?.status === 'suspended' ? profile.suspended_until : null)}. Contact Bite Wise support for help.`);
+      throw new AppError(403, `This account has been suspended${untilText(profile?.status === 'suspended' ? profile.suspended_until : null)}. Contact ResDish support for help.`);
     }
     // Staff can't log in while their restaurant is banned or deleted.
     if (profile.role === 'staff') {
@@ -231,7 +231,7 @@ export async function signIn(input: unknown) {
       const st = job?.restaurants?.status;
       if (!st || st === 'banned' || st === 'deleted') {
         await supabase.auth.signOut();
-        throw new AppError(403, 'This restaurant is no longer on Bite Wise, so its staff accounts are closed.');
+        throw new AppError(403, 'This restaurant is no longer on ResDish, so its staff accounts are closed.');
       }
     }
     // An account logging in on another kind of account's page is sent to its own page.

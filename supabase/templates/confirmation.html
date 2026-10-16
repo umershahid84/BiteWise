@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
 <meta name="supported-color-schemes" content="light">
-<title>Confirm your email for Bite Wise</title>
+<title>Confirm your email for ResDish</title>
 <!--
-  Bite Wise sign-up confirmation email (Supabase Auth → Emails → "Confirm signup").
+  ResDish sign-up confirmation email (Supabase Auth → Emails → "Confirm signup").
   Email apps ignore most CSS, so the layout is tables with inline styles. The logo is a PNG
   (email apps don't show SVG); npm run email:template swaps its address for one that works
   before the site is online. See "Branded emails" in README.md.
@@ -24,7 +24,7 @@
         <tr>
           <td align="center" style="padding:0 0 22px;">
             <a href="{{ .SiteURL }}" style="text-decoration:none;">
-              <img src="{{ .SiteURL }}/assets/email-logo.png" width="280" height="69" alt="Bite Wise"
+              <img src="{{ .SiteURL }}/assets/email-logo.png" width="280" height="81" alt="ResDish"
                 style="display:block;width:280px;height:auto;border:0;font:800 26px Arial,Helvetica,sans-serif;color:#14284B;">
             </a>
           </td>
@@ -48,8 +48,8 @@
               <tr>
                 <td style="padding:32px 36px 8px;font:16px/1.6 Arial,Helvetica,sans-serif;color:#1C1917;">
                   <p style="margin:0 0 14px;">
-                    {{ if eq .Data.role "restaurant" }}Thanks for signing up{{ if .Data.restaurant }} <b>{{ .Data.restaurant.name }}</b>{{ end }} with Bite Wise.
-                    Confirm your email and we will review your application. Once you are approved, we will email you your welcome pack with your signed agreement and your own counter kiosk.{{ else }}Thanks for joining Bite Wise. Confirm your email and you're ready to grab
+                    {{ if eq .Data.role "restaurant" }}Thanks for signing up{{ if .Data.restaurant }} <b>{{ .Data.restaurant.name }}</b>{{ end }} with ResDish.
+                    Confirm your email and we will review your application. Once you are approved, we will email you your welcome pack with your signed agreement and your own counter kiosk.{{ else }}Thanks for joining ResDish. Confirm your email and you're ready to grab
                     wrong orders, end-of-day extras and more from restaurants near you.{{ end }}
                   </p>
                 </td>
@@ -116,9 +116,9 @@
         <!-- Footer -->
         <tr>
           <td align="center" style="padding:24px 20px 0;font:12px/1.6 Arial,Helvetica,sans-serif;color:#A8A29E;">
-            You're getting this email because {{ .Email }} was used to sign up for Bite Wise.<br>
+            You're getting this email because {{ .Email }} was used to sign up for ResDish.<br>
             Didn't sign up? Just ignore this email and no account will be activated.<br><br>
-            <b style="color:#78716C;">Bite Wise</b> · Eat well, waste less · United States &amp; Canada<br>
+            <b style="color:#78716C;">ResDish</b> · Eat well, waste less · United States &amp; Canada<br>
             <a href="mailto:support@bite-wise.org" style="color:#A8A29E;">support@bite-wise.org</a>
           </td>
         </tr>

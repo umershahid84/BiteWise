@@ -17,7 +17,7 @@ import { RoleSwitch, type Audience } from './role-switch';
 export type LoginNotice = 'confirmed' | 'confirmation-failed' | 'idle' | 'session' | 'switched' | null;
 
 // "Remember me": the user name is kept in this browser, and the browser's own password manager is asked to save the
-// password (Bite Wise never stores passwords itself). Each log-in page remembers its own account.
+// password (ResDish never stores passwords itself). Each log-in page remembers its own account.
 type RememberAs = Audience | 'admin';
 const rememberKey = (portal: RememberAs) => `bitewise.remember.${portal}`;
 const readRemembered = (portal: RememberAs) => {

@@ -25,7 +25,7 @@ type Coupon = {
 type Template = { id: number; name: string; subject: string; body: string };
 
 const KINDS: [Kind, string, string][] = [
-  ['no_fee', 'No service fee', 'Waives the Bite Wise service fee. Bite Wise pays for it; the restaurant gets its full amount.'],
+  ['no_fee', 'No service fee', 'Waives the ResDish service fee. ResDish pays for it; the restaurant gets its full amount.'],
   ['fixed', 'Dollar amount off', 'A set amount off the food. Paid by the restaurant: it comes off the restaurant’s payout for the order.'],
   ['percent', 'Percentage off', 'A percentage off the food. Paid by the restaurant: it comes off the restaurant’s payout for the order.'],
 ];
@@ -57,13 +57,13 @@ export function CouponsPanel() {
       </div>
       <p className="mt-0 mb-4 text-sm text-muted">
         Customers enter the code at checkout: one coupon per order, and each coupon once per customer. Food discounts are paid by the restaurant
-        (Restaurant Partner Agreement); a waived service fee is paid by Bite Wise. Coupons work at restaurants in {where} only.
+        (Restaurant Partner Agreement); a waived service fee is paid by ResDish. Coupons work at restaurants in {where} only.
       </p>
       {isLoading || !data ? <div className="grid place-items-center py-8"><Spinner /></div> : data.coupons.length === 0 ? (
         <p className="text-sm text-muted">No coupons yet.</p>
       ) : (
         <Table>
-          <thead><tr><th>Code</th><th>Offer</th><th>Expires</th><th>Used</th><th>Paid by restaurants</th><th>Paid by Bite Wise</th><th>Emailed</th><th /></tr></thead>
+          <thead><tr><th>Code</th><th>Offer</th><th>Expires</th><th>Used</th><th>Paid by restaurants</th><th>Paid by ResDish</th><th>Emailed</th><th /></tr></thead>
           <tbody>
             {data.coupons.map((c) => (
               <tr key={c.id} className={cn(!c.active && 'opacity-60')}>

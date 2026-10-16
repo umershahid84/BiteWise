@@ -22,7 +22,7 @@ function ChangePasswordForm({ forced, onDone }: { forced: boolean; onDone: () =>
     e.preventDefault();
     setBusy(true);
     const res = await changeMyPassword(forced ? { password: f.password, confirm: f.confirm } : f)
-      .catch(() => ({ ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.' }))
+      .catch(() => ({ ok: false as const, error: 'ResDish didn\'t answer. Check your connection and try again.' }))
       .finally(() => setBusy(false));
     if (!res.ok) return setError(res.error);
     toast.success('Your password is changed.');

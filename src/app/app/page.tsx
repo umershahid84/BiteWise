@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { AppInstall, type Device } from '@/components/app-install/app-install';
 
 export const metadata: Metadata = {
-  title: 'Get Bite Wise on your phone',
-  description: 'Put Bite Wise on your Android phone, iPhone or Windows computer: deals near you, one tap away.',
+  title: 'Get ResDish on your phone',
+  description: 'Put ResDish on your Android phone, iPhone or Windows computer: deals near you, one tap away.',
 };
 
 // "Add to Home screen" guide for customers, linked from the welcome email (?device=android|iphone|windows).

@@ -17,7 +17,7 @@ export function TermsGate({ role, country }: { role: 'customer' | 'restaurant'; 
       role={role}
       country={country}
       title="Our terms have been updated"
-      intro="Please review and accept the updated terms to keep using Bite Wise. If you decline, you will be signed out."
+      intro="Please review and accept the updated terms to keep using ResDish. If you decline, you will be signed out."
       acceptLabel="Accept & continue"
       declineLabel="Decline & sign out"
       busy={busy}

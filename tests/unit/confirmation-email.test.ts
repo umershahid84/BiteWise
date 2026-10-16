@@ -24,9 +24,9 @@ describe('sign-up confirmation email', () => {
     expect(html).not.toContain('Turn surplus food into revenue');
   });
 
-  it('has a Bite Wise subject and a plain-text version with the link', () => {
+  it('has a ResDish subject and a plain-text version with the link', () => {
     const e = confirmationEmail({ email: 'a@x.com', tokenHash: 'tok', username: 'ann', role: 'customer' });
-    expect(e.subject).toMatch(/Bite Wise/);
+    expect(e.subject).toMatch(/ResDish/);
     expect(e.text).toMatch(/\/auth\/confirm\?token_hash=tok&type=email/);
   });
 });

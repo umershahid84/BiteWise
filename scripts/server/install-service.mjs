@@ -1,4 +1,4 @@
-// npm run service:install [-- --port 8080 ...]: installs Bite Wise as a systemd service on a Linux server
+// npm run service:install [-- --port 8080 ...]: installs ResDish as a systemd service on a Linux server
 // (install-service.sh, run with sudo). Windows and macOS have no systemd, so there it explains what to do instead.
 import { spawnSync } from 'node:child_process';
 

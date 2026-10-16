@@ -61,7 +61,7 @@ describe.skipIf(!available)('automatic sales tax', () => {
       tax_jurisdiction: 'Testville, WA (WA Department of Revenue)' });
   });
 
-  it("taxes plan fees at Bite Wise's location: Washington in the US, Newfoundland and Labrador HST in Canada", async () => {
+  it("taxes plan fees at ResDish's location: Washington in the US, Newfoundland and Labrador HST in Canada", async () => {
     const db = admin();
     const ny = await signUp('restaurant', { restaurant: { name: 'Big Apple Bites', address: '1 Broadway', city: 'New York', state: 'NY', zip: '10004' } });
     const ca = await signUp('restaurant', CANADA);

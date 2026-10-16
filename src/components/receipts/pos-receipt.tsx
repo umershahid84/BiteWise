@@ -30,7 +30,7 @@ export function PosReceipt({ r }: { r: Receipt }) {
       <article className="pos" aria-label={`Receipt ${r.receiptNumber}`}>
         <header className="pos-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="pos-logo" src="/assets/logo.svg" alt="Bite Wise" />
+          <img className="pos-logo" src="/assets/logo.svg" alt="ResDish" />
           <div className="pos-tag">Rescued food · Eat well, waste less</div>
           <div className="pos-store">{rest.name}</div>
           <div>{rest.address}<br />{cityLine(rest)}{rest.phone && <><br />Tel {displayPhone(rest.phone)}</>}</div>

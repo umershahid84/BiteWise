@@ -1,7 +1,7 @@
-# systemd service for Bite Wise. Install it with: sudo bash scripts/server/install-service.sh
+# systemd service for ResDish. Install it with: sudo bash scripts/server/install-service.sh
 # (the installer fills in the @...@ values). Then: sudo systemctl start bitewise
 [Unit]
-Description=Bite Wise (Next.js)
+Description=ResDish (Next.js)
 Documentation=file://@APP_DIR@/README.md
 After=network-online.target
 Wants=network-online.target

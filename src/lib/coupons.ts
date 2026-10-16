@@ -12,7 +12,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin';
 
 // Coupons (supabase/migrations/20261021000100_coupons.sql). An admin makes them for their location's customers and
 // emails them out; customers enter the code at checkout.
-//   no_fee:  the Bite Wise service fee is waived (Bite Wise pays for it).
+//   no_fee:  the ResDish service fee is waived (ResDish pays for it).
 //   fixed:   a set amount off the food; percent: a percentage off the food (the restaurant pays for these, as the
 //            Restaurant Partner Agreement says).
 
@@ -28,7 +28,7 @@ const expiryText = (iso: string) => new Date(iso).toLocaleDateString('en-US', { 
 
 export function newCouponCode() {
   const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I
-  return `BW-${[...randomBytes(6)].map((b) => abc[b % abc.length]).join('')}`;
+  return `RD-${[...randomBytes(6)].map((b) => abc[b % abc.length]).join('')}`;
 }
 
 export async function createCoupon(by: string, country: Country, o: {
@@ -36,7 +36,7 @@ export async function createCoupon(by: string, country: Country, o: {
 }) {
   const code = (o.code?.trim() || newCouponCode()).toUpperCase();
   if (!/^[A-Z0-9-]{3,24}$/.test(code)) throw new AppError(400, 'Coupon codes are 3 to 24 letters, numbers or dashes.');
-  // Valid through the end of the chosen day (Bite Wise's time zone).
+  // Valid through the end of the chosen day (ResDish's time zone).
   const expiresAt = dayRange(o.expiresOn, serverEnv.timeZone).end;
   if (Date.parse(expiresAt) <= Date.now()) throw new AppError(400, 'Choose an expiration date in the future.');
   if (o.kind === 'fixed' && !(o.amountCents && o.amountCents > 0)) throw new AppError(400, 'Enter the amount off.');
@@ -62,7 +62,7 @@ export async function listCoupons(country: Country) {
       id: c.id, code: c.code, kind: c.kind as CouponKind, offer: couponOffer(c), description: c.description, expiresAt: c.expires_at,
       expired: Date.parse(c.expires_at) <= Date.now(), active: c.active, createdAt: c.created_at, emailedAt: c.emailed_at, emailedCount: c.emailed_count, emailSubject: c.email_subject,
       uses: mine.length,
-      // Paid by restaurants (food discounts) and by Bite Wise (waived fees).
+      // Paid by restaurants (food discounts) and by ResDish (waived fees).
       restaurantCostCents: mine.reduce((n, u) => n + u.coupon_discount_cents, 0),
       bitewiseCostCents: mine.reduce((n, u) => n + u.coupon_fee_waived_cents, 0),
     };

@@ -1,4 +1,4 @@
-// Coupons (src/lib/coupons.ts): food discounts paid by the restaurant, waived service fees paid by Bite Wise.
+// Coupons (src/lib/coupons.ts): food discounts paid by the restaurant, waived service fees paid by ResDish.
 import { describe, expect, it } from 'vitest';
 import { createCoupon } from '@/lib/coupons';
 import * as orders from '@/lib/orders';
@@ -38,7 +38,7 @@ describe.skipIf(!available)('coupons', () => {
     expect(q).toMatchObject({ foodCents: 2000, couponDiscountCents: 2000, subtotalCents: 0, foodTaxCents: 0, serviceFeeCents: 100 });
   });
 
-  it('waives the service fee at Bite Wise\'s cost, leaving the restaurant\'s share whole', async () => {
+  it('waives the service fee at ResDish\'s cost, leaving the restaurant\'s share whole', async () => {
     const s = await shop();
     const c = await signUp('customer');
     const cp = await createCoupon(await boss(), 'US', { code: code(), kind: 'no_fee', description: 'On us', expiresOn: inAWeek() });
@@ -78,7 +78,7 @@ describe.skipIf(!available)('coupon emails', () => {
     const cp = await createCoupon(await boss(), 'US', { code: code(), kind: 'percent', percent: 15, description: 'Enjoy!', expiresOn: inAWeek() });
     const t = templates.find((x) => x.name === 'A thank-you treat')!;
     const p = await previewCouponEmail(cp.id, 'US', { subject: t.subject, body: t.body });
-    expect(p.subject).toBe('A thank-you from Bite Wise: 15% off your food');
+    expect(p.subject).toBe('A thank-you from ResDish: 15% off your food');
     expect(p.html).toContain('Hi Alex,');
     expect(p.html).toContain(cp.code);
     expect(p.html).toContain('Enjoy!');

@@ -21,7 +21,7 @@ import { supabaseBrowser } from '@/lib/supabase/client';
 
 const KIND: Record<string, string> = {
   refund: 'Refund issued as credit',
-  goodwill: 'Credit from Bite Wise',
+  goodwill: 'Credit from ResDish',
   redeem: 'Used on order',
   restore: 'Returned to your credit',
   adjustment: 'Adjustment',
@@ -64,7 +64,7 @@ export function AccountPanel({ username, email, country, postalCode, payments }:
 
       <Card id="credit" className="scroll-mt-24">
         <div className="flex flex-wrap items-center gap-3">
-          <CardTitle className="m-0 flex items-center gap-2"><Gift className="size-5 text-accent-ink" /> Bite Wise credit</CardTitle>
+          <CardTitle className="m-0 flex items-center gap-2"><Gift className="size-5 text-accent-ink" /> ResDish credit</CardTitle>
           <span className="flex-1" />
           <b className="font-heading text-3xl font-extrabold text-accent-ink">{money(balance)}</b>
         </div>

@@ -98,7 +98,7 @@ describe.skipIf(!available)('admin locations', () => {
 });
 
 describe.skipIf(!available)('tax on the service fee', () => {
-  it("taxes the service fee at Bite Wise's location: Washington in the US, Newfoundland and Labrador HST in Canada", async () => {
+  it("taxes the service fee at ResDish's location: Washington in the US, Newfoundland and Labrador HST in Canada", async () => {
     const us = await restaurantWithOffer({ price: 2000, discount: 50 });
     const ca = await restaurantWithOffer({ price: 2000, discount: 50, canada: true });
     await db().from('restaurants').update({ tax_rate_bps: 800 }).in('id', [us.restaurant.id, ca.restaurant.id]);
@@ -109,7 +109,7 @@ describe.skipIf(!available)('tax on the service fee', () => {
     // $10.00 food at 8% = 80; 5% fee = 50, taxed at 10.35% (WA) = 5, or 15% (NL HST) = 8.
     expect([o1.subtotal_cents, o1.service_fee_cents, o1.tax_cents, o1.total_cents]).toEqual([1000, 50, 80 + 5, 1135]);
     expect([o2.subtotal_cents, o2.service_fee_cents, o2.tax_cents, o2.total_cents]).toEqual([1000, 50, 80 + 8, 1138]);
-    // The fee and its tax are Bite Wise's: the restaurant's share is the food and the food's tax.
+    // The fee and its tax are ResDish's: the restaurant's share is the food and the food's tax.
     expect(o1.restaurant_share_cents).toBe(1080);
     expect(o2.restaurant_share_cents).toBe(1080);
   });

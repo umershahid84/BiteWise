@@ -30,7 +30,7 @@ describe.skipIf(!available)('order emails', () => {
     expect(placed.subject).toMatch(new RegExp(`^Order placed: .*\\(PIN ${pin}\\)$`));
     expect(placed.html).toContain('Drive to Restaurant');
     expect(placed.html).toContain(`/directions/${shop.restaurant.id}`);
-    expect(placed.attachments?.[0].filename).toMatch(/^Bite-Wise-hold-receipt-BW-/);
+    expect(placed.attachments?.[0].filename).toMatch(/^ResDish-hold-receipt-RD-/);
 
     // Asking again (e.g. Stripe's webhook arriving later) doesn't send a second one.
     expect(await orders.emailOrderPlaced(res.orderId)).toBe(false);
@@ -42,7 +42,7 @@ describe.skipIf(!available)('order emails', () => {
     orders.emailInvoiceAfterResponse(done.id); // as the dashboard and the kiosk do after handing over the food
     await until(() => sent.length > 1);
     expect(sent).toHaveLength(2);
-    expect(sent[1].subject).toMatch(/^Payment confirmed: your Bite Wise receipt BW-/);
+    expect(sent[1].subject).toMatch(/^Payment confirmed: your ResDish receipt RD-/);
     expect(sent[1].html).not.toContain('Drive to Restaurant');
     expect(sent[1].html).not.toContain('/directions/');
   });

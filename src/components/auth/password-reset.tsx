@@ -44,7 +44,7 @@ export function PasswordReset({ initialLogin, onDone, onCancel }: { initialLogin
   };
   const submitReset = async (code: string, password: string, confirm: string) => {
     const res = await resetPasswordWithCode({ login, code, password, confirm }).catch(() => ({
-      ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.', code: undefined,
+      ok: false as const, error: 'ResDish didn\'t answer. Check your connection and try again.', code: undefined,
     }));
     if (!res.ok) {
       setLocked(res.code === 'reset_locked');

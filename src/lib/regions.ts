@@ -1,7 +1,7 @@
 import { CA_PROVINCES, provinceByCode } from '@/lib/tax/provinces';
 import { stateByCode, US_STATES } from '@/lib/tax/states';
 
-// The two countries Bite Wise serves. The country decides which terms people accept (src/lib/legal/documents.ts),
+// The two countries ResDish serves. The country decides which terms people accept (src/lib/legal/documents.ts),
 // and, with the state or province, the sales tax on a restaurant's food (src/lib/tax).
 export type Country = 'US' | 'CA';
 export const COUNTRIES: { code: Country; name: string; regionLabel: string; postalLabel: string }[] = [

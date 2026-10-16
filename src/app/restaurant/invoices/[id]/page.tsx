@@ -34,7 +34,7 @@ export default async function InvoicePage({ params }: PageProps<'/restaurant/inv
       <article className="rounded-2xl bg-white p-8 text-[#1E293B] shadow-pop print:shadow-none">
         <header className="mb-6 flex flex-wrap items-start gap-4 border-b border-[#E2E8F0] pb-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/logo.png" alt="Bite Wise" className="h-10 w-auto" />
+          <img src="/assets/logo.png" alt="ResDish" className="h-10 w-auto" />
           <div className="flex-1" />
           <div className="text-right">
             <p className="m-0 text-2xl font-extrabold text-[#14284B]">INVOICE</p>

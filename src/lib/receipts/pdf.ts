@@ -25,7 +25,7 @@ const FONTS = {
   monoBold: 'IBMPlexMono-Bold.woff',
 };
 const LOGO = path.join(process.cwd(), 'public', 'assets', 'logo.png');
-const LOGO_RATIO = 400 / 1428;
+const LOGO_RATIO = 413 / 1428; // public/assets/logo.png
 const GREEN = '#047857';
 const INK = '#0b1b14';
 const MUTED = '#6b7b73';
@@ -196,7 +196,7 @@ export function receiptPdf(rc: Receipt) {
   const probe = new PDFDocument({ size: [ROLL_WIDTH, 5000], margin: 0 });
   fonts(probe);
   const height = Math.ceil(drawPosReceipt(probe, rc) + ROLL_MARGIN);
-  const doc = new PDFDocument({ size: [ROLL_WIDTH, height], margin: 0, info: { Title: `Bite Wise receipt ${rc.receiptNumber}`, Author: 'Bite Wise' } });
+  const doc = new PDFDocument({ size: [ROLL_WIDTH, height], margin: 0, info: { Title: `ResDish receipt ${rc.receiptNumber}`, Author: 'ResDish' } });
   fonts(doc);
   drawPosReceipt(doc, rc);
   return finish(doc);
@@ -214,7 +214,7 @@ function rule(doc: Doc, x1: number, x2: number, y: number) {
 
 export function reportPdf(rep: Report) {
   const money = (cents: number) => fmtMoney(cents, rep.currency);
-  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `Bite Wise daily report ${rep.date}`, Author: 'Bite Wise' } });
+  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margin: 40, info: { Title: `ResDish daily report ${rep.date}`, Author: 'ResDish' } });
   fonts(doc);
   const L = 40;
   const R = doc.page.width - 40;
@@ -238,7 +238,7 @@ export function reportPdf(rep: Report) {
     doc.font('head').fontSize(15).fillColor(i === 0 ? GREEN : INK).text(v, x + 10, 131, { width: cw - 16 });
   });
   doc.font('regular').fontSize(9).fillColor(MUTED).text(
-    `Menu value ${money(s.menuValueCents)} · Bite Wise service fees paid by customers ${money(s.serviceFeesCents)} · `
+    `Menu value ${money(s.menuValueCents)} · ResDish service fees paid by customers ${money(s.serviceFeesCents)} · `
       + `Awaiting pickup ${s.awaitingPickup} · Cancelled ${s.cancelled} · Not picked up ${s.notPickedUp}`,
     L, 168, { width: W },
   );
@@ -288,7 +288,7 @@ export function reportPdf(rep: Report) {
 
 export function planInvoicePdf(inv: PlanInvoice) {
   const money = (cents: number) => fmtMoney(cents, inv.currency);
-  const doc = new PDFDocument({ size: 'LETTER', margin: 54, info: { Title: `Bite Wise invoice ${inv.number}`, Author: 'Bite Wise' } });
+  const doc = new PDFDocument({ size: 'LETTER', margin: 54, info: { Title: `ResDish invoice ${inv.number}`, Author: 'ResDish' } });
   fonts(doc);
   const L = 54;
   const R = doc.page.width - 54;
@@ -412,7 +412,7 @@ function pagedTable(doc: Doc, at: { y: number }, box: { L: number; R: number; bo
 // as a landscape letter PDF: title, the tab's figures (whole tab only), then its tables. Columns with width 0 are
 // CSV-only details.
 export function listReportPdf(r: ListReport, o: { generatedAt: string; text: (c: Cell) => string }) {
-  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margins: { top: 36, left: 36, right: 36, bottom: 0 }, info: { Title: `Bite Wise ${r.title}`, Author: 'Bite Wise' } });
+  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margins: { top: 36, left: 36, right: 36, bottom: 0 }, info: { Title: `ResDish ${r.title}`, Author: 'ResDish' } });
   fonts(doc);
   const L = 36;
   const R = doc.page.width - 36;
@@ -468,7 +468,7 @@ const periodLabel = (key: string, by: Income['by'], short = false) =>
 // figures, the chart and both tables); `periods` or `restaurants` = just that table.
 export function incomePdf(x: Income, section: 'all' | 'periods' | 'restaurants', o: { generatedAt: string; note: string }) {
   // No bottom margin: page breaks are placed by hand, and the footer sits below the content area.
-  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margins: { top: 36, left: 36, right: 36, bottom: 0 }, info: { Title: `Bite Wise income ${x.range.from} to ${x.range.to}`, Author: 'Bite Wise' } });
+  const doc = new PDFDocument({ size: 'LETTER', layout: 'landscape', margins: { top: 36, left: 36, right: 36, bottom: 0 }, info: { Title: `ResDish income ${x.range.from} to ${x.range.to}`, Author: 'ResDish' } });
   fonts(doc);
   const L = 36;
   const R = doc.page.width - 36;
@@ -523,7 +523,7 @@ export function incomePdf(x: Income, section: 'all' | 'periods' | 'restaurants',
       ['Net income', money(t.netCents), GREEN], [`Service fees · ${t.orders} orders`, money(t.serviceFeesCents)],
       [`Plan fees · ${t.planInvoices} invoices`, money(t.planFeesCents)], ['Platform credit funded', t.creditCostCents ? `−${money(t.creditCostCents)}` : money(0)],
       ['Avg service fee per order', money(t.orders ? Math.round(t.serviceFeesCents / t.orders) : 0)], ['Charged to customers', money(t.gmvCents)],
-      ['Pioneer discounts given', money(t.pioneerDiscountsCents)], ['Sales tax Bite Wise remits', money(t.orderTaxCents + t.planTaxCents)],
+      ['Pioneer discounts given', money(t.pioneerDiscountsCents)], ['Sales tax ResDish remits', money(t.orderTaxCents + t.planTaxCents)],
     ];
     kpis.forEach(([k, v, c], i) => box(L + (i % 4) * (kw + 8), y + Math.floor(i / 4) * 52, kw, 46, k, v, c));
     y += 110;

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs Bite Wise as a systemd service, so it keeps running after you close your editor or log out,
+# Installs ResDish as a systemd service, so it keeps running after you close your editor or log out,
 # restarts if it crashes, and starts when the server boots.
 #
 #   sudo bash scripts/server/install-service.sh [--port 3000] [--host 0.0.0.0] [--user NAME] [--node /path/to/node]

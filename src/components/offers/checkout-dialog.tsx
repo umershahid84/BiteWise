@@ -33,7 +33,7 @@ export function CheckoutDialog({ offer, origin, payments, country, onClose }: {
   origin: Origin | null;
   // Each country's Stripe account; the order is paid through the restaurant's, in its currency.
   payments: PaymentConfigs;
-  // The customer's country: Bite Wise credit can be used at restaurants there.
+  // The customer's country: ResDish credit can be used at restaurants there.
   country: Country;
   onClose: () => void;
 }) {
@@ -64,7 +64,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<OrderConfirmation | null>(null);
-  // A coupon code from Bite Wise: checked when applied, and again when the order is placed.
+  // A coupon code from ResDish: checked when applied, and again when the order is placed.
   const [couponInput, setCouponInput] = useState('');
   const [coupon, setCoupon] = useState<string | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
@@ -213,7 +213,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
               <tr className="border-t border-line text-base font-bold"><td className="pt-2">Total</td><td className="pt-2">{m(q.totalCents)}</td></tr>
               {creditCents > 0 && (
                 <>
-                  <tr className="text-primary-ink"><td>Bite Wise credit applied</td><td>−{m(creditCents)}</td></tr>
+                  <tr className="text-primary-ink"><td>ResDish credit applied</td><td>−{m(creditCents)}</td></tr>
                   <tr className="font-bold"><td>{cardCents ? 'Card (charged at pickup)' : 'Due'}</td><td>{m(cardCents)}</td></tr>
                 </>
               )}
@@ -251,7 +251,7 @@ function CheckoutContent({ offer, origin, payment, homeCountry, onClose }: {
       )}
       {balance > 0 && (
         <div className="mb-3 rounded-xl border border-accent/30 bg-accent-soft/50 p-3">
-          <Checkbox checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} label={<>Use my Bite Wise credit · <b>{m(balance)}</b> available</>} />
+          <Checkbox checked={useCredit} onChange={(e) => setUseCredit(e.target.checked)} label={<>Use my ResDish credit · <b>{m(balance)}</b> available</>} />
           {useCredit && (
             <div className="mt-2 flex items-center gap-2 text-sm">
               <span className="text-muted">Apply $</span>
@@ -322,7 +322,7 @@ function Confirmation({ order, currency, onClose }: { order: OrderConfirmation; 
           Pick up by <b>{fmtTime(order.pickupEnd)}</b> · <Countdown until={order.pickupEnd} />
           <br />
           {order.creditAppliedCents >= order.totalCents
-            ? <>Paid with your Bite Wise credit.</>
+            ? <>Paid with your ResDish credit.</>
             : <>💳 {order.cardLabel} will be charged <b>{m(order.totalCents - order.creditAppliedCents)}</b> only when the restaurant enters your PIN.</>}
         </div>
         <div className="mt-5 flex flex-wrap justify-center gap-2">

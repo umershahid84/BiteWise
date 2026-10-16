@@ -12,7 +12,7 @@ const PAGES: Record<Portal, { tag?: string; title: string; footer: React.ReactNo
     title: 'Welcome back',
     footer: (
       <div className="mt-5 grid gap-1 text-center text-sm text-muted">
-        <p className="m-0">New to Bite Wise? <Link href={SIGNUP_PATH.customer}>Create a free account</Link></p>
+        <p className="m-0">New to ResDish? <Link href={SIGNUP_PATH.customer}>Create a free account</Link></p>
       </div>
     ),
   },

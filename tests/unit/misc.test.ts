@@ -44,7 +44,7 @@ describe('Pacific time days', () => {
 });
 
 describe('legal documents', () => {
-  const company = { entity: 'Bite Wise <LLC>', email: 'help@example.com', address: 'Seattle', serviceFee: { mode: 'percent' as const, bps: 500, fixedCents: 99 }, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
+  const company = { entity: 'ResDish <LLC>', email: 'help@example.com', address: 'Seattle', serviceFee: { mode: 'percent' as const, bps: 500, fixedCents: 99 }, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
   it('lists what each role must accept', () => {
     expect(requiredDocuments('customer').map((d) => d.id)).toEqual(['customer-terms', 'privacy']);
     expect(requiredDocuments('restaurant').map((d) => d.id)).toEqual(['restaurant-agreement', 'privacy']);
@@ -52,13 +52,13 @@ describe('legal documents', () => {
   it('renders with escaped company details and the live service fee', () => {
     const doc = renderDocument('customer-terms', company)!;
     expect(doc.version).toBe(LEGAL_VERSION);
-    expect(doc.html).toContain('Bite Wise &lt;LLC&gt;');
+    expect(doc.html).toContain('ResDish &lt;LLC&gt;');
     expect(doc.html).toContain('currently 5% of the food subtotal');
     expect(renderDocument('restaurant-agreement', company)!.html).toContain('Stripe Connect');
     expect(renderDocument('restaurant-agreement', company)!.html).toMatch(/\$15 per month[^]*\$150 per year[^]*\$30 less/);
     expect(renderDocument('nope', company)).toBeNull();
   });
-  it('shows Bite Wise\'s US location in US documents and its Canadian one in Canadian documents', () => {
+  it('shows ResDish\'s US location in US documents and its Canadian one in Canadian documents', () => {
     const both = { ...company, address: 'Federal Way, Washington', addressCa: "St. John's, Newfoundland and Labrador" };
     expect(renderDocument('restaurant-agreement', both)!.html).toContain('Federal Way, Washington');
     expect(renderDocument('restaurant-agreement', both)!.html).not.toContain('Newfoundland and Labrador');
@@ -101,7 +101,7 @@ describe('password reset email', () => {
 });
 
 describe('United States and Canada', () => {
-  const company = { entity: 'Bite Wise', email: 'support@bitewise.app', address: 'Seattle', serviceFee: { mode: 'percent' as const, bps: 500, fixedCents: 99 }, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
+  const company = { entity: 'ResDish', email: 'support@bitewise.app', address: 'Seattle', serviceFee: { mode: 'percent' as const, bps: 500, fixedCents: 99 }, graceMinutes: 10, monthlyPrice: 15, annualPrice: 150, foundingSpots: 50 };
   it('asks people to accept the documents of their country', async () => {
     const { requiredDocuments } = await import('@/lib/legal/documents');
     expect(requiredDocuments('customer', 'CA').map((d) => d.id)).toEqual(['customer-terms-ca', 'privacy-ca']);

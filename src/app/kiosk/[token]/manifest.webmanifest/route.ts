@@ -10,8 +10,8 @@ export async function GET(_req: Request, { params }: RouteContext<'/kiosk/[token
   const start = `/kiosk/${token}`;
   return NextResponse.json({
     id: start,
-    name: `${k.name} · Bite Wise Kiosk`,
-    short_name: 'Bite Wise Kiosk',
+    name: `${k.name} · ResDish Kiosk`,
+    short_name: 'ResDish Kiosk',
     description: `Pickup kiosk for ${k.name}`,
     start_url: start,
     scope: start,

@@ -10,7 +10,7 @@ export function createStripeProvider(
   secretKey: string, api?: { host: string; port: number; protocol: 'http' | 'https' },
   market: { country: 'US' | 'CA'; currency: 'usd' | 'cad' } = { country: 'US', currency: 'usd' },
 ): PaymentProvider {
-  const stripe = new Stripe(secretKey, { appInfo: { name: 'Bite Wise' }, ...api });
+  const stripe = new Stripe(secretKey, { appInfo: { name: 'ResDish' }, ...api });
 
   const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
     try {
@@ -35,7 +35,7 @@ export function createStripeProvider(
 
     async ensureCustomer({ email, username, existingId }) {
       if (existingId) return existingId;
-      const customer = await stripe.customers.create({ email, name: username, metadata: { app: 'bitewise' } });
+      const customer = await stripe.customers.create({ email, name: username, metadata: { app: 'resdish' } });
       return customer.id;
     },
 
@@ -140,7 +140,7 @@ export function createStripeProvider(
       const account = await stripe.accounts.create({
         country: market.country,
         email,
-        business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through Bite Wise' },
+        business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through ResDish' },
         capabilities: { transfers: { requested: true } },
         controller: {
           stripe_dashboard: { type: 'express' },
@@ -148,7 +148,7 @@ export function createStripeProvider(
           losses: { payments: 'application' },
           requirement_collection: 'stripe',
         },
-        metadata: { restaurant_id: String(restaurantId), app: 'bitewise' },
+        metadata: { restaurant_id: String(restaurantId), app: 'resdish' },
       });
       return account.id;
     },

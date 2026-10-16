@@ -1,16 +1,16 @@
 {
   "voice": "af_heart",
   "speed": 1.0,
-  "pronounce": { "ZIP": "zip", "PINs": "pins", "PIN": "pin" },
+  "pronounce": { "ZIP": "zip", "PINs": "pins", "PIN": "pin", "ResDish": "Rez dish" },
   "customer": [
-    { "id": "welcome", "text": "Hi there, and welcome to Bite Wise! Local restaurants across the United States and Canada post their surplus food, like wrong orders and end-of-day extras, at up to seventy percent off." },
+    { "id": "welcome", "text": "Hi there, and welcome to ResDish! Local restaurants across the United States and Canada post their surplus food, like wrong orders and end-of-day extras, at up to seventy percent off." },
     { "id": "login", "text": "Create a free account with your ZIP code, or your postal code in Canada, then log in with your email or user name." },
     { "id": "deals", "text": "You'll see the live deals closest to your ZIP code first, with a countdown showing how long each one is available." },
     { "id": "search", "text": "Search by dish, restaurant, city, or ZIP or postal code." },
     { "id": "quantity", "text": "Pick a deal, and choose how many you want." },
     { "id": "total", "text": "You see the full total before you order: the food, a small service fee, and any applicable taxes." },
-    { "id": "coupon", "text": "Got a coupon from Bite Wise? Enter the code, and the discount comes right off your total." },
-    { "id": "payment", "text": "Use your Bite Wise credit, and pay the rest with a saved or new card." },
+    { "id": "coupon", "text": "Got a coupon from ResDish? Enter the code, and the discount comes right off your total." },
+    { "id": "payment", "text": "Use your ResDish credit, and pay the rest with a saved or new card." },
     { "id": "hold", "text": "Your card is only held for now. It's charged when you pick up your food." },
     { "id": "pin", "text": "Done! You get a four-digit PIN. Show it at the counter when you pick up." },
     { "id": "orders", "text": "Your orders and PINs are always under My orders." },
@@ -18,10 +18,10 @@
     { "id": "story-order", "text": "Here's how it works in real life. Sam orders dinner on his phone, and gets his PIN." },
     { "id": "story-drive", "text": "Then he drives over to the restaurant, before the pickup window closes." },
     { "id": "story-pickup", "text": "At the counter, he shows his PIN. The staff check it and hand over his food, and only then is his card charged." },
-    { "id": "end", "text": "That's Bite Wise. Rescue great food, and save money. Happy rescuing!" }
+    { "id": "end", "text": "That's ResDish. Rescue great food, and save money. Happy rescuing!" }
   ],
   "restaurant": [
-    { "id": "welcome", "text": "Hi there! Bite Wise helps restaurants in the United States and Canada turn surplus food into revenue, in under a minute." },
+    { "id": "welcome", "text": "Hi there! ResDish helps restaurants in the United States and Canada turn surplus food into revenue, in under a minute." },
     { "id": "login", "text": "Log in to your restaurant dashboard." },
     { "id": "dashboard", "text": "It shows your pickups, offers, menu, orders, and payouts." },
     { "id": "post", "text": "To post surplus food, pick a dish from your menu, say why it's available, and choose your discount." },
@@ -31,7 +31,7 @@
     { "id": "pin", "text": "At pickup, type the customer's four-digit PIN." },
     { "id": "handover", "text": "Check the order and hand over the food. The customer's card is charged, and your share is paid to your Stripe account." },
     { "id": "payouts", "text": "The Payouts tab lists every payment, in US or Canadian dollars, with its invoice number and transaction ID." },
-    { "id": "report", "text": "And the daily report shows your sales, including any Bite Wise coupons, with print, PDF, and CSV downloads." },
-    { "id": "end", "text": "That's Bite Wise. Less waste, and more revenue. Happy selling!" }
+    { "id": "report", "text": "And the daily report shows your sales, including any ResDish coupons, with print, PDF, and CSV downloads." },
+    { "id": "end", "text": "That's ResDish. Less waste, and more revenue. Happy selling!" }
   ]
 }

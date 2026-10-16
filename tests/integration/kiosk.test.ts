@@ -73,7 +73,7 @@ describe.skipIf(!available)('signed agreement', () => {
   it('is a PDF named after the restaurant', async () => {
     const shop = await restaurantWithOffer();
     const { filename, pdf } = await signedAgreementPdf(shop.restaurant.id, new Date().toISOString());
-    expect(filename).toMatch(/^Bite-Wise-Partner-Agreement-Test-Kitchen-t-[a-f0-9]+\.pdf$/);
+    expect(filename).toMatch(/^ResDish-Partner-Agreement-Test-Kitchen-t-[a-f0-9]+\.pdf$/);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.length).toBeGreaterThan(20_000);
   });

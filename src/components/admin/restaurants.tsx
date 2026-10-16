@@ -315,7 +315,7 @@ function BanRestaurant({ restaurant, onDone }: { restaurant: Row; onDone: () => 
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   return (
-    <DialogContent title={`Ban ${restaurant.name}?`} description="A permanent removal from Bite Wise.">
+    <DialogContent title={`Ban ${restaurant.name}?`} description="A permanent removal from ResDish.">
       <ul className="mt-0 mb-4 list-disc pl-5 text-sm text-ink-2">
         <li>All its offers end and open orders are cancelled (customers aren&apos;t charged).</li>
         <li>Its kiosk link stops working, and the owner ({restaurant.ownerUsername}) can no longer log in.</li>
@@ -344,7 +344,7 @@ function DeleteRestaurant({ restaurant, onDone }: { restaurant: Row; onDone: () 
   return (
     <DialogContent title={`Delete ${restaurant.name}?`} description="This can't be undone.">
       <ul className="mt-0 mb-4 list-disc pl-5 text-sm text-ink-2">
-        <li>The restaurant is taken off Bite Wise: its offers end, open orders are cancelled (customers aren&apos;t charged) and its kiosk link stops working.</li>
+        <li>The restaurant is taken off ResDish: its offers end, open orders are cancelled (customers aren&apos;t charged) and its kiosk link stops working.</li>
         <li>The owner&apos;s account ({restaurant.ownerUsername}, {restaurant.ownerEmail}) is deleted too, with its saved cards. A paid plan stops renewing.</li>
         <li>
           {hasHistory

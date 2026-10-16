@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/orders/[id]/
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `${disposition}; filename="BiteWise-receipt-${rc.receiptNumber}.pdf"`,
+      'Content-Disposition': `${disposition}; filename="ResDish-receipt-${rc.receiptNumber}.pdf"`,
       'Cache-Control': 'private, no-store',
     },
   });

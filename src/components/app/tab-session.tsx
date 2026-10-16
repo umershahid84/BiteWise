@@ -3,9 +3,9 @@
 import { useEffect } from 'react';
 import { logOut } from '@/app/actions/auth';
 
-// Logs out once every Bite Wise tab has been closed. Each open tab keeps a heartbeat in localStorage and removes it
+// Logs out once every ResDish tab has been closed. Each open tab keeps a heartbeat in localStorage and removes it
 // when the tab closes. A page that opens with no other live tab, in a session this browser has seen before, means
-// Bite Wise was closed and opened again (or the browser restored the old session), so it logs out. A new session
+// ResDish was closed and opened again (or the browser restored the old session), so it logs out. A new session
 // (just logged in, or from an email link) is recorded instead. Reloading a tab keeps the session.
 const TABS = 'bitewise.tabs';
 const SESSION = 'bitewise.session';
@@ -42,7 +42,7 @@ export function TabSession({ sessionId }: { sessionId: string }) {
       const others = Object.entries(readTabs()).filter(([k, t]) => k !== id && now - t < ALIVE_MS);
       const known = localStorage.getItem(SESSION) === sessionId;
       if (!reload && !others.length && known) {
-        // Bite Wise was closed and opened again: end the old session.
+        // ResDish was closed and opened again: end the old session.
         void logOut().then((res) => {
           // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           location.assign(`${res.ok ? res.data.login : '/login'}?session=1`);

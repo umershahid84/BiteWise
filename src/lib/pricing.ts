@@ -24,7 +24,7 @@ export type Quote = {
   serviceFeeBps: number;
   serviceFeeCents: number;
   taxRateBps: number;
-  // Food: the restaurant's rate. Service fee (Bite Wise's platform fee): the rate of Bite Wise's location in the
+  // Food: the restaurant's rate. Service fee (ResDish's platform fee): the rate of ResDish's location in the
   // restaurant's country (Washington / Newfoundland and Labrador HST).
   foodTaxCents: number;
   serviceFeeTaxBps: number;
@@ -68,7 +68,7 @@ export function quote(q: {
   };
 }
 
-// The Bite Wise service fee is never refunded, whether or not the order is picked up. When the fee is taxed, the
+// The ResDish service fee is never refunded, whether or not the order is picked up. When the fee is taxed, the
 // sales tax on it isn't refunded either. Same math as public.order_non_refundable().
 type Charged = { subtotal_cents: number; service_fee_cents: number; tax_cents: number; tax_rate_bps: number; total_cents: number };
 export const feeTaxCents = (o: Charged) => Math.max(0, o.tax_cents - roundHalfUp((o.subtotal_cents * o.tax_rate_bps) / 10000));

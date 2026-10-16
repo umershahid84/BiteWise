@@ -63,7 +63,7 @@ export function AdminConsole({ access }: { access: Access }) {
       </div>
       <p className="-mt-1 mb-5 text-muted">
         {access.role === 'admin'
-          ? 'Everything about Bite Wise in one place: income, alerts, restaurants, customers, orders, payouts and taxes.'
+          ? 'Everything about ResDish in one place: income, alerts, restaurants, customers, orders, payouts and taxes.'
           : `Support: alerts, restaurants, customers, orders and live offers${access.canRefund ? ', including platform credit' : ''}.`}
       </p>
       <Tabs value={tab} onValueChange={go}>

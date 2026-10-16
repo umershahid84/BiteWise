@@ -94,7 +94,7 @@ export function ProfilePanel({ ctx }: { ctx: Ctx }) {
           <p className="m-0"><b>{pct(r.tax_rate_bps)}</b>{r.tax_jurisdiction && <span className="text-muted"> · {r.tax_jurisdiction}</span>}</p>
           <p className="m-0 mt-1 text-muted">
             {r.tax_source === 'manual'
-              ? 'Set by Bite Wise. Contact us if your rate changes.'
+              ? 'Set by ResDish. Contact us if your rate changes.'
               : 'Set automatically from your address, since customers pick up at your restaurant. We check it every month, and right away when you change your address.'}
             {r.tax_checked_at && ` Last checked ${new Date(r.tax_checked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}.`}
           </p>

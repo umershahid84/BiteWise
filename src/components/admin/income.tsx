@@ -81,7 +81,7 @@ export function IncomePanel() {
             <Kpi value={<span className="text-primary-ink">{money(data.totals.netCents)}</span>} label="Net income" />
             <Kpi value={money(data.totals.serviceFeesCents)} label={`Service fees · ${data.totals.orders} orders`} />
             <Kpi value={money(data.totals.planFeesCents)} label={`Plan fees · ${data.totals.planInvoices} invoices`} />
-            <Kpi value={data.totals.creditCostCents ? `−${money(data.totals.creditCostCents)}` : money(0)} label="Platform credit Bite Wise funded" />
+            <Kpi value={data.totals.creditCostCents ? `−${money(data.totals.creditCostCents)}` : money(0)} label="Platform credit ResDish funded" />
             <Kpi value={money(data.totals.orders ? Math.round(data.totals.serviceFeesCents / data.totals.orders) : 0)} label="Average service fee per order" />
             <Kpi value={money(data.totals.gmvCents)} label={`Charged to customers · ${data.totals.meals} meals`} />
             <Kpi value={money(data.totals.pioneerDiscountsCents)} label="Pioneer Members discounts given" />
@@ -153,7 +153,7 @@ export function IncomePanel() {
             )}
           </Card>
           <p className="mt-3 text-xs text-muted">
-            Net income = service fees on completed orders + restaurant plan fees − platform credit Bite Wise funded (refunds as credit and goodwill credit),
+            Net income = service fees on completed orders + restaurant plan fees − platform credit ResDish funded (refunds as credit and goodwill credit),
             before payment processing (Stripe) fees. Orders count on their pickup day, plan fees on their payment day, in Pacific Time. Sales tax is
             collected for Washington State and is not income: see the Sales tax tab.
           </p>

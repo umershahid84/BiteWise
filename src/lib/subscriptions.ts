@@ -54,7 +54,7 @@ export async function prices() {
 }
 export const priceOf = (p: Awaited<ReturnType<typeof prices>>, plan: PaidPlan) => (plan === 'annual' ? p.annualCents : p.monthlyCents);
 
-// Sales tax on a plan fee (a Bite Wise platform fee): at the rate of Bite Wise's location in the restaurant's country,
+// Sales tax on a plan fee (a ResDish platform fee): at the rate of ResDish's location in the restaurant's country,
 // set in the admin Settings: Washington for restaurants in the United States, Newfoundland and Labrador HST for
 // restaurants in Canada.
 export const salesTax = (cents: number, rateBps: number) => Math.round((cents * rateBps) / 10000);
@@ -218,7 +218,7 @@ async function chargePeriod(o: {
   try {
     const charge = await payments(o.country).charge({
       amountCents: total, customerId: o.customerId, paymentRef: o.card.provider_ref,
-      description: `Bite Wise ${o.plan} plan · ${o.name}`,
+      description: `ResDish ${o.plan} plan · ${o.name}`,
       metadata: { restaurant_id: String(o.restaurantId), plan: o.plan, period_start: o.start.toISOString() },
       idempotencyKey: o.key,
     });
@@ -247,7 +247,7 @@ async function receipt(o: {
         listPriceCents: o.listPriceCents, discountCents: o.discountCents, discountLabel: o.discountLabel, taxCents: o.taxCents, taxRateBps: o.taxRateBps,
         invoiceUrl: `${publicEnv.siteUrl}/restaurant/invoices/${inv.id}`, currency: inv.currency,
       }),
-      attachments: [{ filename: `Bite-Wise-invoice-${o.invoice}.pdf`, content: await planInvoicePdf(inv), contentType: 'application/pdf' }],
+      attachments: [{ filename: `ResDish-invoice-${o.invoice}.pdf`, content: await planInvoicePdf(inv), contentType: 'application/pdf' }],
     });
   } catch (err) {
     console.error('subscription receipt email:', err);
@@ -280,7 +280,7 @@ async function pioneerInvoice(restaurantId: number, plan: PaidPlan, start: Date,
 // card (subscribe), which is only possible once the restaurant is approved.
 export async function choosePlan(restaurantId: number, plan: PaidPlan) {
   const r = must(await db().from('restaurants').select('status').eq('id', restaurantId).single());
-  if (r.status === 'banned' || r.status === 'deleted') throw new AppError(403, 'Your restaurant has been removed from Bite Wise.');
+  if (r.status === 'banned' || r.status === 'deleted') throw new AppError(403, 'Your restaurant has been removed from ResDish.');
   const sub = await getSubscription(restaurantId);
   if (isPioneer(sub) && sub!.status === 'active') throw new AppError(409, 'You are already a Pioneer Member: your plan is free.');
   if (sub && sub.status !== 'expired') throw new AppError(409, 'You already have a plan. You can switch plans from your next renewal.');

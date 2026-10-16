@@ -1,4 +1,4 @@
-// Records the "See Bite Wise in action" tours (public/videos/), timed to the spoken narration.
+// Records the "See ResDish in action" tours (public/videos/), timed to the spoken narration.
 // Full steps are in scripts/demo-video/README.md. This step needs the app running on fresh demo data
 // and .video-tmp/voice/durations.json from voice.py; it writes .video-tmp/<tour>-raw.webm and <tour>-cues.json.
 //
@@ -116,7 +116,7 @@ function narrator(tour) {
   };
 }
 
-// End screen: fades in over the last page, pops in the Bite Wise logo piece by piece and says goodbye.
+// End screen: fades in over the last page, pops in the ResDish logo piece by piece and says goodbye.
 const OUTRO = {
   customer: { headline: 'Happy rescuing!', line: 'Great food. Great prices. Less waste.', pill: 'Free to join' },
   restaurant: { headline: 'Happy selling!', line: 'Less waste. More revenue.', pill: 'Free to join · Paid through Stripe' },
@@ -288,6 +288,7 @@ async function customerTour(browser) {
     await type(p, '#cc-num', '4242424242424242', 25);
     await type(p, '#cc-exp', '1230', 60);
     await type(p, '#cc-cvc', '123', 60);
+    await type(p, '#cc-zip', '98101', 60);
   }
   await n.say(p, 'hold');
   await n.idle(p, -900);

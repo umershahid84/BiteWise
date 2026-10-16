@@ -7,7 +7,7 @@ import { Field, Input } from '@/components/ui/field';
 import { formatPostalInput, normalizePostal, type Country } from '@/lib/regions';
 
 // Card entry. With Stripe, card numbers go straight from the browser to Stripe (Stripe Elements)
-// and never reach Bite Wise. In mock mode (no Stripe keys), only brand, last 4 digits and expiry
+// and never reach ResDish. In mock mode (no Stripe keys), only brand, last 4 digits and expiry
 // leave the browser.
 
 // One per country: US cards are saved with the US Stripe account (US dollars), Canadian ones with the Canadian
@@ -166,7 +166,7 @@ function StripeFields({ country, ref }: { country: Country; ref: React.Ref<CardE
         <CardElement options={{ hidePostalCode: ownPostal, style: { base: { fontSize: '16px', color: colors.ink, iconColor: colors.muted, '::placeholder': { color: colors.muted } }, invalid: { color: colors.danger } } }} />
       </div>
       {ownPostal && <div className="mt-3"><PostalField country={country} value={postal} onChange={setPostal} /></div>}
-      <div className="mt-2 text-xs text-muted">🔒 Card details are sent securely to Stripe and never stored on Bite Wise servers.</div>
+      <div className="mt-2 text-xs text-muted">🔒 Card details are sent securely to Stripe and never stored on ResDish servers.</div>
     </div>
   );
 }

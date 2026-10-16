@@ -89,8 +89,8 @@ export function OrdersPanel({ range, setRange }: { range: Range; setRange: (r: R
 
 const PRESETS = [10, 25, 50, 75, 100];
 
-// All sales are final (Customer Terms, Section 6): customers have no right to a refund. Bite Wise may refund case by case,
-// as a courtesy or for loyalty: as platform credit (paid by Bite Wise; the restaurant keeps its payout) or back to the
+// All sales are final (Customer Terms, Section 6): customers have no right to a refund. ResDish may refund case by case,
+// as a courtesy or for loyalty: as platform credit (paid by ResDish; the restaurant keeps its payout) or back to the
 // card (the restaurant gives up the matching part of its payout). Never the service fee.
 function RefundForm({ order: o, onDone }: { order: AdminOrder; onDone: () => void }) {
   const [percent, setPercent] = useState<number | null>(100);
@@ -131,7 +131,7 @@ function RefundForm({ order: o, onDone }: { order: AdminOrder; onDone: () => voi
         <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
           <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'credit'} onChange={() => setMethod('credit')} />
           <span><b>Courtesy platform credit</b>
-            <span className="block text-xs text-muted">{money(cents)} added to their Bite Wise credit for future orders, as a courtesy or for loyalty. Paid by Bite Wise; the restaurant keeps its full payout.</span></span>
+            <span className="block text-xs text-muted">{money(cents)} added to their ResDish credit for future orders, as a courtesy or for loyalty. Paid by ResDish; the restaurant keeps its full payout.</span></span>
         </label>
         <label className="flex cursor-pointer gap-2.5 rounded-xl border border-line p-3 has-[:checked]:border-primary has-[:checked]:bg-primary-soft/40">
           <input type="radio" name="method" className="mt-1 accent-[var(--color-primary)]" checked={method === 'original'} onChange={() => setMethod('original')} />

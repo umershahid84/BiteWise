@@ -4,7 +4,7 @@ import { AuthCard } from '@/components/auth/auth-card';
 import { SignupForm } from '@/components/auth/signup-form';
 import { getViewer } from '@/lib/auth';
 
-export const metadata: Metadata = { title: 'Join Bite Wise as a restaurant' };
+export const metadata: Metadata = { title: 'Join ResDish as a restaurant' };
 
 export default async function RestaurantSignupPage() {
   const viewer = await getViewer();

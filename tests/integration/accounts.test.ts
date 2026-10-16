@@ -15,7 +15,7 @@ const { setRestaurantStatus } = await import('@/lib/moderation');
 const { admin, anon, PASSWORD, restaurantWithOffer, signUp, supabaseAvailable, uid } = await import('../support/db');
 
 const available = await supabaseAvailable();
-const codeIn = (e: Email | undefined) => /(\d{6,10}) is your Bite Wise password reset code/.exec(e?.subject ?? '')?.[1];
+const codeIn = (e: Email | undefined) => /(\d{6,10}) is your ResDish password reset code/.exec(e?.subject ?? '')?.[1];
 const login = async (email: string, password: string) => {
   const client = anon();
   const { error } = await client.auth.signInWithPassword({ email, password });

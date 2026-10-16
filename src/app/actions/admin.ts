@@ -118,7 +118,7 @@ export async function deleteRestaurant(input: unknown) {
   });
 }
 
-// Goodwill platform credit, funded by Bite Wise.
+// Goodwill platform credit, funded by ResDish.
 export async function issueCredit(input: unknown) {
   return action(async () => {
     const me = await requireAdmin('refund');
@@ -145,8 +145,8 @@ export async function adminCancelOrder(input: unknown) {
 }
 
 // All sales are final: food is sold as is and customers have no right to a refund (Customer Terms, Section 6), so food
-// isn't bought and returned over and over. Bite Wise may still refund case by case, as a courtesy or for loyalty
-// (admins, and employees allowed to): as platform credit (paid by Bite Wise; the restaurant keeps its payout) or back
+// isn't bought and returned over and over. ResDish may still refund case by case, as a courtesy or for loyalty
+// (admins, and employees allowed to): as platform credit (paid by ResDish; the restaurant keeps its payout) or back
 // to how the customer paid (the restaurant gives up the matching part of its payout). Never the service fee.
 // By percentage of what's left (food and its tax) or by amount; the reason is recorded in the audit log.
 export async function refundOrder(input: unknown) {
@@ -214,7 +214,7 @@ export async function updateSettings(input: unknown) {
         serviceFeeFixed: z.coerce.number().min(0, 'The fixed service fee must be $0 to $20.').max(20, 'The fixed service fee must be $0 to $20.').optional(),
         defaultTaxRatePct: z.coerce.number().min(0, 'Sales tax must be 0% to 20%.').max(20, 'Sales tax must be 0% to 20%.'),
         requireRestaurantApproval: z.boolean(),
-        // true: restaurants get the sales tax on their food and remit it; false: Bite Wise keeps and remits it.
+        // true: restaurants get the sales tax on their food and remit it; false: ResDish keeps and remits it.
         orderTaxToRestaurant: z.boolean().optional(),
         // Sales tax on plan fees in the admin's location (Washington or Newfoundland and Labrador).
         platformTaxPct: z.coerce.number().min(0, 'Sales tax on plan fees must be 0% to 20%.').max(20, 'Sales tax on plan fees must be 0% to 20%.').optional(),

@@ -25,7 +25,7 @@ export type PickupOrder = {
   id: number; itemTitle: string; imageUrl: string | null; quantity: number; unitPriceCents: number; subtotalCents: number;
   serviceFeeCents: number; taxCents: number; totalCents: number; creditAppliedCents: number; customerUsername: string;
   createdAt: string; pickupEnd: string;
-  // A Bite Wise coupon: money off the food (paid by the restaurant) or the service fee waived (paid by Bite Wise).
+  // A ResDish coupon: money off the food (paid by the restaurant) or the service fee waived (paid by ResDish).
   couponCode?: string; couponDiscountCents?: number; couponFeeWaivedCents?: number;
 };
 
@@ -156,7 +156,7 @@ export async function stripeDashboardLink() {
     const supabase = await supabaseServer();
     const pay = payments(restaurant.country);
     if (pay.mode === 'mock') {
-      throw new AppError(409, 'Payouts are in test mode on Bite Wise right now, so there is no real Stripe account or dashboard yet. Your earnings are recorded and will be paid once Bite Wise switches on live payments.');
+      throw new AppError(409, 'Payouts are in test mode on ResDish right now, so there is no real Stripe account or dashboard yet. Your earnings are recorded and will be paid once ResDish switches on live payments.');
     }
     const acct = maybe(await supabase.from('restaurant_payment_accounts').select('stripe_account_id').eq('restaurant_id', restaurant.id).maybeSingle());
     if (!acct?.stripe_account_id || isTestStripeAccount(acct.stripe_account_id)) throw new AppError(409, 'Set up payouts with Stripe first.');
@@ -225,7 +225,7 @@ export async function choosePlan(plan: unknown) {
 export async function subscribePlan(input: unknown) {
   return action(async () => {
     const { restaurant } = await requireRestaurant();
-    if (restaurant.status === 'banned') throw new AppError(403, 'Your restaurant has been removed from Bite Wise.');
+    if (restaurant.status === 'banned') throw new AppError(403, 'Your restaurant has been removed from ResDish.');
     const d = parse(z.object({ plan: paidPlan, cardId: z.number().int().positive().nullish(), token: z.unknown(), autoRenew: z.boolean().default(true) }), input);
     return subscriptions.subscribe(restaurant.id, d);
   });

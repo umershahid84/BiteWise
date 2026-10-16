@@ -53,7 +53,7 @@ export async function updateTeamMember(by: string, id: string, o: { role: TeamRo
   if (p.role !== 'admin' && p.role !== 'support') throw new AppError(404, 'Team member not found.');
   if (p.role === 'admin' && o.role !== 'admin') {
     if (id === by) throw new AppError(400, 'You can\'t remove your own admin access. Ask another admin.');
-    if (!(await adminsLeft(id))) throw new AppError(400, 'Bite Wise needs at least one admin.');
+    if (!(await adminsLeft(id))) throw new AppError(400, 'ResDish needs at least one admin.');
   }
   check(await db().from('profiles').update({ role: o.role, can_refund: o.role === 'admin' || o.canRefund, ...(o.country ? { country: o.country } : {}) }).eq('id', id));
 }
@@ -63,7 +63,7 @@ export async function checkTeamRemoval(by: string, id: string) {
   const p = must(await db().from('profiles').select('role').eq('id', id).single());
   if (p.role !== 'admin' && p.role !== 'support') throw new AppError(404, 'Team member not found.');
   if (id === by) throw new AppError(400, 'You can\'t delete your own account here.');
-  if (p.role === 'admin' && !(await adminsLeft(id))) throw new AppError(400, 'Bite Wise needs at least one admin.');
+  if (p.role === 'admin' && !(await adminsLeft(id))) throw new AppError(400, 'ResDish needs at least one admin.');
 }
 
 async function teamMember(id: string) {

@@ -20,7 +20,7 @@ const MenuSchema = z.object({
   })),
 });
 
-const SYSTEM = `You extract restaurant menus from web pages for Bite Wise, a marketplace where restaurants sell surplus food.
+const SYSTEM = `You extract restaurant menus from web pages for ResDish, a marketplace where restaurants sell surplus food.
 Return every dish or drink that has a price, with its name as written, a short description (empty if none), and the price in US dollars.
 If an item has several sizes or prices, use the lowest one and mention the sizes in the description.
 Only use photo URLs from the IMAGES list, and only when a photo clearly belongs to that item (its alt text or position names the dish); otherwise null.

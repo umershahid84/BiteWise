@@ -24,7 +24,7 @@ export function planInvoice(x: Payment, restaurant: Restaurant) {
     dateText: day(x.created_at),
     restaurant,
     from: serverEnv.legal,
-    description: `Bite Wise ${NAMES[x.plan].toLowerCase()} plan`,
+    description: `ResDish ${NAMES[x.plan].toLowerCase()} plan`,
     periodText: `${day(x.period_start)} – ${day(x.period_end)}`,
     listCents: x.list_price_cents ?? x.amount_cents + x.discount_cents - x.tax_cents,
     discountCents: x.discount_cents,

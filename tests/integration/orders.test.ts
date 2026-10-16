@@ -103,7 +103,7 @@ describe.skipIf(!available)('checkout', () => {
     expect(await balance(c.id)).toBe(2000 - 25 - 3);
   });
 
-  it('releases the whole hold, fee included, when Bite Wise cancels', async () => {
+  it('releases the whole hold, fee included, when ResDish cancels', async () => {
     const shop = await restaurantWithOffer();
     const c = await signUp('customer');
     const { orderId } = await orders.checkout(c.id, { offerId: shop.offer.id, quantity: 1, creditCents: 0, newCard: visa });
@@ -121,7 +121,7 @@ describe.skipIf(!available)('pickup and payouts', () => {
     expect(done.status).toBe('picked_up');
     const payouts = (await db().from('payouts').select('*').eq('order_id', orderId)).data!;
     expect(payouts).toHaveLength(1);
-    expect(payouts[0]).toMatchObject({ kind: 'transfer', amount_cents: 552 }); // $5.00 food + $0.52 sales tax; Bite Wise keeps the fee
+    expect(payouts[0]).toMatchObject({ kind: 'transfer', amount_cents: 552 }); // $5.00 food + $0.52 sales tax; ResDish keeps the fee
     expect((await orders.getOrder(orderId)).restaurant_share_cents).toBe(552);
     expect(payouts[0].invoice_number).toMatch(/^INV-\d{8}-\d{6}$/);
     expect(payouts[0].transaction_id).toMatch(/^tr_mock_/);

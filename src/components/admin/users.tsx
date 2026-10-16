@@ -157,7 +157,7 @@ function CreditForm({ user, onDone }: { user: User; onDone: () => void }) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   return (
-    <DialogContent title={`Issue credit to ${user.username}`} description="Goodwill platform credit is funded by Bite Wise. Restaurants are still paid in full when it's used.">
+    <DialogContent title={`Issue credit to ${user.username}`} description="Goodwill platform credit is funded by ResDish. Restaurants are still paid in full when it's used.">
       <Field label="Amount ($)" htmlFor="c-amt"><Input id="c-amt" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10.00" /></Field>
       <Field label="Reason (shown to the customer)" htmlFor="c-reason"><Input id="c-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Sorry about the wait on your last order" /></Field>
       <ErrorText error={error} />
@@ -221,7 +221,7 @@ function BanForm({ user, onDone }: { user: User; onDone: () => void }) {
         <li>They are signed out and can never log in again.</li>
         <li>Their email ({user.email}) can&apos;t be used to create a new account.</li>
         {user.role === 'customer' && <li>Open orders are cancelled and their card holds released (no charge).</li>}
-        {user.role === 'restaurant' && <li>Their restaurant is removed from Bite Wise: offers end, open orders are cancelled and the kiosk stops working.</li>}
+        {user.role === 'restaurant' && <li>Their restaurant is removed from ResDish: offers end, open orders are cancelled and the kiosk stops working.</li>}
         <li>Order history is kept. You can lift the ban later if it was a mistake.</li>
       </ul>
       <Field label="Reason (kept in the audit log)" htmlFor="b-reason"><Input id="b-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Repeated fraudulent chargebacks" /></Field>

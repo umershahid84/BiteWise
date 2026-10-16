@@ -1,4 +1,4 @@
-// Bite Wise legal documents. Each document has a version; users must accept the current version of
+// ResDish legal documents. Each document has a version; users must accept the current version of
 // every document required for their role before their account is created, and again whenever a
 // version changes. When you edit the text, change LEGAL_VERSION and EFFECTIVE here AND the versions
 // in the legal_documents table (add a migration); a test checks that they match.
@@ -14,11 +14,11 @@ import type { Role } from '@/lib/constants';
 import type { Country } from '@/lib/regions';
 import { describeServiceFee, type ServiceFee } from '@/lib/service-fee';
 
-export const LEGAL_VERSION = '2026-10-21.1';
+export const LEGAL_VERSION = '2026-10-24.1';
 export const EFFECTIVE = 'October 18, 2026';
 
 export type Company = {
-  // address: Bite Wise's location in the US documents; addressCa in the Canadian ones (the US one when not given).
+  // address: ResDish's location in the US documents; addressCa in the Canadian ones (the US one when not given).
   entity: string; email: string; address: string; addressCa?: string; serviceFee: ServiceFee; graceMinutes: number;
   // Restaurant subscription: prices in dollars, and how many Pioneer Member (free) spots there are.
   monthlyPrice: number; annualPrice: number; foundingSpots: number;
@@ -44,18 +44,18 @@ const esc = (s: string) =>
 
 function customerTerms(c: Company, j: Jur) {
   return `
-<p class="lead">Welcome to Bite Wise. These Customer Terms of Service (the "<b>Terms</b>") are a binding agreement between you and ${c.entity}
-("<b>Bite Wise</b>," "<b>we</b>," "<b>us</b>") and govern your use of the Bite Wise website and services (the "<b>Service</b>") to find and buy
+<p class="lead">Welcome to ResDish. These Customer Terms of Service (the "<b>Terms</b>") are a binding agreement between you and ${c.entity}
+("<b>ResDish</b>," "<b>we</b>," "<b>us</b>") and govern your use of the ResDish website and services (the "<b>Service</b>") to find and buy
 discounted surplus food from participating restaurants. By selecting <b>Accept</b> when you create an account, or by using the Service,
 you agree to these Terms and to our <a href="${j.privacy}">Privacy Policy</a>. If you do not agree, select <b>Decline</b> and do not use the Service.</p>
 ${t(j, `<p>These are the Terms for customers in the <b>United States</b>. Customers in Canada agree to the Canadian Terms.</p>`,
   `<p>These are the Terms for customers in <b>Canada</b>. Customers in the United States agree to the US Terms.</p>`)}
 
 <h2>1. Who we are and what we do</h2>
-<p>1.1 <b>Marketplace only.</b> Bite Wise operates an online marketplace that connects customers with independent restaurants, cafés,
-bakeries and other food businesses ("<b>Restaurants</b>") that sell surplus food. Bite Wise does not prepare, cook, store, package,
-handle, inspect or sell food. Each purchase is a sale made by the Restaurant to you. Bite Wise facilitates the order and payment.</p>
-<p>1.2 <b>Surplus food.</b> Food offered on Bite Wise ("<b>Offers</b>") is food a Restaurant has already prepared and would otherwise
+<p>1.1 <b>Marketplace only.</b> ResDish operates an online marketplace that connects customers with independent restaurants, cafés,
+bakeries and other food businesses ("<b>Restaurants</b>") that sell surplus food. ResDish does not prepare, cook, store, package,
+handle, inspect or sell food. Each purchase is a sale made by the Restaurant to you. ResDish facilitates the order and payment.</p>
+<p>1.2 <b>Surplus food.</b> Food offered on ResDish ("<b>Offers</b>") is food a Restaurant has already prepared and would otherwise
 discard. For example, it may be a mistaken order, an order that was delayed or never collected, or end-of-day or excess production.
 You understand that surplus food:</p>
 <ul>
@@ -76,7 +76,7 @@ has been used without your permission. You may have only one customer account.</
 
 <h2>3. Allergens, dietary information and food safety</h2>
 <p>3.1 <b>Restaurants supply all food information.</b> Item names, descriptions, photos, ingredients and dietary tags (such as
-"vegan" or "gluten-free") are provided by the Restaurant. Bite Wise does not verify them and does not guarantee that food is free of any
+"vegan" or "gluten-free") are provided by the Restaurant. ResDish does not verify them and does not guarantee that food is free of any
 allergen.</p>
 <p>3.2 <b>If you have a food allergy or dietary restriction, ask the Restaurant before you eat.</b> Surplus food may have been
 prepared in kitchens that handle common allergens, including ${t(j, ALLERGENS_US, ALLERGENS_CA)},
@@ -91,8 +91,8 @@ your order, it is yours as is (Section 6).</p>
 
 <h2>4. Ordering, pricing and payment</h2>
 <p>4.1 <b>Prices.</b> Before you place an order, we show you the item's original price, the Restaurant's discount, the discounted
-price, a Bite Wise service fee (currently ${feeText(c, j)}), applicable sales tax, and the total. Sales tax on the food is at the
-Restaurant's local rate; ${t(j, 'sales tax on the service fee is at the Washington rate for Bite Wise\'s location', 'HST on the service fee is at the Newfoundland and Labrador rate for Bite Wise\'s location')}.
+price, a ResDish service fee (currently ${feeText(c, j)}), applicable sales tax, and the total. Sales tax on the food is at the
+Restaurant's local rate; ${t(j, 'sales tax on the service fee is at the Washington rate for ResDish\'s location', 'HST on the service fee is at the Newfoundland and Labrador rate for ResDish\'s location')}.
 Orders are charged in the currency of the Restaurant's country: U.S. dollars at Restaurants in the United States and Canadian
 dollars at Restaurants in Canada. If your card is in another currency, your card issuer may charge its own conversion fees.</p>
 <p>4.2 <b>Payment authorization.</b> When you place an order, we (through our payment processor) place a temporary authorization hold
@@ -100,20 +100,20 @@ on your debit or credit card for the order total. <b>Your card is charged only w
 PIN.</b> If you cancel an order or do not pick it up, the hold is released except for the service fee, which is charged as described
 in Section 4.6. Your card issuer controls how long it takes for a released hold to disappear from your statement.</p>
 <p>4.3 <b>Saved cards.</b> If you choose to save a card, you authorize us and our payment processor to store it securely and to use
-it for future orders you place. Card numbers are handled by our payment processor. Bite Wise stores only the card brand, last four
+it for future orders you place. Card numbers are handled by our payment processor. ResDish stores only the card brand, last four
 digits and expiry date. You can remove a saved card at any time on your Account page.</p>
 <p>4.4 <b>Order confirmation.</b> An order is confirmed when you receive a 4-digit pickup PIN. The Restaurant may decline or cancel an
 order it cannot fulfil (for example, if food is found to be unsuitable), in which case you will not be charged.</p>
 <p>4.5 <b>Taxes.</b> ${t(j,
   `Because you pick your order up at the Restaurant, sales tax is charged at the rate that applies at the Restaurant's address (state,
 county, city and any local taxes), which we calculate automatically. The sales tax on your food is passed to the Restaurant, which reports
-and remits it, except where Bite Wise is required to collect and remit it as a marketplace facilitator. Any sales tax on the Bite Wise
-service fee is remitted by Bite Wise.`,
+and remits it, except where ResDish is required to collect and remit it as a marketplace facilitator. Any sales tax on the ResDish
+service fee is remitted by ResDish.`,
   `Because you pick your order up at the Restaurant, sales taxes are charged for the province or territory where the Restaurant is: the
 GST or HST, and any provincial sales tax on restaurant meals (PST, RST or QST), which we calculate automatically. The tax on your food is
-passed to the Restaurant, which reports and remits it, except where Bite Wise is required to collect and remit it as a platform operator
-under the Excise Tax Act or provincial law. Any tax on the Bite Wise service fee is remitted by Bite Wise.`)}</p>
-<p>4.6 <b>The service fee is not refundable.</b> The Bite Wise service fee pays for reserving the food for you and processing your
+passed to the Restaurant, which reports and remits it, except where ResDish is required to collect and remit it as a platform operator
+under the Excise Tax Act or provincial law. Any tax on the ResDish service fee is remitted by ResDish.`)}</p>
+<p>4.6 <b>The service fee is not refundable.</b> The ResDish service fee pays for reserving the food for you and processing your
 order, and <b>it is not refunded, whether or not you pick up your order</b>. In particular:</p>
 <ul>
   <li>if you <b>cancel</b> an order, or <b>do not pick it up</b> before the discard timer ends (a missed pickup, Section 5.4), you are charged
@@ -121,13 +121,13 @@ order, and <b>it is not refunded, whether or not you pick up your order</b>. In 
   service fee is charged to your card first and then taken from that credit;</li>
   <li>completed orders are not refunded at all (Section 6).</li>
 </ul>
-<p>The only exception is an order the Restaurant or Bite Wise cancels or declines (for example, because the food became unavailable or
+<p>The only exception is an order the Restaurant or ResDish cancels or declines (for example, because the food became unavailable or
 unsafe, or the Restaurant's account was closed), or an order whose payment failed: those holds are released in full and you are not
 charged at all.</p>
-<p>4.7 <b>Coupons.</b> From time to time Bite Wise may send you coupon codes. A coupon may waive the service fee, or take a fixed amount
+<p>4.7 <b>Coupons.</b> From time to time ResDish may send you coupon codes. A coupon may waive the service fee, or take a fixed amount
 or a percentage off the price of the food, as the coupon says. Enter the code at checkout; the discount is shown before you place your
 order. One coupon can be used per order, and each coupon once per customer. Coupons work only at Restaurants in the country they were
-issued for, only until their expiration date, and only while Bite Wise has not withdrawn them. They have no cash value, cannot be sold,
+issued for, only until their expiration date, and only while ResDish has not withdrawn them. They have no cash value, cannot be sold,
 transferred or exchanged for Platform Credit, and are void where prohibited. If an order is cancelled before pickup, or its payment fails,
 you can use the coupon again; a missed pickup uses it up. Sales tax is charged on the price after the coupon. We may refuse or reverse a
 coupon used by mistake, against these Terms or fraudulently.</p>
@@ -137,12 +137,12 @@ coupon used by mistake, against these Terms or fraudulently.</p>
 you do not, the Restaurant may discard the food, your order will be released ${c.graceMinutes} minutes after the timer ends, and you will
 be charged only the non-refundable service fee (Section 4.6).</p>
 <p>5.2 Your PIN is how the Restaurant confirms that you are the buyer. <b>Keep it private.</b> Anyone who presents your PIN may
-receive your order, and your card will be charged when the Restaurant enters it. Bite Wise is not responsible for orders collected by
+receive your order, and your card will be charged when the Restaurant enters it. ResDish is not responsible for orders collected by
 someone using a PIN you shared.</p>
 <p>5.3 You may cancel an order from the My Orders page at any time before it is picked up. The food goes back on sale and the hold on
 your card is released, except for the non-refundable service fee (Section 4.6).</p>
 <p>5.4 <b>Missed pickups.</b> An order that you do not pick up and do not cancel before the discard timer ends is a <b>missed pickup</b>: the
-food was held for you, could not be sold to anyone else, and is usually thrown away. To prevent food waste, Bite Wise counts missed pickups
+food was held for you, could not be sold to anyone else, and is usually thrown away. To prevent food waste, ResDish counts missed pickups
 automatically, and the following steps are taken automatically by the platform, without further notice:</p>
 <ul>
   <li><b>Three missed pickups in a row:</b> your account is <b>suspended for 30 days</b>. While it is suspended you cannot log in or place
@@ -151,26 +151,26 @@ automatically, and the following steps are taken automatically by the platform, 
   of your account, as described in Section 12.</li>
   <li>Picking up an order resets the count of missed pickups in a row. Orders you cancel before the timer ends, and orders the Restaurant
   cancels or declines, are not missed pickups.</li>
-  <li>We email you after each missed pickup, and when your account is suspended or closed. Bite Wise administrators are notified as well
+  <li>We email you after each missed pickup, and when your account is suspended or closed. ResDish administrators are notified as well
   and may review or reverse a suspension or ban. If you believe a missed pickup was recorded in error, contact us at
   <a href="mailto:${c.email}">${c.email}</a>.</li>
 </ul>
 
 <h2>6. All sales are final: food is sold as is</h2>
 <p>6.1 <b>Sold as is.</b> Surplus food is food a Restaurant has already prepared and would otherwise throw away. It is sold at a discount,
-<b>as is</b>, in the condition it is in when you pick it up, with no warranty of any kind from the Restaurant or Bite Wise beyond what the
+<b>as is</b>, in the condition it is in when you pick it up, with no warranty of any kind from the Restaurant or ResDish beyond what the
 law requires.</p>
 <p>6.2 <b>No right to a refund.</b> <b>All sales are final.</b> Once you have picked up an order (the Restaurant has entered your PIN),
-<b>you are not entitled to a refund</b> from the Restaurant or from Bite Wise, in whole or in part. This includes matters of taste,
+<b>you are not entitled to a refund</b> from the Restaurant or from ResDish, in whole or in part. This includes matters of taste,
 portion, temperature, packaging or preparation, and food that differs from the Restaurant's regular menu. Surplus food can't be resold
 once it has left the Restaurant, so this rule keeps food from being bought and returned and going to waste. The service fee is never
 refunded (Section 4.6).</p>
-<p><b>Courtesy refunds.</b> Bite Wise may, on a case-by-case basis and at its sole discretion, give a refund as a courtesy or for your
-loyalty, either to your original form of payment or as Bite Wise Platform Credit (Section 6.6). A courtesy refund is a goodwill gesture,
-not a right: Bite Wise has no obligation to give one, and giving one does not mean it will be given again. Card refunds usually appear
+<p><b>Courtesy refunds.</b> ResDish may, on a case-by-case basis and at its sole discretion, give a refund as a courtesy or for your
+loyalty, either to your original form of payment or as ResDish Platform Credit (Section 6.6). A courtesy refund is a goodwill gesture,
+not a right: ResDish has no obligation to give one, and giving one does not mean it will be given again. Card refunds usually appear
 within 5 to 10 business days, depending on your card issuer.</p>
 <p>6.3 <b>Before you accept it.</b> Because there are no refunds, please check your order at the counter (Section 3.3). If it is not the
-food you ordered, or it appears unsafe or spoiled, do not accept it: the Restaurant can cancel the order through Bite Wise support, and
+food you ordered, or it appears unsafe or spoiled, do not accept it: the Restaurant can cancel the order through ResDish support, and
 then you are not charged (Section 4.6).</p>
 <p>6.4 <b>Report safety problems.</b> If you believe food made you ill or was unsafe, contact your local health department and tell us at
 <a href="mailto:${c.email}">${c.email}</a>, so we can review the Restaurant.</p>
@@ -178,7 +178,7 @@ then you are not charged (Section 4.6).</p>
   'the consumer protection laws of your state',
   'the consumer protection legislation of your province or territory (for example, Ontario\'s Consumer Protection Act, 2002, or Quebec\'s Consumer Protection Act)')}
 or other laws that cannot be waived. Where such a law requires a refund, it will be given as the law requires.</p>
-<p>6.6 <b>Bite Wise Platform Credit.</b> Platform Credit is a promotional and courtesy balance issued by Bite Wise, at its discretion,
+<p>6.6 <b>ResDish Platform Credit.</b> Platform Credit is a promotional and courtesy balance issued by ResDish, at its discretion,
 to your account.</p>
 <ul>
   <li><b>Where you see it:</b> your balance appears in the site header, on your Account page (with a history of every credit and use),
@@ -194,40 +194,40 @@ to your account.</p>
   <li><b>Expiry:</b> it does not expire while your account is open and in good standing. If we close your account for fraud or a serious
   breach of these Terms, unused credit is forfeited to the extent permitted by law.</li>
   <li><b>Errors:</b> we may correct credit issued in error.</li>
-  <li><b>Who pays:</b> Platform Credit is funded by Bite Wise; when you use it, the Restaurant is paid in full for your order.</li>
+  <li><b>Who pays:</b> Platform Credit is funded by ResDish; when you use it, the Restaurant is paid in full for your order.</li>
 </ul>
 
 <h2>7. Acceptable use</h2>
-<p>You agree not to: (a) use the Service for anything unlawful, fraudulent or harmful; (b) resell food bought through Bite Wise;
+<p>You agree not to: (a) use the Service for anything unlawful, fraudulent or harmful; (b) resell food bought through ResDish;
 (c) place orders you do not intend to pick up (see Section 5.4), or repeatedly abuse cancellations or holds; (d) harass, threaten or abuse Restaurant
 staff or other users; (e) try to guess PINs, access other accounts, or interfere with the security or operation of the Service;
 (f) scrape, copy or reverse-engineer the Service except as allowed by law; or (g) use someone else's payment card without permission.
 We may suspend or close accounts that break these rules.</p>
 
 <h2>8. Intellectual property</h2>
-<p>The Service, including the Bite Wise name, logo, design and software, is owned by Bite Wise or its licensors and protected by law.
+<p>The Service, including the ResDish name, logo, design and software, is owned by ResDish or its licensors and protected by law.
 We grant you a limited, personal, non-transferable, revocable licence to use the Service for its intended purpose. Restaurant names,
 menus and photos belong to the Restaurants.</p>
 
 <h2>9. Disclaimers</h2>
-<p>To the fullest extent permitted by law, the Service is provided "as is" and "as available." Bite Wise does not make any warranty
+<p>To the fullest extent permitted by law, the Service is provided "as is" and "as available." ResDish does not make any warranty
 about food sold by Restaurants, including its quality, safety, ingredients, allergens, fitness for a particular purpose or
 conformity to its description, which are the Restaurant's responsibility. We do not guarantee that the Service will be uninterrupted,
 error-free, or that any particular Offer will be available.</p>
 
 <h2>10. Limitation of liability</h2>
-<p>10.1 To the fullest extent permitted by law, Bite Wise and its officers, employees and agents will not be liable for any indirect,
+<p>10.1 To the fullest extent permitted by law, ResDish and its officers, employees and agents will not be liable for any indirect,
 incidental, special, consequential or punitive damages, or for lost profits or data, arising out of or related to your use of the
 Service or food purchased through it.</p>
-<p>10.2 To the fullest extent permitted by law, Bite Wise's total liability for any claim arising out of or relating to these Terms or
+<p>10.2 To the fullest extent permitted by law, ResDish's total liability for any claim arising out of or relating to these Terms or
 the Service is limited to the greater of (a) the amounts you paid through the Service in the 6 months before the claim arose, or
 (b) $100.</p>
 <p>10.3 Nothing in these Terms excludes or limits liability that cannot be excluded or limited under applicable law, including
-liability for gross negligence, wilful misconduct, or death or personal injury caused by Bite Wise's negligence.</p>
+liability for gross negligence, wilful misconduct, or death or personal injury caused by ResDish's negligence.</p>
 
 <h2>11. Indemnity</h2>
 <p>${t(j, '', 'To the extent permitted by the consumer protection laws of your province or territory, ')}You agree to indemnify and hold
-Bite Wise harmless from claims, losses and expenses (including reasonable ${t(j, "attorneys' fees", 'legal fees')}) arising from your misuse
+ResDish harmless from claims, losses and expenses (including reasonable ${t(j, "attorneys' fees", 'legal fees')}) arising from your misuse
 of the Service or your violation of these Terms or the law.</p>
 
 <h2>12. Suspension and termination</h2>
@@ -252,7 +252,7 @@ Wise consent to their jurisdiction. Nothing in this section takes away a right t
 consumer.</p>
 
 <h2>15. General</h2>
-<p>These Terms and the Privacy Policy are the entire agreement between you and Bite Wise about the Service. If any provision is found
+<p>These Terms and the Privacy Policy are the entire agreement between you and ResDish about the Service. If any provision is found
 unenforceable, the rest remains in effect. Our failure to enforce a provision is not a waiver. You may not assign these Terms; we may
 assign them in connection with a merger, acquisition or sale of assets. You agree that accepting these Terms electronically has the
 same effect as a handwritten signature under ${t(j,
@@ -265,17 +265,17 @@ same effect as a handwritten signature under ${t(j,
 
 function restaurantAgreement(c: Company, j: Jur) {
   return `
-<p class="lead">This Restaurant Partner Agreement (the "<b>Agreement</b>") is a binding agreement between ${c.entity} ("<b>Bite Wise</b>,"
-"<b>we</b>," "<b>us</b>") and the food business you register (the "<b>Partner</b>," "<b>you</b>"). It governs your use of the Bite Wise
+<p class="lead">This Restaurant Partner Agreement (the "<b>Agreement</b>") is a binding agreement between ${c.entity} ("<b>ResDish</b>,"
+"<b>we</b>," "<b>us</b>") and the food business you register (the "<b>Partner</b>," "<b>you</b>"). It governs your use of the ResDish
 Partner Portal and marketplace to sell surplus food. By selecting <b>Accept</b> when you create a restaurant account, you confirm that
 you are authorized to bind the Partner and that the Partner agrees to this Agreement and to our <a href="${j.privacy}">Privacy
 Policy</a>. If you do not agree, select <b>Decline</b> and do not create an account.</p>
 ${t(j, `<p>This is the Agreement for restaurants located in the <b>United States</b>. Restaurants in Canada agree to the Canadian Agreement.</p>`,
   `<p>This is the Agreement for restaurants located in <b>Canada</b>. Restaurants in the United States agree to the US Agreement.</p>`)}
 
-<h2>1. The Bite Wise marketplace</h2>
-<p>1.1 Bite Wise provides an online marketplace, software and payment facilitation that let you list surplus food ("<b>Offers</b>") for
-customers to buy at a discount and collect in person. You are the seller of all food you list. Bite Wise is not a food business and
+<h2>1. The ResDish marketplace</h2>
+<p>1.1 ResDish provides an online marketplace, software and payment facilitation that let you list surplus food ("<b>Offers</b>") for
+customers to buy at a discount and collect in person. You are the seller of all food you list. ResDish is not a food business and
 does not handle, inspect, store or transport food.</p>
 <p>1.2 You set the menu items, discount percentage, quantity available and discard timer for each Offer, and may pause, edit, extend
 or end an Offer at any time. Orders already placed must still be honoured unless Section 4.4 applies.</p>
@@ -288,7 +288,7 @@ ${t(j, `  <li>are a legally operating business in the United States, holding all
   <li>comply with the food code adopted by your state and local health jurisdiction and all other applicable food safety, labelling,
   health, employment and consumer protection laws;</li>
   <li>maintain commercial general liability insurance, including products-completed operations coverage, of at least
-  US$1,000,000 per occurrence, and provide proof to Bite Wise on request; and</li>`,
+  US$1,000,000 per occurrence, and provide proof to ResDish on request; and</li>`,
   `  <li>are a legally operating business in Canada, holding all business licences and food premises permits required by your province
   or territory and municipality, and registered for the GST/HST (and the QST in Quebec, or provincial sales tax where it applies)
   unless you qualify as a small supplier;</li>
@@ -296,9 +296,9 @@ ${t(j, `  <li>are a legally operating business in the United States, holding all
   they apply, the Safe Food for Canadians Act and Regulations and the Food and Drugs Act, as well as all applicable labelling, health,
   employment and consumer protection laws;</li>
   <li>maintain commercial general liability insurance, including products-completed operations coverage, of at least
-  CA$2,000,000 per occurrence, and provide proof to Bite Wise on request; and</li>`)}
-  <li>will notify Bite Wise within 2 business days if any permit is suspended or revoked, or if you receive a health department
-  closure order. Bite Wise may suspend your listings immediately in that case.</li>
+  CA$2,000,000 per occurrence, and provide proof to ResDish on request; and</li>`)}
+  <li>will notify ResDish within 2 business days if any permit is suspended or revoked, or if you receive a health department
+  closure order. ResDish may suspend your listings immediately in that case.</li>
 </ul>
 
 <h2>3. Food safety and listing standards</h2>
@@ -321,20 +321,20 @@ name, and where appropriate, with reheating or storage guidance.</p>
 Offer's discard timer ends.</p>
 <p>4.2 <b>Verify the PIN before handing over food.</b> You must enter the customer's 4-digit PIN in the Partner Portal and confirm the
 order before giving the customer their food. Confirming pickup is what charges the customer's card. If you hand over food without
-confirming a valid PIN, Bite Wise is not responsible for payment for that food.</p>
+confirming a valid PIN, ResDish is not responsible for payment for that food.</p>
 <p>4.3 Orders not picked up within ${c.graceMinutes} minutes after the discard timer ends are automatically released. The customer is
-charged only the Bite Wise service fee, which is not refundable and which Bite Wise keeps. You are not paid for released orders or for orders
+charged only the ResDish service fee, which is not refundable and which ResDish keeps. You are not paid for released orders or for orders
 the customer cancels.</p>
 <p>4.4 You may refuse or cancel an order only if the food has become unsafe or unavailable, or the customer behaves abusively. You
-will cancel through Bite Wise support so the customer's payment hold is released.</p>
+will cancel through ResDish support so the customer's payment hold is released.</p>
 
 <h2>5. Payments, fees and payouts</h2>
-<p>5.1 <b>Customer payments.</b> Bite Wise, through its payment processor Stripe, collects all payments from customers on your
-behalf as your limited payment collection agent. A customer's payment to Bite Wise satisfies the customer's obligation to you.</p>
+<p>5.1 <b>Customer payments.</b> ResDish, through its payment processor Stripe, collects all payments from customers on your
+behalf as your limited payment collection agent. A customer's payment to ResDish satisfies the customer's obligation to you.</p>
 <p>5.2 <b>Your proceeds.</b> For each completed order you are entitled to the food subtotal (the discounted price times quantity)
-<b>plus the sales tax charged on that food</b>, unless Bite Wise collects and remits that tax under Section 5.4.
-Bite Wise charges Partners <b>no commission</b> on orders. Customers pay a separate Bite Wise service fee (currently
-${feeText(c, j)}), which Bite Wise keeps and which is <b>not refundable</b> to the customer, whether or not the order is picked up.
+<b>plus the sales tax charged on that food</b>, unless ResDish collects and remits that tax under Section 5.4.
+ResDish charges Partners <b>no commission</b> on orders. Customers pay a separate ResDish service fee (currently
+${feeText(c, j)}), which ResDish keeps and which is <b>not refundable</b> to the customer, whether or not the order is picked up.
 Partners pay the subscription fee in Section 5.6. We will give you at least 30 days'
 written notice before introducing or changing any fee charged to Partners.</p>
 <p>5.3 <b>Payouts through Stripe Connect.</b> Payouts are made through Stripe Connect. To be paid, you must create and verify a
@@ -344,69 +344,69 @@ includes the Stripe Services Agreement.</p>
 <ul>
   <li><b>When you are paid:</b> when you confirm a pickup with the customer's PIN, your proceeds for that order are transferred to
   your Stripe account. Stripe then pays your available balance to the bank account you gave Stripe, on your Stripe payout schedule.
-  If your Stripe account is not yet set up, Bite Wise holds your proceeds and transfers them once it is.</li>
-  <li><b>Identity and bank details:</b> Stripe collects and verifies your identity and bank details (know-your-customer). Bite Wise does
+  If your Stripe account is not yet set up, ResDish holds your proceeds and transfers them once it is.</li>
+  <li><b>Identity and bank details:</b> Stripe collects and verifies your identity and bank details (know-your-customer). ResDish does
   not store your full bank account number and is not responsible for a payout sent to the bank details you gave Stripe.</li>
   <li><b>Payout records:</b> each transfer is documented with a system-generated invoice number, the receiving account (shown
   masked) and the Stripe transaction ID. These records cannot be altered, and they appear in your Partner Portal so you can match
   each deposit.</li>
   <li><b>Questions:</b> raise any question about a payout within 60 days.</li>
 </ul>
-${t(j, `<p>5.4 <b>Taxes.</b> Sales tax on each order is charged at the rate for your restaurant's address, which Bite Wise looks up
+${t(j, `<p>5.4 <b>Taxes.</b> Sales tax on each order is charged at the rate for your restaurant's address, which ResDish looks up
 automatically from the address in your profile; keep that address accurate.</p>
 <ul>
   <li><b>Sales tax on your food is paid to you.</b> It is included in your payout for each completed order, and it is shown on your
   daily report ("Sales tax paid to you"). <b>You are responsible for reporting and remitting it</b> to your state and local tax
   authorities.</li>
-  <li><b>Marketplace facilitator.</b> If the law of your state requires Bite Wise to collect and remit sales tax on marketplace sales
-  (for example once Bite Wise's sales in your state pass the legal threshold), Bite Wise will tell you in writing at least 14 days
-  in advance where possible. From then on, Bite Wise keeps the sales tax on new orders and remits it, and your proceeds are the food
+  <li><b>Marketplace facilitator.</b> If the law of your state requires ResDish to collect and remit sales tax on marketplace sales
+  (for example once ResDish's sales in your state pass the legal threshold), ResDish will tell you in writing at least 14 days
+  in advance where possible. From then on, ResDish keeps the sales tax on new orders and remits it, and your proceeds are the food
   subtotal only.</li>
-  <li>Bite Wise remits any sales tax on its own service fee and on your subscription. You remain responsible for all other taxes on
+  <li>ResDish remits any sales tax on its own service fee and on your subscription. You remain responsible for all other taxes on
   your business, such as gross receipts or business and occupation taxes on your proceeds, and income taxes.</li>
 </ul>`, `<p>5.4 <b>Taxes.</b> Sales taxes on each order are charged for the province or territory of your restaurant's address: the GST or
-HST, and any provincial sales tax on restaurant meals (PST, RST or QST). Bite Wise sets the rate from the address in your profile; keep
+HST, and any provincial sales tax on restaurant meals (PST, RST or QST). ResDish sets the rate from the address in your profile; keep
 it accurate.</p>
 <ul>
   <li><b>Sales tax on your food is paid to you.</b> It is included in your payout for each completed order, and it is shown on your
   daily report ("Sales tax paid to you"). <b>You are responsible for reporting and remitting it</b> to the Canada Revenue Agency, to
   Revenu Québec, and to your provincial tax authority, as they apply to you. If you are a small supplier not registered for the GST/HST,
   tell us before you list Offers.</li>
-  <li><b>Platform operator.</b> If the Excise Tax Act or a provincial law requires Bite Wise to collect and remit tax on sales made
-  through the marketplace, Bite Wise will tell you in writing at least 14 days in advance where possible. From then on, Bite Wise keeps
+  <li><b>Platform operator.</b> If the Excise Tax Act or a provincial law requires ResDish to collect and remit tax on sales made
+  through the marketplace, ResDish will tell you in writing at least 14 days in advance where possible. From then on, ResDish keeps
   that tax on new orders and remits it, and your proceeds are the food subtotal only.</li>
-  <li>Bite Wise remits any tax on its own service fee and on your subscription. You remain responsible for all other taxes on your
+  <li>ResDish remits any tax on its own service fee and on your subscription. You remain responsible for all other taxes on your
   business, including income taxes.</li>
 </ul>`)}
 <p>5.5 <b>Sold as is; all sales final; courtesy refunds; chargebacks.</b> Food is sold to customers <b>as is</b>, and <b>all sales are
 final</b>: customers have no right to a refund once you have confirmed a pickup with their PIN (Customer Terms, Section 6), and you do not
-give refunds yourself. Do not hand over food that is unsafe, spoiled or not what was ordered: cancel the order through Bite Wise support
-instead, so the customer is not charged and you are not paid for it. Bite Wise may, case by case and at its discretion, give a customer a
+give refunds yourself. Do not hand over food that is unsafe, spoiled or not what was ordered: cancel the order through ResDish support
+instead, so the customer is not charged and you are not paid for it. ResDish may, case by case and at its discretion, give a customer a
 courtesy refund (for example for a genuine problem with the food, or for loyalty), and will share the customer's complaint with you first
 where it can:</p>
 <ul>
   <li><b>(a) Courtesy refund to the customer's original form of payment.</b> The refunded share of what you were paid for the order (the
   food, and its sales tax when it was paid to you) is taken back from you, by reversing the transfer for that order or deducting it from
-  future payouts. The customer's service fee is never refunded. Bite Wise will also give any refund a law that cannot be waived requires,
+  future payouts. The customer's service fee is never refunded. ResDish will also give any refund a law that cannot be waived requires,
   on the same terms.</li>
-  <li><b>(b) Courtesy Platform Credit.</b> Platform Credit, including goodwill credit, is funded solely by Bite Wise. You keep your full
+  <li><b>(b) Courtesy Platform Credit.</b> Platform Credit, including goodwill credit, is funded solely by ResDish. You keep your full
   proceeds for the order, and nothing is deducted from your payouts.</li>
 </ul>
 <p>When a customer pays for an order with Platform Credit, in whole or in part, you receive your full proceeds for that order exactly as
-if it had been paid by card. Bite Wise bears the cost of the credit. If a payment is reversed through a chargeback caused by your acts or
+if it had been paid by card. ResDish bears the cost of the credit. If a payment is reversed through a chargeback caused by your acts or
 omissions, the corresponding amount is deducted from your future payouts.</p>
 
-<p>5.6 <b>Subscription.</b> To list Offers, an approved Partner needs an active Bite Wise plan:</p>
+<p>5.6 <b>Subscription.</b> To list Offers, an approved Partner needs an active ResDish plan:</p>
 <ul>
-  <li><b>Pioneer Members.</b> The first ${c.foundingSpots} restaurants to choose a plan on Bite Wise become Pioneer Members: their
+  <li><b>Pioneer Members.</b> The first ${c.foundingSpots} restaurants to choose a plan on ResDish become Pioneer Members: their
   monthly or annual plan is free for as long as this Agreement continues and the membership stays active. Each period you receive an
   invoice that shows the plan price, a Pioneer Members Discount of the same amount, and a total of $0.00; no card is needed. Pioneer
   status is personal to your restaurant and can't be transferred.</li>
   <li><b>Monthly plan:</b> ${usd(c.monthlyPrice)} per month. <b>Annual plan:</b> ${usd(c.annualPrice)} per year, paid in advance
   (${usd(c.monthlyPrice * 12 - c.annualPrice)} less than twelve monthly payments). ${t(j, 'Prices are in U.S. dollars and exclude taxes.', 'Prices are in Canadian dollars and exclude taxes.')} Orders at the Restaurant, plan fees and payouts are in the currency of the Restaurant's country.</li>
-  <li><b>Sales tax.</b> ${t(j, `Sales tax is added to every plan payment at the Washington rate for Bite Wise's location, is shown
-  separately on each invoice, and is collected and remitted by Bite Wise.`, `HST is added to every plan payment at the Newfoundland and
-  Labrador rate for Bite Wise's location, is shown separately on each invoice, and is collected and remitted by Bite Wise.`)} A Pioneer Member's $0.00 plan has no sales tax.</li>
+  <li><b>Sales tax.</b> ${t(j, `Sales tax is added to every plan payment at the Washington rate for ResDish's location, is shown
+  separately on each invoice, and is collected and remitted by ResDish.`, `HST is added to every plan payment at the Newfoundland and
+  Labrador rate for ResDish's location, is shown separately on each invoice, and is collected and remitted by ResDish.`)} A Pioneer Member's $0.00 plan has no sales tax.</li>
   <li><b>Card on file and automatic renewal.</b> You keep at least one payment card on file in the Partner Portal while a paid plan
   renews automatically. Paid plans renew automatically at the end of each period, for the same length, and your default card on file
   is charged the plan price then in effect, plus sales tax. You can turn automatic renewal off at any time in the Partner Portal (Plan tab); your plan then
@@ -423,15 +423,15 @@ omissions, the corresponding amount is deducted from your future payouts.</p>
   delinquent plan, and the end of this Agreement by either party. If you turn off automatic renewal or this Agreement ends, your plan
   simply runs to the end of the period you have paid for and is not renewed. This applies except where the law requires a refund.</li>
 </ul>
-<p>5.7 <b>Bite Wise coupons.</b> From time to time Bite Wise issues promotional coupons to customers, which customers can use on your
+<p>5.7 <b>ResDish coupons.</b> From time to time ResDish issues promotional coupons to customers, which customers can use on your
 Offers. You agree to honour them as follows:</p>
 <ul>
   <li><b>Coupons that take money off the food</b> (a fixed amount or a percentage, never more than the food's price) are <b>paid by
   you</b>. The discount lowers the food subtotal of that order, so your proceeds for the order (Section 5.2), and the sales tax on the food,
   are calculated on the price after the coupon. In other words, the coupon amount is deducted from the money you receive for that order.</li>
-  <li><b>Coupons that waive the Bite Wise service fee</b> ("No Service Fee" coupons) are <b>paid by Bite Wise</b> and do not change your
+  <li><b>Coupons that waive the ResDish service fee</b> ("No Service Fee" coupons) are <b>paid by ResDish</b> and do not change your
   proceeds.</li>
-  <li>Bite Wise decides when to issue coupons, their value, the customers who receive them and their expiration dates. Each coupon applies
+  <li>ResDish decides when to issue coupons, their value, the customers who receive them and their expiration dates. Each coupon applies
   to one order, once per customer, in the country it was issued for.</li>
   <li>Every coupon used on one of your orders is shown with that order at pickup, in your Orders tab and on your daily sales report, and
   your payouts reflect it.</li>
@@ -439,26 +439,26 @@ Offers. You agree to honour them as follows:</p>
 </ul>
 
 <h2>6. Content and licence</h2>
-<p>You grant Bite Wise a non-exclusive, royalty-free, worldwide licence, for the term of this Agreement, to use, reproduce, display and
-adapt your business name, logo, menu information and photos you upload, solely to operate and promote the Bite Wise marketplace. You
+<p>You grant ResDish a non-exclusive, royalty-free, worldwide licence, for the term of this Agreement, to use, reproduce, display and
+adapt your business name, logo, menu information and photos you upload, solely to operate and promote the ResDish marketplace. You
 represent that you own or have permission to use all content you upload, and that it does not infringe anyone's rights.</p>
 
 <h2>7. Customer data</h2>
 <p>You will receive limited customer information (such as username, order details and pickup time) solely to fulfil orders. You will
 not use it for any other purpose, contact customers for marketing, or sell or share it, and you will protect it with reasonable
-security measures${t(j, '', ', and you will comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and any provincial privacy law that applies to you')}. Bite Wise's handling of personal information is described in the <a href="${j.privacy}">Privacy Policy</a>.</p>
+security measures${t(j, '', ', and you will comply with the Personal Information Protection and Electronic Documents Act (PIPEDA) and any provincial privacy law that applies to you')}. ResDish's handling of personal information is described in the <a href="${j.privacy}">Privacy Policy</a>.</p>
 
 <h2>8. Account security and conduct</h2>
 <p>You are responsible for keeping your Partner Portal login secure and for all activity under it, including by your staff. You will
 not manipulate prices, create fake orders or reviews, or use the marketplace for anything other than selling genuine surplus food.</p>
 
 <h2>9. Indemnification</h2>
-<p>You will defend, indemnify and hold harmless Bite Wise and its officers, employees and agents from any claims, damages, losses,
+<p>You will defend, indemnify and hold harmless ResDish and its officers, employees and agents from any claims, damages, losses,
 penalties and expenses (including reasonable ${t(j, "attorneys' fees", 'legal fees')}) arising out of or related to: (a) food you sell, including foodborne
 illness, allergic reaction or injury; (b) your breach of this Agreement or of law; (c) inaccurate listings; or (d) content you upload.</p>
 
 <h2>10. Disclaimers and limitation of liability</h2>
-<p>10.1 The marketplace and software are provided "as is." Bite Wise does not guarantee any level of sales or that the service will be
+<p>10.1 The marketplace and software are provided "as is." ResDish does not guarantee any level of sales or that the service will be
 uninterrupted or error-free.</p>
 <p>10.2 To the fullest extent permitted by law, neither party will be liable for indirect, incidental, special, consequential or
 punitive damages or lost profits. Except for your obligations under Sections 3 and 9 and amounts owed under Section 5, each party's
@@ -467,9 +467,9 @@ the claim arose.</p>
 
 <h2>11. Term and termination</h2>
 <p>This Agreement starts when you accept it and continues until terminated. Either party may terminate for convenience with 14 days'
-written notice. Bite Wise may suspend your restaurant (for a set number of days) or terminate immediately and permanently remove it
-from Bite Wise (a ban) if you breach Sections 2, 3, 7 or 8, if food safety is at risk, or if required by law. A banned Partner may not
-open a new Partner or customer account. On termination, your Offers are removed, open orders are cancelled and released, and Bite Wise will pay out amounts
+written notice. ResDish may suspend your restaurant (for a set number of days) or terminate immediately and permanently remove it
+from ResDish (a ban) if you breach Sections 2, 3, 7 or 8, if food safety is at risk, or if required by law. A banned Partner may not
+open a new Partner or customer account. On termination, your Offers are removed, open orders are cancelled and released, and ResDish will pay out amounts
 owed for completed orders, less adjustments under Section 5.5. Subscription fees already paid are not refunded (Section 5.6).</p>
 
 <h2>12. Changes</h2>
@@ -477,7 +477,7 @@ owed for completed orders, less adjustments under Section 5.5. Subscription fees
 ask you to accept the new version. If you do not accept, you may terminate under Section 11.</p>
 
 <h2>13. General</h2>
-<p>You and Bite Wise are independent contractors; nothing in this Agreement creates a partnership, joint venture, franchise or
+<p>You and ResDish are independent contractors; nothing in this Agreement creates a partnership, joint venture, franchise or
 employment relationship. ${t(j,
   `This Agreement is governed by the laws of the state where your restaurant is located (for a Partner with restaurants in more than one
 state, the state of its main location) and applicable United States federal law, and the parties consent to the jurisdiction of the
@@ -496,8 +496,8 @@ between the parties about its subject. Electronic acceptance has the same effect
 
 function privacyPolicy(c: Company, j: Jur) {
   return `
-<p class="lead">This Privacy Policy explains how ${c.entity} ("<b>Bite Wise</b>," "<b>we</b>") collects, uses and shares personal information
-when you use the Bite Wise website and services as a customer or restaurant partner${t(j, ' in the United States', ' in Canada')}.
+<p class="lead">This Privacy Policy explains how ${c.entity} ("<b>ResDish</b>," "<b>we</b>") collects, uses and shares personal information
+when you use the ResDish website and services as a customer or restaurant partner${t(j, ' in the United States', ' in Canada')}.
 ${t(j, '', `It is written to meet the Personal Information Protection and Electronic Documents Act (PIPEDA) and, where they apply, the
 private-sector privacy laws of Alberta, British Columbia and Quebec (including Quebec's Law 25). By creating an account you consent to the
 collection, use and disclosure of your personal information as described here; you can withdraw your consent at any time (Section 7),
@@ -509,10 +509,10 @@ although we may then be unable to provide the service.`)}</p>
   Supabase). For restaurant partners, business name, address, phone number, cuisine, map location, sales-tax rate, menus and photos.</li>
   <li><b>Orders:</b> items, quantities, prices, fees, taxes, pickup PIN, order status and timestamps.</li>
   <li><b>Payment information:</b> card numbers are collected and processed by our payment processor (Stripe) and never stored on
-  Bite Wise servers. We store a processor reference and the card brand, last four digits and expiry date so you can recognise saved
+  ResDish servers. We store a processor reference and the card brand, last four digits and expiry date so you can recognise saved
   cards and receipts.</li>
   <li><b>Payouts (restaurant partners):</b> payouts are made through Stripe Connect. Stripe collects and verifies the partner's
-  identity and bank account. Bite Wise stores only the Stripe account ID, whether payouts are enabled, and a masked description of
+  identity and bank account. ResDish stores only the Stripe account ID, whether payouts are enabled, and a masked description of
   the bank account (bank name and last four digits) for payout records.</li>
   <li><b>Platform Credit:</b> a ledger of credit issued to you, used on orders and returned, with dates and reasons.</li>
   <li><b>Location:</b> if you choose "Use my location," your browser shares your approximate location with us to show nearby deals.
@@ -539,11 +539,11 @@ it for targeted advertising.</p>
   address when your browser requests map images.</li>
   <li><b>For legal reasons:</b> to comply with law, legal process or requests from government authorities (including ${t(j,
     'state and local tax authorities', 'the Canada Revenue Agency, Revenu Québec and provincial tax authorities')} for tax purposes), or to
-  protect the rights, safety and property of users, restaurants or Bite Wise.</li>
+  protect the rights, safety and property of users, restaurants or ResDish.</li>
   <li><b>Business transfers:</b> in connection with a merger, acquisition or sale of assets, subject to this Policy.</li>
 </ul>
 
-${t(j, '', `<p><b>Information stored outside Canada.</b> Bite Wise and several of its service providers (including Supabase, Stripe and our
+${t(j, '', `<p><b>Information stored outside Canada.</b> ResDish and several of its service providers (including Supabase, Stripe and our
 hosting provider) store and process information in the United States. While it is there, it is protected by contracts and security
 measures, but it may be accessed by courts, law enforcement and national security authorities of that country under its laws.</p>`)}
 
@@ -613,7 +613,7 @@ const REQUIRED_US: Record<SigningRole, DocumentId[]> = {
   restaurant: ['restaurant-agreement', 'privacy'],
   // Staff work under their restaurant's agreement, accepted by the owner.
   staff: [],
-  // Admin employees work for Bite Wise.
+  // Admin employees work for ResDish.
   support: [],
 };
 const REQUIRED_CA: Record<SigningRole, DocumentId[]> = {

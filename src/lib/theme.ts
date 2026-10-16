@@ -1,4 +1,4 @@
-// Each part of Bite Wise has its own look (src/app/globals.css): customers, restaurants (portal and kiosk) and the
+// Each part of ResDish has its own look (src/app/globals.css): customers, restaurants (portal and kiosk) and the
 // admin team. The address decides which. Each look comes in light and dark: by default customers and the admin team
 // get light and restaurants dark, and anyone can pick Light, Dark or "Match my device" (saved in a cookie).
 export type Theme = 'customer' | 'restaurant' | 'admin';

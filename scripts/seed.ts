@@ -194,7 +194,7 @@ async function restaurantId(ownerId: string) {
 async function main() {
   const tables = await db.from('profiles').select('id').limit(1);
   if (tables.error?.code === 'PGRST205' || tables.error?.code === '42P01') {
-    throw new Error(`The database doesn't have the Bite Wise tables yet (${tables.error.message}).
+    throw new Error(`The database doesn't have the ResDish tables yet (${tables.error.message}).
 Create them first with: npx supabase db push   (see "Run it locally" in README.md), then run npm run seed again.`);
   }
   if (tables.error) throw new Error(`Can't reach the database at ${url}: ${tables.error.message}`);

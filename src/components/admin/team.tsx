@@ -130,7 +130,7 @@ function AddMember({ onDone }: { onDone: () => void }) {
     setError(null);
     // Never leave the button stuck on "Adding…", whatever happens to the request.
     const res = await addTeamMemberAction({ email: f.email, username: f.username, password: f.password, role: f.role, country: f.country, canRefund: f.canRefund })
-      .catch(() => ({ ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.', status: 0 }))
+      .catch(() => ({ ok: false as const, error: 'ResDish didn\'t answer. Check your connection and try again.', status: 0 }))
       .finally(() => setBusy(false));
     if (!res.ok && res.status === 401) return sendToLogin();
     if (!res.ok) return setError(res.error);
@@ -181,7 +181,7 @@ function EditMember({ member: m, self, onSaved }: { member: Member; self: boolea
     setBusy(what);
     setError(null);
     const res = await fn()
-      .catch(() => ({ ok: false as const, error: 'Bite Wise didn\'t answer. Check your connection and try again.' }))
+      .catch(() => ({ ok: false as const, error: 'ResDish didn\'t answer. Check your connection and try again.' }))
       .finally(() => setBusy(null));
     if (!res.ok && 'status' in res && res.status === 401) return sendToLogin();
     if (!res.ok) return void setError(res.error);

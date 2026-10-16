@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'About us',
-  description: 'How three family members who grew up in Pakistan, where wasting food was never an option, started Bite Wise in the United States and Canada to rescue good restaurant food.',
+  description: 'How three family members who grew up in Pakistan, where wasting food was never an option, started ResDish in the United States and Canada to rescue good restaurant food.',
 };
 
 // Photos live in public/about/. Until a photo is there, its frame shows a placeholder that says which file to add,
@@ -58,7 +58,7 @@ const STEPS = [
   ['🇵🇰', 'Growing up in Pakistan', 'We grew up surrounded by family, chai, cricket in the street and mango summers, and by the reality that many families struggle to put one meal on the table. Hunger was never far away.'],
   ['✈️', 'Two new homes', 'Life took us across the world: Umer to the United States, Arham and Shaheer to Canada. Two countries, one family, and a lot of long-distance calls. Both countries gave us so much: opportunity, safety and a future. We are grateful for them every day.'],
   ['🗑️', 'The thing we couldn’t get used to', 'Good food in the bin. A wrong order, a late delivery, a meal nobody picked up, the end of the day. Strict food-safety rules mean restaurants often have to throw perfectly good food away.'],
-  ['🌱', 'Bite Wise is born', 'What if that food could go to someone nearby, at a great price, before it was too late? We built Bite Wise together across the border to make that one tap away, and we are launching it in the United States and Canada at the same time.'],
+  ['🌱', 'ResDish is born', 'What if that food could go to someone nearby, at a great price, before it was too late? We built ResDish together across the border to make that one tap away, and we are launching it in the United States and Canada at the same time.'],
 ] as const;
 
 const SAVES = [
@@ -99,7 +99,7 @@ export default function AboutPage() {
             </h1>
             <p className="mb-4 max-w-[46ch] text-[1.15rem] text-ink-2">
               We are <b>Umer</b>, <b>Arham</b> and <b>Shaheer</b>: family first, founders second. We grew up in Pakistan, where wasting food
-              was never an option. Today Umer lives in the United States and Arham and Shaheer in Canada, and Bite Wise is how we are carrying that lesson into our new homes.
+              was never an option. Today Umer lives in the United States and Arham and Shaheer in Canada, and ResDish is how we are carrying that lesson into our new homes.
             </p>
             <p className="max-w-[46ch] text-ink-2">
               &ldquo;Put on your plate only what you can eat, and finish it.&rdquo; We heard it at every meal as children. Today it is the reason this
@@ -167,7 +167,7 @@ export default function AboutPage() {
       {/* Why */}
       <section className="container-page py-12">
         <div className="mx-auto max-w-[760px] text-center">
-          <h2 className="m-0 text-[clamp(1.8rem,3.6vw,2.6rem)] font-extrabold tracking-tight">Why Bite Wise</h2>
+          <h2 className="m-0 text-[clamp(1.8rem,3.6vw,2.6rem)] font-extrabold tracking-tight">Why ResDish</h2>
           <p className="mt-3 text-[1.08rem] text-ink-2">
             Restaurants don&apos;t want to throw food away; the rules leave them little choice. So we built a simple way to get that food to people
             nearby while it is still fresh, good and safe to enjoy. Every rescued meal is four wins at once:
@@ -207,7 +207,7 @@ export default function AboutPage() {
               <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1.5 text-[0.8rem] font-bold text-accent-ink">🤍 With gratitude</span>
               <h2 className="mt-4 mb-3 text-[clamp(1.7rem,3.2vw,2.3rem)] font-extrabold tracking-tight">The two people who guided us</h2>
               <p className="text-ink-2">
-                Every idea needs people who believe in it before anyone else does. Bite Wise would not be what it is without two of them.
+                Every idea needs people who believe in it before anyone else does. ResDish would not be what it is without two of them.
               </p>
               <p className="text-ink-2">
                 <b>Aini</b>, Umer&apos;s sister and the mother of Arham and Shaheer, whose wisdom, patience and encouragement shaped this platform
@@ -231,7 +231,7 @@ export default function AboutPage() {
         <div className="text-5xl">🍽️</div>
         <h2 className="mt-4 mb-3 text-[clamp(1.8rem,3.6vw,2.6rem)] font-extrabold tracking-tight">Our hope</h2>
         <p className="mx-auto max-w-[680px] text-[1.08rem] text-ink-2">
-          We hope Bite Wise helps you enjoy great food for less, helps restaurant owners earn from food that would have been thrown away, and
+          We hope ResDish helps you enjoy great food for less, helps restaurant owners earn from food that would have been thrown away, and
           helps all of us waste a little less. If our story makes you think twice before throwing away a good meal, we have already done
           something right.
         </p>
@@ -240,7 +240,7 @@ export default function AboutPage() {
           <Link href="/signup" className={buttonVariants({ size: 'lg' })}>Find food near me →</Link>
           <Link href="/restaurant/signup" className={buttonVariants({ size: 'lg', variant: 'ghost' })}>Partner with us</Link>
         </div>
-        <p className="mt-6 text-sm text-muted">Umer, Arham &amp; Shaheer · Founders of Bite Wise</p>
+        <p className="mt-6 text-sm text-muted">Umer, Arham &amp; Shaheer · Founders of ResDish</p>
       </section>
     </main>
   );

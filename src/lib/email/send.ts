@@ -14,7 +14,7 @@ export type Email = {
 let transport: Transporter | undefined;
 
 // The logo is attached inline (cid:logo), so it shows in every email app without hosting the image anywhere.
-const LOGO = { filename: 'bite-wise.png', path: path.join(process.cwd(), 'public', 'assets', 'email-logo.png'), cid: 'logo' };
+const LOGO = { filename: 'resdish.png', path: path.join(process.cwd(), 'public', 'assets', 'email-logo.png'), cid: 'logo' };
 
 // Whether the app can send email itself (SMTP_HOST, and a password when there is a user name).
 export const emailConfigured = () => Boolean(serverEnv.smtp.host && (!serverEnv.smtp.user || serverEnv.smtp.password));

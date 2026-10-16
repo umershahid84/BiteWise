@@ -119,7 +119,7 @@ export function MenuImportDialog({ restaurantId, restaurantName, onDone }: { res
             <>
               <p className="mt-0 text-sm text-ink-2">A PDF of your menu, or a clear photo of each page (one file at a time). We read the dishes and prices from it.</p>
               {ai === false && (
-                <Alert tone="warn" className="mb-3">Reading photos and PDFs needs the AI menu reader, which isn&apos;t switched on for Bite Wise yet. Use &ldquo;Spreadsheet&rdquo; for now.</Alert>
+                <Alert tone="warn" className="mb-3">Reading photos and PDFs needs the AI menu reader, which isn&apos;t switched on for ResDish yet. Use &ldquo;Spreadsheet&rdquo; for now.</Alert>
               )}
               <Field label="Menu photo or PDF" htmlFor="mi-upload"><Input id="mi-upload" type="file" accept="application/pdf,image/*" onChange={(e) => void readUpload(e.target.files?.[0])} /></Field>
             </>
@@ -128,7 +128,7 @@ export function MenuImportDialog({ restaurantId, restaurantName, onDone }: { res
               <p className="mt-0 text-sm text-ink-2">
                 Columns: <b>Name</b>, <b>Price</b>, and if you have them <b>Description</b>, <b>Photo</b> (a web address of the picture) and <b>Dietary</b>.
                 Choose a CSV file (in Excel or Google Sheets: Save as / Download → CSV), or copy the cells and paste them here.{' '}
-                <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE)}`} download="bite-wise-menu-template.csv">Download a template</a>
+                <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE)}`} download="resdish-menu-template.csv">Download a template</a>
               </p>
               <Field label="CSV file" htmlFor="mi-file"><Input id="mi-file" type="file" accept=".csv,.tsv,.txt,text/csv,text/plain" onChange={(e) => readFile(e.target.files?.[0])} /></Field>
               <Field label="…or paste here" htmlFor="mi-text"><Textarea id="mi-text" rows={6} className="font-mono text-xs" value={text} onChange={(e) => setText(e.target.value)} placeholder={TEMPLATE} /></Field>
@@ -143,7 +143,7 @@ export function MenuImportDialog({ restaurantId, restaurantName, onDone }: { res
         <>
           <Alert tone="info" className="mb-3">
             {found?.source === 'ai' && <Sparkles className="mr-1 inline size-4" />}
-            Found <b>{rows.length}</b> item{rows.length === 1 ? '' : 's'}. Untick anything that shouldn&apos;t be on your menu and fix names or prices. Photos are copied into Bite Wise.
+            Found <b>{rows.length}</b> item{rows.length === 1 ? '' : 's'}. Untick anything that shouldn&apos;t be on your menu and fix names or prices. Photos are copied into ResDish.
           </Alert>
           {found?.problems.length ? <Alert tone="warn" className="mb-3">{found.problems.join(' ')}</Alert> : null}
           <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">

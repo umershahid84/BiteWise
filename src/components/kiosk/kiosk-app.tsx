@@ -119,7 +119,7 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
     <div className="fixed inset-0 z-[2000] flex flex-col bg-bg text-ink select-none">
       <header className="flex items-center gap-4 border-b border-line bg-bg-2 px-5 py-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/logo-dark-compact.svg" alt="Bite Wise" className="h-9" />
+        <img src="/assets/logo-dark-compact.svg" alt="ResDish" className="h-9" />
         <div className="min-w-0 flex-1 border-l border-line pl-4">
           <div className="truncate font-heading text-xl font-extrabold">{name}</div>
           <div className="text-xs text-muted">Pickup kiosk · {pickedUpToday} picked up in the last 24 h</div>
@@ -169,8 +169,8 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
       {status !== 'approved' && (
         <div className="absolute inset-x-0 bottom-0 z-10 bg-accent-soft px-6 py-4 text-center font-bold text-accent-ink">
           {status === 'pending'
-            ? 'Your restaurant is waiting for approval. Orders will appear here once Bite Wise approves you.'
-            : 'This restaurant is suspended, so it gets no new orders. Contact Bite Wise support.'}
+            ? 'Your restaurant is waiting for approval. Orders will appear here once ResDish approves you.'
+            : 'This restaurant is suspended, so it gets no new orders. Contact ResDish support.'}
         </div>
       )}
 
@@ -178,7 +178,7 @@ export function KioskApp({ token, name, initialStatus, install }: { token: strin
         <button type="button" onClick={() => setStarted(true)} className="absolute inset-0 z-30 grid place-items-center bg-bg/95 text-center">
           <span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/logo-dark.svg" alt="Bite Wise" className="mx-auto mb-8 h-24" />
+            <img src="/assets/logo-dark.svg" alt="ResDish" className="mx-auto mb-8 h-24" />
             <span className="block font-heading text-4xl font-extrabold">{name}</span>
             <span className="mt-6 inline-flex items-center gap-3 rounded-full bg-grad px-10 py-5 text-2xl font-extrabold text-on-primary shadow-pop">
               <Store className="size-7" /> Tap to start the kiosk
@@ -266,7 +266,7 @@ function PinPad({ token, onDone }: { token: string; onDone: () => void }) {
           <h2 className="mt-6 mb-2 font-heading text-4xl font-extrabold">Picked up!</h2>
           <p className="m-0 text-xl text-ink-2">{done.quantity} × {done.itemTitle} for <b>{done.customerUsername}</b></p>
           <p className="mt-2 text-lg text-primary-ink">
-            {done.totalCents - done.creditAppliedCents > 0 ? `Card charged ${money(done.totalCents - done.creditAppliedCents)}` : 'Paid with Bite Wise credit'}
+            {done.totalCents - done.creditAppliedCents > 0 ? `Card charged ${money(done.totalCents - done.creditAppliedCents)}` : 'Paid with ResDish credit'}
           </p>
           <button type="button" onClick={reset} className="mt-8 rounded-full bg-grad px-10 py-4 text-xl font-extrabold text-on-primary">Next pickup</button>
         </div>
@@ -350,7 +350,7 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
             <h2 className="m-0 font-heading text-2xl font-extrabold">{target === 'windows' ? 'Install the kiosk on this computer' : 'Add the kiosk to this tablet\u2019s home screen'}</h2>
             <p className="m-0 text-ink-2">
               {target === 'windows'
-                ? <>A <b>Bite Wise Kiosk</b> app for <b>{name}</b> appears in the Start menu and on the desktop. It opens in its own window.</>
+                ? <>A <b>ResDish Kiosk</b> app for <b>{name}</b> appears in the Start menu and on the desktop. It opens in its own window.</>
                 : <>An icon for <b>{name}</b> appears on the home screen. Tap it to open your kiosk full-screen.</>}
             </p>
           </div>
@@ -364,7 +364,7 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
         </div>
 
         {target === 'android' && (installed || accepted ? (
-          <p className="mt-6 rounded-2xl bg-primary-soft p-5 text-lg font-bold text-primary-ink">✓ Done! The Bite Wise Kiosk icon is on your home screen. Tap it to open the kiosk.</p>
+          <p className="mt-6 rounded-2xl bg-primary-soft p-5 text-lg font-bold text-primary-ink">✓ Done! The ResDish Kiosk icon is on your home screen. Tap it to open the kiosk.</p>
         ) : promptEvent ? (
           <div className="mt-6 text-center">
             <button
@@ -389,12 +389,12 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
             <Step n={1}>Open this page in <b>Safari</b>. If you opened it from your email app, tap <Pill><Share className="size-4" /></Pill> or <b>Open in Safari</b> first.</Step>
             <Step n={2}>Tap the Share button <Pill><Share className="size-4" /></Pill> at the top of the screen on an iPad (at the bottom on an iPhone).</Step>
             <Step n={3}>Scroll down and tap <Pill><SquarePlus className="size-4" />Add to Home Screen</Pill></Step>
-            <Step n={4}>Tap <b>Add</b> at the top right. The <b>Bite Wise Kiosk</b> icon appears on your home screen.</Step>
+            <Step n={4}>Tap <b>Add</b> at the top right. The <b>ResDish Kiosk</b> icon appears on your home screen.</Step>
           </ol>
         )}
 
         {target === 'windows' && (installed || accepted ? (
-          <p className="mt-6 rounded-2xl bg-primary-soft p-5 text-lg font-bold text-primary-ink">✓ Done! Open <b>Bite Wise Kiosk</b> from the Start menu or the desktop. Right-click its taskbar icon and choose <b>Pin to taskbar</b> to keep it one click away.</p>
+          <p className="mt-6 rounded-2xl bg-primary-soft p-5 text-lg font-bold text-primary-ink">✓ Done! Open <b>ResDish Kiosk</b> from the Start menu or the desktop. Right-click its taskbar icon and choose <b>Pin to taskbar</b> to keep it one click away.</p>
         ) : (
           <>
             {promptEvent && (
@@ -413,7 +413,7 @@ function InstallGuide({ target, name, promptEvent, installed, onChoose, onClose 
             <ol className="mt-3 grid list-none gap-3 p-0">
               <Step n={1}><b>Microsoft Edge:</b> click the menu <Pill><MoreHorizontal className="size-4" /></Pill> at the top right, then <b>Apps</b> → <b>Install this site as an app</b> → <b>Install</b>.</Step>
               <Step n={2}><b>Google Chrome:</b> click the install icon <Pill><MonitorDown className="size-4" /></Pill> at the right end of the address bar (or the menu <Pill><MoreVertical className="size-4" /></Pill> → <b>Cast, save and share</b> → <b>Install page as app</b>), then <b>Install</b>.</Step>
-              <Step n={3}>Tick <b>Pin to taskbar</b>, <b>Create desktop shortcut</b> and, for a counter computer, <b>Auto-start on device login</b> if your browser offers them. Then open <b>Bite Wise Kiosk</b> from the Start menu or the desktop.</Step>
+              <Step n={3}>Tick <b>Pin to taskbar</b>, <b>Create desktop shortcut</b> and, for a counter computer, <b>Auto-start on device login</b> if your browser offers them. Then open <b>ResDish Kiosk</b> from the Start menu or the desktop.</Step>
             </ol>
             <p className="mt-3 mb-0 text-sm text-muted">Tip: press <b>F11</b> in the kiosk window for full screen; press it again to leave.</p>
           </>

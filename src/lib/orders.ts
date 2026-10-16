@@ -114,7 +114,7 @@ export type CheckoutInput = {
   creditCents: number;
   cardId?: number | null;
   newCard?: { token: unknown; save: boolean } | null;
-  // A coupon code from Bite Wise (src/lib/coupons.ts).
+  // A coupon code from ResDish (src/lib/coupons.ts).
   couponCode?: string | null;
 };
 
@@ -132,7 +132,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
   if (input.creditCents > 0) {
     // Platform Credit is in the currency of the customer's own country.
     const me = must(await db().from('profiles').select('country').eq('id', userId).single());
-    if ((me.country === 'CA' ? 'CA' : 'US') !== country) throw new AppError(400, 'Your Bite Wise credit can only be used at restaurants in your own country.');
+    if ((me.country === 'CA' ? 'CA' : 'US') !== country) throw new AppError(400, 'Your ResDish credit can only be used at restaurants in your own country.');
   }
   const pay = needsCard ? payments(country) : null; // fails early if payments aren't set up in that country
 
@@ -184,7 +184,7 @@ export async function checkout(userId: string, input: CheckoutInput) {
       customerId,
       paymentRef: paymentRef!,
       attached,
-      description: `Bite Wise order #${order.id}: ${order.quantity} x ${order.item_title}`,
+      description: `ResDish order #${order.id}: ${order.quantity} x ${order.item_title}`,
       metadata: { order_id: String(order.id), restaurant_id: String(order.restaurant_id) },
       destinationAccount: destination?.id ?? null,
       idempotencyKey: `authorize-${order.id}`,
@@ -228,7 +228,7 @@ async function settleHold(o: Pick<Order, 'id' | 'payment_ref' | 'needs_void' | '
   const pay = () => payments(countryOfCurrency(o.currency));
   if (o.needs_fee_charge && o.payment_ref && o.kept_card_cents > 0) {
     try {
-      // On a destination charge all of it is Bite Wise's application fee: the restaurant gets nothing for a missed order.
+      // On a destination charge all of it is ResDish's application fee: the restaurant gets nothing for a missed order.
       const charge = await pay().capture(o.payment_ref, {
         amountCents: o.kept_card_cents, applicationFeeCents: o.destination_account ? o.kept_card_cents : null, idempotencyKey: `fee-${o.id}`,
       });
@@ -270,8 +270,8 @@ export async function sweep() {
 // ---------------------------------------------------------------- pickup
 
 // Restaurant confirms pickup with the customer's PIN: the card is charged now and the restaurant is paid its share
-// through Stripe Connect: the food price, plus the sales tax on it unless Bite Wise remits that tax
-// (orders.restaurant_share_cents, fixed when the order was placed). Bite Wise keeps the service fee.
+// through Stripe Connect: the food price, plus the sales tax on it unless ResDish remits that tax
+// (orders.restaurant_share_cents, fixed when the order was placed). ResDish keeps the service fee.
 export async function completePickup(claimed: { id: number; paymentRef: string | null; destinationAccount: string | null }) {
   const order = await getOrder(claimed.id);
   const cardCents = order.total_cents - order.credit_applied_cents;
@@ -281,7 +281,7 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
 
   if (claimed.paymentRef) {
     try {
-      // Destination charge: Bite Wise keeps the service fee (and any sales tax it remits); Stripe sends the rest.
+      // Destination charge: ResDish keeps the service fee (and any sales tax it remits); Stripe sends the rest.
       const applicationFee = destination ? Math.max(0, cardCents - share) : null;
       charge = await payments(countryOfCurrency(order.currency)).capture(claimed.paymentRef, { applicationFeeCents: applicationFee, idempotencyKey: `capture-${order.id}` });
     } catch (err) {
@@ -302,7 +302,7 @@ export async function completePickup(claimed: { id: number; paymentRef: string |
         p_transaction_id: charge.transferId, p_bank_details: bankDetails({ id: destination, bank: (await paymentAccount(order.restaurant_id))?.bank_summary ?? '' }),
         p_note: `Order #${order.id} (destination charge)`, p_by: null as unknown as string,
       }));
-      // Platform credit paid part of the food: Bite Wise tops up the restaurant from its own balance.
+      // Platform credit paid part of the food: ResDish tops up the restaurant from its own balance.
       if (share > sent) await sendTransfer(order.restaurant_id, share - sent, null, `Order #${order.id} (platform credit top-up)`, order.id, `topup-${order.id}`);
     } else if (await transferAccount(order.restaurant_id)) {
       await sendTransfer(order.restaurant_id, share, cardCents >= share ? charge.chargeId : null, `Order #${order.id}`, order.id, `transfer-${order.id}`);
@@ -338,7 +338,7 @@ export async function emailOrderPlaced(orderId: number) {
         ordersUrl: `${publicEnv.siteUrl}/orders`,
         receiptUrl: `${publicEnv.siteUrl}/orders/${orderId}/receipt`,
       }),
-      attachments: [{ filename: `Bite-Wise-hold-receipt-${rc.receiptNumber}.pdf`, content: await receiptPdf(rc), contentType: 'application/pdf' }],
+      attachments: [{ filename: `ResDish-hold-receipt-${rc.receiptNumber}.pdf`, content: await receiptPdf(rc), contentType: 'application/pdf' }],
     });
     if (!sent) await db().from('orders').update({ placed_email_at: null }).eq('id', orderId);
     return sent;
@@ -366,7 +366,7 @@ export async function emailInvoice(orderId: number) {
     return await sendEmail({
       to: rc.customer.email,
       ...orderInvoiceEmail(rc, { receiptUrl: `${publicEnv.siteUrl}/orders/${orderId}/receipt` }),
-      attachments: [{ filename: `Bite-Wise-receipt-${rc.receiptNumber}.pdf`, content: await receiptPdf(rc), contentType: 'application/pdf' }],
+      attachments: [{ filename: `ResDish-receipt-${rc.receiptNumber}.pdf`, content: await receiptPdf(rc), contentType: 'application/pdf' }],
     });
   } catch (err) {
     console.error(`Invoice email for order ${orderId} failed:`, err instanceof Error ? err.message : err);
@@ -378,7 +378,7 @@ async function sendTransfer(restaurantId: number, amountCents: number, sourceCha
   const acct = await transferAccount(restaurantId);
   if (!acct) throw new AppError(409, 'This restaurant has not finished setting up Stripe payouts yet.');
   const t = await payments(await restaurantCountry(restaurantId)).transfer({
-    accountId: acct.id, amountCents, sourceChargeId, description: `Bite Wise payout: ${note}`,
+    accountId: acct.id, amountCents, sourceChargeId, description: `ResDish payout: ${note}`,
     metadata: { restaurant_id: String(restaurantId), ...(orderId ? { order_id: String(orderId) } : {}) }, idempotencyKey: key,
   });
   return must(await db().rpc('record_payout', {
@@ -395,7 +395,7 @@ export async function payRestaurant(restaurantId: number, amountCents: number, a
   }
   return must(await db().rpc('record_payout', {
     p_restaurant_id: restaurantId, p_order_id: null as unknown as number, p_kind: 'manual', p_amount_cents: amountCents,
-    p_transaction_id: '', p_bank_details: 'Paid outside Stripe (recorded by Bite Wise)', p_note: note, p_by: adminId,
+    p_transaction_id: '', p_bank_details: 'Paid outside Stripe (recorded by ResDish)', p_note: note, p_by: adminId,
   }));
 }
 
@@ -403,7 +403,7 @@ export async function payRestaurant(restaurantId: number, amountCents: number, a
 
 // Refunds a completed order, either to the ORIGINAL payment (card first, then any platform credit
 // the customer used; the restaurant gives up its share of the food) or as PLATFORM CREDIT
-// (funded by Bite Wise; the restaurant keeps its money). The service fee is never refunded.
+// (funded by ResDish; the restaurant keeps its money). The service fee is never refunded.
 export const refundableCents = (o: Order) => Math.max(0, refundableTotalCents(o) - o.refunded_cents - o.credited_cents);
 
 export async function refundOrder(orderId: number, p: { amountCents: number; method: 'original' | 'credit'; reason: string; adminId: string }) {

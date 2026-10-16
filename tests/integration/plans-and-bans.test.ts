@@ -42,7 +42,7 @@ describe.skipIf(!available)('restaurant plans', () => {
       expect((Date.parse(s1.current_period_end!) - Date.parse(s1.current_period_start!)) / 86_400_000).toBeGreaterThanOrEqual(365);
       const [invoice] = await paymentsOf(first.restaurant.id);
       expect(invoice).toMatchObject({ amount_cents: 0, status: 'paid', list_price_cents: 15000, discount_cents: 15000, discount_label: 'Pioneer Members Discount' });
-      expect(invoice.invoice_number).toMatch(/^BW-SUB-/);
+      expect(invoice.invoice_number).toMatch(/^RD-SUB-/);
       expect(await subs.cardsOf(first.owner.id)).toEqual([]); // no card was asked for
       await expect(subs.setAutoRenew(first.restaurant.id, false)).rejects.toThrow(/renew automatically, free/);
 
@@ -75,7 +75,7 @@ describe.skipIf(!available)('restaurant plans', () => {
     expect(await subs.cardsOf(shop.owner.id)).toEqual([]); // the declined card isn't kept
 
     const res = await subs.subscribe(shop.restaurant.id, { plan: 'annual', token: card('4242'), autoRenew: true });
-    expect(res.invoiceNumber).toMatch(/^BW-SUB-\d{6}$/);
+    expect(res.invoiceNumber).toMatch(/^RD-SUB-\d{6}$/);
     const s = await subOf(shop.restaurant.id);
     expect(s).toMatchObject({ plan: 'annual', status: 'active', price_cents: 15000, auto_renew: true, card_label: 'VISA •••• 4242' });
     expect((Date.parse(s.current_period_end!) - Date.parse(s.current_period_start!)) / 86_400_000).toBeGreaterThanOrEqual(365);
@@ -134,7 +134,7 @@ describe.skipIf(!available)('restaurant plans', () => {
     expect((await subOf(shop.restaurant.id)).status).toBe('expired');
     expect(await paymentsOf(shop.restaurant.id)).toHaveLength(2);
     expect((await db.from('offers').select('status').eq('restaurant_id', shop.restaurant.id)).data!.map((o) => o.status)).toEqual(['paused']);
-    expect((await shop.post()).error?.message).toMatch(/Choose a Bite Wise plan/);
+    expect((await shop.post()).error?.message).toMatch(/Choose a ResDish plan/);
   });
 
   it('makes the plan delinquent as soon as a payment is declined, until a payment succeeds', async () => {

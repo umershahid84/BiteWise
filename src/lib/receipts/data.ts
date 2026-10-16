@@ -24,7 +24,7 @@ const PAYMENT_STATUS: Record<Order['status'], string> = {
 export const receiptNumber = (order: { id: number; created_at: string }) => {
   const d = new Date(order.created_at);
   const ymd = `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
-  return `BW-${ymd}-${String(order.id).padStart(6, '0')}`;
+  return `RD-${ymd}-${String(order.id).padStart(6, '0')}`;
 };
 
 export type Receipt = Awaited<ReturnType<typeof receiptData>>;
@@ -76,14 +76,14 @@ export async function receiptData(order: Order) {
       lineTotalCents: order.subtotal_cents + order.coupon_discount_cents,
       savingsCents: lineOriginal - order.subtotal_cents - order.coupon_discount_cents,
     },
-    // A Bite Wise coupon: money off the food, or the service fee waived.
+    // A ResDish coupon: money off the food, or the service fee waived.
     coupon: order.coupon_code ? { code: order.coupon_code, discountCents: order.coupon_discount_cents, feeWaivedCents: order.coupon_fee_waived_cents } : null,
     subtotalCents: order.subtotal_cents,
     serviceFeeCents: order.service_fee_cents,
     serviceFeeLabel: serviceFeeLabel(order.service_fee_bps),
     taxRateBps: order.tax_rate_bps,
     taxCents: order.tax_cents,
-    // The food's tax (restaurant's rate) and the service fee's (Bite Wise's location rate).
+    // The food's tax (restaurant's rate) and the service fee's (ResDish's location rate).
     foodTaxCents: order.tax_cents - feeTaxCents(order),
     feeTaxCents: feeTaxCents(order),
     // Shown to the customer as one line: the food's tax and the fee's together.
@@ -96,7 +96,7 @@ export async function receiptData(order: Order) {
       amountCents: f.amount_cents,
       to:
         f.method === 'credit'
-          ? 'Bite Wise platform credit'
+          ? 'ResDish platform credit'
           : [f.card_cents && `${order.card_label} (${money(f.card_cents)})`, f.credit_cents && `platform credit (${money(f.credit_cents)})`]
               .filter(Boolean).join(' + '),
       reason: f.reason,
@@ -145,7 +145,7 @@ export async function reportData(restaurantId: number, date: string) {
       // the part of that which is sales tax for the restaurant to report and remit.
       payoutCents: sum(sold, (o) => o.restaurant_share_cents),
       taxPaidToYouCents: sum(sold, (o) => o.restaurant_share_cents - o.subtotal_cents),
-      // Bite Wise coupons that took money off the food: paid by the restaurant (Partner Agreement, coupons).
+      // ResDish coupons that took money off the food: paid by the restaurant (Partner Agreement, coupons).
       couponDiscountsCents: sum(sold, (o) => o.coupon_discount_cents),
       serviceFeesCents: sum(sold, (o) => o.service_fee_cents),
       totalChargedCents: sum(sold, (o) => o.total_cents),
@@ -196,7 +196,7 @@ export function reportCsv(rep: Report) {
     ['Sales tax collected', dollars(s.salesTaxCents)],
     ['Sales tax paid to you (yours to report and remit)', dollars(s.taxPaidToYouCents)],
     ['Your payout (food sales plus the sales tax paid to you)', dollars(s.payoutCents)],
-    ['Bite Wise service fees (paid by customers)', dollars(s.serviceFeesCents)],
+    ['ResDish service fees (paid by customers)', dollars(s.serviceFeesCents)],
     ['Total charged to customers', dollars(s.totalChargedCents)],
     ['Awaiting pickup', s.awaitingPickup],
     ['Cancelled', s.cancelled],

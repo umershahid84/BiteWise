@@ -45,11 +45,11 @@ const plexMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: { default: 'Bite Wise: Rescue good food, save money', template: '%s · Bite Wise' },
-  description: 'Bite Wise: rescue good restaurant food at a discount near you, across the United States and Canada.',
-  // Lets customers put Bite Wise on their phone's home screen (/app). The kiosk has its own manifest.
+  title: { default: 'ResDish: Rescue good food, save money', template: '%s · ResDish' },
+  description: 'ResDish: rescue good restaurant food at a discount near you, across the United States and Canada.',
+  // Lets customers put ResDish on their phone's home screen (/app). The kiosk has its own manifest.
   manifest: '/app.webmanifest',
-  appleWebApp: { capable: true, title: 'Bite Wise', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'ResDish', statusBarStyle: 'black-translucent' },
   icons: { apple: '/assets/apple-touch-icon.png' },
 };
 

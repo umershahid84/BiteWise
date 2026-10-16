@@ -37,7 +37,7 @@ async function cardToken(payment: PaymentConfig, ref: React.RefObject<CardEntryH
   return ref.current!.confirmSetup(secret);
 }
 
-// The restaurant's Bite Wise plan. The first restaurants to choose a plan are Pioneer Members: free, no card, with a
+// The restaurant's ResDish plan. The first restaurants to choose a plan are Pioneer Members: free, no card, with a
 // $0.00 invoice each period. Others pay a monthly or annual plan that renews automatically with the default card on
 // file; a declined payment makes the plan delinquent until it is paid.
 export function PlanPanel({ payment, approved }: { payment: PaymentConfig; approved: boolean }) {
@@ -227,7 +227,7 @@ function PioneerCard({ sub, onChanged }: { sub: NonNullable<PlanSummary['subscri
           <h2 className="m-0 text-2xl font-extrabold">{legacy ? 'Your plan' : `${NAMES[sub.plan as PaidPlan]} plan`} · FREE 🎉</h2>
           <p className="m-0 mt-1 text-ink-2">
             {legacy
-              ? 'As one of the first restaurants on Bite Wise, you pay no subscription fee.'
+              ? 'As one of the first restaurants on ResDish, you pay no subscription fee.'
               : <>Your <span className="line-through">{usd(sub.listPriceCents)}</span> {sub.plan === 'annual' ? 'yearly' : 'monthly'} fee is covered by the <b>Pioneer Members Discount</b>.
                 You get a $0.00 invoice every {sub.plan === 'annual' ? 'year' : 'month'}; the next one on <b>{fmtDate(sub.periodEnd)}</b>. No card needed.</>}
           </p>

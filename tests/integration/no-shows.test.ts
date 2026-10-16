@@ -46,7 +46,7 @@ describe.skipIf(!available)('missed pickups', () => {
     expect((await orders.getOrder(open)).status).toBe('cancelled');
     expect((await authUser(c.id)).banned_until).toBeTruthy();
     expect(sent.some((e) => e.to === c.email && /suspended for 30 days/.test(e.subject))).toBe(true);
-    expect(sent.some((e) => /Bite Wise alert: .* suspended for 30 days/.test(e.subject))).toBe(true);
+    expect(sent.some((e) => /ResDish alert: .* suspended for 30 days/.test(e.subject))).toBe(true);
     expect((await alertsFor(c.id)).every((a) => a.processed_at)).toBe(true);
     // Processing again does nothing (no second email).
     const before = sent.length;
@@ -68,7 +68,7 @@ describe.skipIf(!available)('missed pickups', () => {
     const ban = await authUser(c.id);
     expect(Date.parse(ban.banned_until!) - Date.now()).toBeGreaterThan(50 * 365 * 86_400_000);
     expect(sent.some((e) => e.to === c.email && /closed/.test(e.subject))).toBe(true);
-    expect(sent.some((e) => /Bite Wise alert: .* banned/.test(e.subject))).toBe(true);
+    expect(sent.some((e) => /ResDish alert: .* banned/.test(e.subject))).toBe(true);
   });
 
   it('a pickup resets the count, and cancelled orders never count', async () => {

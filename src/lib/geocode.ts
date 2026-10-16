@@ -24,7 +24,7 @@ const valid = (p: Point) => Number.isFinite(p.lat) && Number.isFinite(p.lng) && 
 
 async function getJson(fetcher: Fetch, url: string) {
   const res = await fetcher(url, {
-    headers: { 'User-Agent': `BiteWise/1.0 (${serverEnv.legal.email})`, Accept: 'application/json' },
+    headers: { 'User-Agent': `ResDish/1.0 (${serverEnv.legal.email})`, Accept: 'application/json' },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

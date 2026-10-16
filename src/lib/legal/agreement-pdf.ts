@@ -12,11 +12,11 @@ import { cityLine } from '@/lib/regions';
 
 // The restaurant's copy of its Restaurant Partner Agreement as a PDF: the full text, then an electronic signature
 // record built from the acceptance stored at sign-up (who, when, from which IP and device, which version) and
-// Bite Wise's acceptance on approval. Sent with the welcome email and downloadable from the dashboard.
+// ResDish's acceptance on approval. Sent with the welcome email and downloadable from the dashboard.
 
 const FONT_DIR = path.join(process.cwd(), 'assets', 'pdf-fonts');
 const LOGO = path.join(process.cwd(), 'public', 'assets', 'logo.png');
-const LOGO_RATIO = 400 / 1428;
+const LOGO_RATIO = 413 / 1428; // public/assets/logo.png
 const NAVY = '#14284B';
 const MUTED = '#64748B';
 const LINE = '#E2E8F0';
@@ -85,7 +85,7 @@ export async function signedAgreementPdf(restaurantId: number, approvedAt?: stri
   pdf.addPage();
   pdf.font('head').fontSize(18).fillColor(NAVY).text('Electronic signature record', L, pdf.page.margins.top, { width: W });
   pdf.font('regular').fontSize(9.5).fillColor(MUTED).text(
-    `This page records how the agreement above was signed. ${r.name}'s representative reviewed the full text in the Bite Wise sign-up form, ` +
+    `This page records how the agreement above was signed. ${r.name}'s representative reviewed the full text in the ResDish sign-up form, ` +
     'checked "I have read and agree to the Restaurant Partner Agreement and Privacy Policy. I understand this is a legally binding agreement." ' +
     'and selected "Accept & create account". The account could not be created without that acceptance.', { width: W, lineGap: 2 });
   pdf.moveDown(1);
@@ -128,5 +128,5 @@ export async function signedAgreementPdf(restaurantId: number, approvedAt?: stri
   const done = new Promise<Buffer>((resolve, reject) => { pdf.on('end', () => resolve(Buffer.concat(chunks))); pdf.on('error', reject); });
   pdf.end();
   const safe = r.name.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'restaurant';
-  return { filename: `Bite-Wise-Partner-Agreement-${safe}.pdf`, pdf: await done };
+  return { filename: `ResDish-Partner-Agreement-${safe}.pdf`, pdf: await done };
 }

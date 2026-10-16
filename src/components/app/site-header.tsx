@@ -74,7 +74,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
           <Link
             href="/account#credit"
             onClick={close}
-            title="Your Bite Wise platform credit"
+            title="Your ResDish platform credit"
             className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-3.5 py-2 text-sm font-bold text-accent-ink no-underline"
           >
             <Gift className="size-4" /> {money(viewer.creditCents)} credit
@@ -86,7 +86,7 @@ export function SiteHeader({ viewer }: { viewer: HeaderViewer }) {
   return (
     <header className="no-print sticky top-0 z-[500] border-b border-line/70 bg-bg/75 backdrop-blur-md backdrop-saturate-150">
       <div className={cn(wide ? 'container-wide' : 'container-page', 'flex h-[72px] items-center gap-4')}>
-        <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="Bite Wise home" className="shrink-0">
+        <Link href={viewer ? homeFor(viewer.role) : '/'} aria-label="ResDish home" className="shrink-0">
           <Logo className="block h-[46px] md:h-[54px]" />
         </Link>
         <div className="ml-auto md:order-last md:ml-1"><ModeToggle /></div>

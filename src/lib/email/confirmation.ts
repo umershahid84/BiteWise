@@ -4,13 +4,13 @@ import path from 'node:path';
 import { publicEnv } from '@/lib/env';
 import { emailConfigured } from './send';
 
-// The sign-up confirmation email, sent by the app itself through its own SMTP account, so it is always the Bite Wise
+// The sign-up confirmation email, sent by the app itself through its own SMTP account, so it is always the ResDish
 // design in supabase/templates/confirmation.html. (When Supabase sends it, Supabase uses its own stored copy of the
 // template, which stays whatever was last installed there.) Supabase only creates the account and the confirmation
 // token (auth.admin.generateLink); the link in the email goes to /auth/confirm like Supabase's would.
 
 const TEMPLATE = path.join(process.cwd(), 'supabase', 'templates', 'confirmation.html');
-export const CONFIRM_SUBJECT = 'Confirm your email for Bite Wise 🍃';
+export const CONFIRM_SUBJECT = 'Confirm your email for ResDish 🍃';
 
 export type ConfirmData = { email: string; tokenHash: string; username?: string; role?: string; restaurant?: string };
 
@@ -44,15 +44,15 @@ export function confirmationEmail(d: ConfirmData) {
   return {
     subject: CONFIRM_SUBJECT,
     html: renderConfirmation(fs.readFileSync(TEMPLATE, 'utf8'), d),
-    text: `Welcome to Bite Wise${d.username ? `, ${d.username}` : ''}!
+    text: `Welcome to ResDish${d.username ? `, ${d.username}` : ''}!
 
 ${d.role === 'restaurant'
-    ? `Thanks for signing up${d.restaurant ? ` ${d.restaurant}` : ''} with Bite Wise. Confirm your email and we will review your application.`
-    : 'Thanks for joining Bite Wise. Confirm your email to start rescuing great restaurant food at a discount.'}
+    ? `Thanks for signing up${d.restaurant ? ` ${d.restaurant}` : ''} with ResDish. Confirm your email and we will review your application.`
+    : 'Thanks for joining ResDish. Confirm your email to start rescuing great restaurant food at a discount.'}
 
 Confirm your email: ${link}
 
-You're getting this email because ${d.email} was used to sign up for Bite Wise. If that wasn't you, ignore this email.`,
+You're getting this email because ${d.email} was used to sign up for ResDish. If that wasn't you, ignore this email.`,
   };
 }
 

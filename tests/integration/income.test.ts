@@ -1,4 +1,4 @@
-// The owner console's Income tab: service fees + plan fees (without sales tax) - platform credit Bite Wise funds.
+// The owner console's Income tab: service fees + plan fees (without sales tax) - platform credit ResDish funds.
 // Against the local database; compares before and after, so other data in it doesn't matter.
 import { feeTaxCents } from '@/lib/pricing';
 import { describe, expect, it, vi } from 'vitest';

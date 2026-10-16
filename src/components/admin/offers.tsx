@@ -21,7 +21,7 @@ export function OffersPanel() {
   const { error: loadError, data, isLoading } = useAdmin<Offer[]>(['offers'], 'offers');
   const pager = usePager(data ?? []);
   const remove = async (o: Offer) => {
-    const reason = prompt(`Remove "${o.title}" from Bite Wise? Reason (optional):`);
+    const reason = prompt(`Remove "${o.title}" from ResDish? Reason (optional):`);
     if (reason === null) return;
     if (await run(() => endOffer({ id: o.id, reason }), 'Offer removed')) queryClient.invalidateQueries({ queryKey: ['admin'] });
   };

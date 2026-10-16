@@ -10,12 +10,12 @@ import { cn } from '@/lib/utils';
 // Short narrated screen recordings of the app (public/videos, made with scripts/demo-video; see its README).
 export const TOURS = {
   customer: {
-    title: 'How Bite Wise works for customers',
+    title: 'How ResDish works for customers',
     src: '/videos/customer-tour',
     steps: ['Browse live deals near your ZIP or postal code', 'See the full total, and use a coupon', 'Your card is held, not charged', 'Show your 4-digit PIN at pickup'],
   },
   restaurant: {
-    title: 'How Bite Wise works for restaurants',
+    title: 'How ResDish works for restaurants',
     src: '/videos/restaurant-tour',
     steps: ['Post surplus food in under a minute', 'A bell rings when someone orders', 'Type the PIN and hand over the food', 'Get paid through Stripe, with reports'],
   },
