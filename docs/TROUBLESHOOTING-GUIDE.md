@@ -40,8 +40,8 @@ This guide covers everything on the ResDish platform: where each thing lives, ho
 |---|---|
 | **Product** | ResDish: restaurants sell surplus food at a discount; customers order, pay with a card hold, and pick up with a 4-digit PIN. The card is charged only at pickup. |
 | **Countries** | United States (US dollars, miles, ZIP codes) and Canada (Canadian dollars, kilometres, postal codes) |
-| **Website** | https://www.bite-wise.org |
-| **Support email** | support@bite-wise.org |
+| **Website** | https://www.resdish.com |
+| **Support email** | support@resdish.com |
 | **Code** | GitHub: `umershahid84/RescueBites`, branch **`main`** (everything is pushed straight to `main`) |
 | **Hosting** | Vercel project **bite-wise** (deploys automatically from `main`) |
 | **Database & logins** | Supabase (PostgreSQL + Auth + Storage + Realtime) |
@@ -61,28 +61,28 @@ This guide covers everything on the ResDish platform: where each thing lives, ho
 
 The fastest way to find where a word, email, price or label appears is to **search the whole repository**.
 
-**On GitHub (no setup needed):** open the repository, press `/` (or click the search box), type the text in quotes, e.g. `"support@bite-wise.org"`, and choose **Code**.
+**On GitHub (no setup needed):** open the repository, press `/` (or click the search box), type the text in quotes, e.g. `"support@resdish.com"`, and choose **Code**.
 
 **On your computer** (in the project folder):
 
 ```bash
-git grep -n "support@bite-wise.org"          # every line with that text, with file and line number
+git grep -n "support@resdish.com"          # every line with that text, with file and line number
 git grep -n -i "service fee"                 # -i ignores upper/lower case
 git grep -l "Pioneer"                        # only the file names
-git grep -n "support@bite-wise.org" -- ':!legacy'   # skip the old legacy/ folder
+git grep -n "support@resdish.com" -- ':!legacy'   # skip the old legacy/ folder
 ```
 
 **In VS Code:** press `Ctrl+Shift+F` (Windows) or `Cmd+Shift+F` (Mac) and type the text.
 
 > **Ignore the `legacy/` folder.** It holds the original version of the app and is no longer used. Changes there have no effect.
 
-### Example: where is `support@bite-wise.org`?
+### Example: where is `support@resdish.com`?
 
 The support email comes from the `SUPPORT_EMAIL` setting (see [section 4](#4-environment-variables-vercel-settings)). **Changing `SUPPORT_EMAIL` in Vercel updates most places at once**: email footers, the legal documents, the signed agreement PDF and the map lookup's contact address. A few places have it typed in directly and must be edited by hand:
 
 | File | What it is |
 |---|---|
-| `src/lib/env.ts` (line ~32) | Fallback used when `SUPPORT_EMAIL` isn't set; also `no-reply@bite-wise.org`, the fallback "from" address (line ~43) |
+| `src/lib/env.ts` (line ~32) | Fallback used when `SUPPORT_EMAIL` isn't set; also `no-reply@resdish.com`, the fallback "from" address (line ~43) |
 | `src/components/receipts/pos-receipt.tsx` (line ~105) | Bottom of the on-screen receipt |
 | `src/lib/receipts/pdf.ts` (line ~189) | Bottom of the PDF receipt |
 | `supabase/templates/confirmation.html` (line ~122) | The "confirm your email" sign-up email |
@@ -107,9 +107,9 @@ The same approach works for anything else: search for the text you see on the sc
 | **Supabase** | Database, user logins, food photo storage, live updates, every-minute cleanup (`pg_cron`) | supabase.com → your project |
 | **Stripe (US)** | Card payments in US dollars, payouts to US restaurants. Connected through Vercel's Stripe integration (sandbox for now). | dashboard.stripe.com (the US account's email) |
 | **Stripe (Canada)** | Card payments in Canadian dollars, payouts to Canadian restaurants. Separate Stripe account, separate email. Keys added by hand in Vercel. | dashboard.stripe.com (the Canada account's email) |
-| **Resend** | Sends the app's emails (receipts, codes, welcomes) from `@bite-wise.org` | resend.com → Domains / Emails / API keys |
-| **Domain email host** (`mailserver.businessidentity.llc`) | The support@bite-wise.org inbox (read on phone/computer: IMAP 993, SMTP 465) | Your domain/email provider |
-| **Domain DNS** | Points bite-wise.org to Vercel, holds Resend's verification records | Where the domain was bought |
+| **Resend** | Sends the app's emails (receipts, codes, welcomes) from `@resdish.com` | resend.com → Domains / Emails / API keys |
+| **Domain email host** | The support@resdish.com inbox. (The old bite-wise.org mailbox was at `mailserver.businessidentity.llc`, IMAP 993 / SMTP 465.) | Your domain/email provider |
+| **Domain DNS** | Points resdish.com to Vercel, holds Resend's verification records | Where the domain was bought |
 | **OpenStreetMap / US Census / Nominatim** | Free map tiles and address lookups (no account) | n/a |
 | **WA Department of Revenue** | Free Washington sales tax rate lookup (no account) | n/a |
 | **Anthropic (optional)** | Reads hard-to-parse restaurant menus during Menu import | console.anthropic.com (`ANTHROPIC_API_KEY`) |
@@ -127,7 +127,7 @@ These are set in **Vercel → bite-wise → Settings → Environment Variables**
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project address |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase public key |
 | `SUPABASE_SECRET_KEY` | Supabase secret key (server only) |
-| `NEXT_PUBLIC_SITE_URL` | The site address: `https://www.bite-wise.org`. Used in every email link. |
+| `NEXT_PUBLIC_SITE_URL` | The site address: `https://www.resdish.com`. Used in every email link. |
 | `CRON_SECRET` | Password Vercel's scheduled job uses to call `/api/cron/sweep` |
 
 ### Payments (Stripe)
@@ -150,15 +150,15 @@ No Stripe keys at all = built-in **test mode** (nothing is charged; test card `4
 | `SMTP_PORT` | `465` |
 | `SMTP_USER` | `resend` |
 | `SMTP_PASSWORD` | the Resend API key |
-| `EMAIL_FROM` | `ResDish <no-reply@bite-wise.org>` (must be on the verified domain) |
-| `SUPPORT_EMAIL` | `support@bite-wise.org` |
+| `EMAIL_FROM` | `ResDish <no-reply@resdish.com>` (must be on the verified domain) |
+| `SUPPORT_EMAIL` | `support@resdish.com` |
 
 ### Company details
 
 | Variable | Default |
 |---|---|
 | `LEGAL_ENTITY_NAME` | `ResDish` |
-| `SUPPORT_EMAIL` | `support@bite-wise.org` |
+| `SUPPORT_EMAIL` | `support@resdish.com` |
 | `LEGAL_ADDRESS` | `Federal Way, Washington`: ResDish's location in the **US** documents ("ResDish (Federal Way, Washington)" in the US agreement, its signed PDF and the US legal pages) |
 | `LEGAL_ADDRESS_CA` | `St. John's, Newfoundland and Labrador`: the same, in the **Canadian** documents |
 
@@ -356,7 +356,7 @@ The customer sees the two taxes added together as **one "Sales tax" line**. Curr
 - **Restaurants connect** their own Stripe account in Dashboard → **Payouts** (Stripe Express). Until then they're paid manually from Admin → Payouts.
 - **Test (sandbox) mode:** currently both accounts use Stripe **Sandbox** keys. Test cards: `4242 4242 4242 4242` (US Visa), `4000 0012 4000 0000` (Canadian Visa), `4000 0000 0000 0002` (declined); any future date, any CVC.
 - **Postal code on the card form:** for Canadian purchases the app shows its own **Postal code** box (Stripe's own box says "ZIP" for US cards).
-- **Webhooks** (`/api/stripe/webhook`): optional while testing. For live: in **each** Stripe account add an endpoint `https://www.bite-wise.org/api/stripe/webhook` for `payment_intent.amount_capturable_updated` and `payment_intent.payment_failed` (Your account) and `account.updated` (Connected accounts). Put the signing secrets in `STRIPE_WEBHOOK_SECRET` (US) / `STRIPE_WEBHOOK_SECRET_CA` (Canada), comma-separated if two.
+- **Webhooks** (`/api/stripe/webhook`): optional while testing. For live: in **each** Stripe account add an endpoint `https://www.resdish.com/api/stripe/webhook` for `payment_intent.amount_capturable_updated` and `payment_intent.payment_failed` (Your account) and `account.updated` (Connected accounts). Put the signing secrets in `STRIPE_WEBHOOK_SECRET` (US) / `STRIPE_WEBHOOK_SECRET_CA` (Canada), comma-separated if two.
 - **Important:** the US keys were set by **Vercel's Stripe integration**. Don't reinstall that integration for Canada; it would overwrite the US keys. Add the Canada keys by hand.
 - **Going live:** replace the sandbox keys with live keys (`sk_live_…`, `pk_live_…`) in Vercel, set up live webhooks, redeploy. Restaurants must connect again in live mode.
 
@@ -388,9 +388,9 @@ The customer sees the two taxes added together as **one "Sales tax" line**. Curr
 | Admin team welcome / password | `teamWelcomeEmail`, `teamPasswordEmail` |
 | Coupon | `couponEmail` (templates edited in Admin → Coupons) |
 
-**Setup with Resend:** verify `bite-wise.org` in Resend (add its DNS records), then set the SMTP variables in [section 4](#4-environment-variables-vercel-settings) and redeploy. Optional: the same SMTP details in **Supabase → Authentication → Emails → SMTP Settings**.
+**Setup with Resend:** verify `resdish.com` in Resend (add its DNS records), then set the SMTP variables in [section 4](#4-environment-variables-vercel-settings) and redeploy. Optional: the same SMTP details in **Supabase → Authentication → Emails → SMTP Settings**.
 
-**Supabase login links:** **Supabase → Authentication → URL Configuration**: Site URL `https://www.bite-wise.org`, Redirect URLs include `https://www.bite-wise.org/auth/confirm`.
+**Supabase login links:** **Supabase → Authentication → URL Configuration**: Site URL `https://www.resdish.com`, Redirect URLs include `https://www.resdish.com/auth/confirm`.
 
 ---
 
@@ -421,7 +421,7 @@ The customer sees the two taxes added together as **one "Sales tax" line**. Curr
 | Card holds, missed-pickup emails/suspensions, fee changes, **plan renewals and reminders**, tax rate refresh | `/api/cron/sweep` (`src/lib/jobs.ts`), called by Vercel Cron (`vercel.json`) | **once a day** at 00:00 UTC (Vercel Hobby plan limit) |
 | Same, on a self-hosted server | `src/instrumentation.ts` | every 5 minutes |
 
-If renewals or no-show emails seem late, it's because Vercel's cron runs daily. To run it now: call `https://www.bite-wise.org/api/cron/sweep` with header `Authorization: Bearer <CRON_SECRET>`, or upgrade Vercel and change the schedule in `vercel.json`.
+If renewals or no-show emails seem late, it's because Vercel's cron runs daily. To run it now: call `https://www.resdish.com/api/cron/sweep` with header `Authorization: Bearer <CRON_SECRET>`, or upgrade Vercel and change the schedule in `vercel.json`.
 
 ---
 
@@ -438,7 +438,7 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 ## 15. Branding, text and images
 
 - **Name:** "ResDish" (renamed from Bite Wise on 2026-10-16). Logo tagline "FOOD RESCUE"; slogan in emails and footers "Eat well · Waste less". Search with `git grep -n "ResDish"` / `git grep -n "Eat well"`.
-- **Technical names that still say bitewise** (on purpose, nobody sees them, and changing them would log people out or break logins): the server service `bitewise`, the npm package name, the database job `bitewise-sweep`, browser storage keys `bitewise.*`, the local Supabase project id, staff login emails `@staff.bitewise.invalid`, demo accounts `@bitewise.test` and the demo password `BiteWise123`. The domain stays **bite-wise.org** until a new one is chosen.
+- **Technical names that still say bitewise** (on purpose, nobody sees them, and changing them would log people out or break logins): the server service `bitewise`, the npm package name, the database job `bitewise-sweep`, browser storage keys `bitewise.*`, the local Supabase project id, staff login emails `@staff.bitewise.invalid`, demo accounts `@bitewise.test` and the demo password `BiteWise123`. The domain is **resdish.com** (it was bite-wise.org until 2026-10-17).
 - **Colors:** `src/app/globals.css` (orange `#ea580c`, green `#4e9f3d`, dark ink `#2a1a0e`). Three looks: customer (warm), restaurant (dark kitchen), admin (corporate). Chosen in `src/lib/theme.ts`.
 - **Logos and icons:** `public/assets/` (`logo.svg` with tagline, `logo-compact.svg` without, `-dark` versions for dark backgrounds, `logo-mark.svg` the mascot alone, `logo.png` for PDFs, `email-logo.png` for emails, `app-icon-*` / `kiosk-icon-*` / `apple-touch-icon.png` for phones), plus `src/app/icon.svg` (browser tab) and `src/app/apple-icon.png`. The mark is the whole mascot (grocery bag, shoulder bag and feet). The dot of the "i" in "Dish" is a green leaf; in the website's SVG logos it drifts down and settles on the "i" once when the logo appears (skipped for visitors who turn off motion), and emails, PDFs and icons show it in place. All are made from the original artwork `assets/brand/resdish-logo-original.jpg` by `scripts/make-logo.py` (instructions at the top of the script; the leaf's size, colors and animation are in it too). Logo colors: radish red `#D63B4B`, teal `#13827C`. App install manifest: `src/app/app.webmanifest/route.ts`.
 - **About us photos:** `public/about/` with the names shown on the page placeholders.
@@ -485,8 +485,8 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | **No emails arrive** | `SMTP_HOST` not set in Vercel, or domain not verified in Resend | Set the SMTP variables ([section 4](#4-environment-variables-vercel-settings)), verify the domain in Resend, redeploy. Check Resend → Emails/Logs. |
-| Emails rejected "domain not verified" | `EMAIL_FROM` isn't an `@bite-wise.org` address, or DNS records missing | Use `ResDish <no-reply@bite-wise.org>`; finish Resend DNS verification |
-| Sign-up/confirm links go to the wrong site | `NEXT_PUBLIC_SITE_URL` or Supabase Site URL wrong | Set both to `https://www.bite-wise.org`; add `/auth/confirm` redirect in Supabase |
+| Emails rejected "domain not verified" | `EMAIL_FROM` isn't an `@resdish.com` address, or DNS records missing | Use `ResDish <no-reply@resdish.com>`; finish Resend DNS verification |
+| Sign-up/confirm links go to the wrong site | `NEXT_PUBLIC_SITE_URL` or Supabase Site URL wrong | Set both to `https://www.resdish.com`; add `/auth/confirm` redirect in Supabase |
 | "Card payments for this country aren't available yet" | That country's Stripe keys are missing | Add `STRIPE_SECRET_KEY(_CA)` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY(_CA)`, redeploy |
 | Canadian customer asked for a "ZIP code" | Old version before the fix | Fixed: Canadian purchases show a Postal code box. Redeploy if still seen. |
 | Postal code refused | Wrong format | Canada: `A1A 1A1` (the app formats it; the first 3 characters alone also work for customers). US: 5 digits. Code: `normalizePostal` in `src/lib/regions.ts` |
@@ -544,6 +544,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-17 | New domain **www.resdish.com**; support@resdish.com and no-reply@resdish.com (was bite-wise.org) | `src/lib/env.ts`, receipts, `supabase/templates/confirmation.html`, `.env.example`, business documents |
 | 2026-10-17 | Stripe payout setup message ends with Stripe's own words ("Stripe says: …") | `src/lib/orders.ts` (`stripeSetupMessage`) |
 | 2026-10-17 | Fix: Stripe payout setup shows Stripe's real reason instead of "Something went wrong", and starts a new Stripe account when the saved one isn't in this Stripe account; videos show a $1.99 fixed service fee | `src/lib/orders.ts`, `scripts/demo-video/record.mjs`, `public/videos/` |
 | 2026-10-16 | Logo: full mascot with its bags; green leaf as the dot of the "i", falling into place on the website; videos and documents updated | `scripts/make-logo.py`, `public/assets/`, `public/videos/`, `docs/business/`, `docs/production/` |
@@ -553,7 +554,7 @@ Add a line for every change (newest first): date, what changed, and where.
 | 2026-10-13 | Canadian legal documents and signed agreements show ResDish (St. John's, Newfoundland and Labrador) | `src/lib/env.ts` (`LEGAL_ADDRESS_CA`), `src/lib/legal/documents.ts`, `src/lib/legal/agreement-pdf.ts` |
 | 2026-10-13 | Company address in legal documents: Federal Way, Washington (was Seattle) | `src/lib/env.ts` (`LEGAL_ADDRESS`), `.env.example` |
 | 2026-10-13 | Created this guide | `docs/TROUBLESHOOTING-GUIDE.md` |
-| 2026-10-13 | Support email `support@bite-wise.org`, website `www.bite-wise.org` | `src/lib/env.ts`, receipts, `supabase/templates/confirmation.html`, `.env.example`, sales deck |
+| 2026-10-13 | Support email `support@resdish.com`, website `www.resdish.com` | `src/lib/env.ts`, receipts, `supabase/templates/confirmation.html`, `.env.example`, sales deck |
 | 2026-10-13 | Restaurant sales pitch deck (PowerPoint + PDF) | `docs/business/` |
 | 2026-10-12 | Canadian purchases ask for a Postal code on the card form | `src/components/payments/card-entry.tsx`, `src/lib/env.ts` |
 | 2026-10-12 | Addresses show the real state/province (not "WA"); Map link searches the full address; city/postal suggestions by country | `src/lib/regions.ts`, migrations `20261022000200`, `20261022000300` |

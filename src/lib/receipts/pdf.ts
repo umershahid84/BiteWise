@@ -186,7 +186,7 @@ function drawPosReceipt(doc: Doc, rc: Receipt) {
   center('THANK YOU FOR RESCUING FOOD!', 'monoBold', 8, { after: 4 });
   small('Your card is authorized when you order and charged only when the restaurant confirms pickup with your PIN. '
     + 'Food is sold as is and all sales are final: picked-up orders are not refundable. The service fee is not refundable: if an order is cancelled by you or not picked up, only the service fee is charged. Times in Pacific Time.', { align: 'center', size: 6.2, after: 3 });
-  center('support@bite-wise.org', 'mono', 6.6, { after: 0 });
+  center('support@resdish.com', 'mono', 6.6, { after: 0 });
   return y;
 }
 
