@@ -407,6 +407,25 @@ async function restaurantTour(browser) {
 }
 
 console.log(REAL_CLIPS ? 'Customer story: real video clips (clips/)' : 'Customer story: illustrated scenes (story.html)');
+// The service fee shown in the videos: a fixed amount per order (DEMO_SERVICE_FEE_CENTS, default $1.99), set on the
+// demo database before recording and put back afterwards (from .env.local's Supabase URL and secret key).
+const ENV = Object.fromEntries(fs.readFileSync(new URL('../../.env.local', import.meta.url), 'utf8').split('\n')
+  .map((l) => l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/)).filter(Boolean).map((m) => [m[1], m[2].replace(/^["']|["']$/g, '')]));
+const FEE_KEYS = ['service_fee_mode', 'service_fee_fixed_cents'];
+async function settingsApi(method, body) {
+  const res = await fetch(`${ENV.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/settings?key=in.(${FEE_KEYS.join(',')})&select=key,value`, {
+    method,
+    headers: { apikey: ENV.SUPABASE_SECRET_KEY, Authorization: `Bearer ${ENV.SUPABASE_SECRET_KEY}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  if (!res.ok) throw new Error(`Demo service fee: ${res.status} ${await res.text()}`);
+  return method === 'GET' ? res.json() : null;
+}
+const savedFee = await settingsApi('GET');
+const cents = Number(process.env.DEMO_SERVICE_FEE_CENTS ?? 199);
+await settingsApi('POST', [{ key: 'service_fee_mode', value: 'fixed' }, { key: 'service_fee_fixed_cents', value: cents }]);
+console.log(`Service fee for the recording: $${(cents / 100).toFixed(2)} per order`);
+
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 try {
   const only = process.env.TOUR; // e.g. TOUR=restaurant records just that one
@@ -418,4 +437,5 @@ try {
   }
 } finally {
   await browser.close();
+  if (savedFee.length) await settingsApi('POST', savedFee); // the fee as it was before recording
 }

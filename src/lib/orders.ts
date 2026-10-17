@@ -480,15 +480,46 @@ export async function refreshConnectStatus(restaurantId: number) {
 }
 
 export async function connectOnboardingLink(restaurantId: number, email: string, businessName: string, siteUrl: string) {
+  const country = await restaurantCountry(restaurantId);
+  const pay = payments(country);
   let acct = await paymentAccount(restaurantId);
   if (!acct) acct = must(await db().from('restaurant_payment_accounts').insert({ restaurant_id: restaurantId }).select('*').single());
-  let accountId = acct.stripe_account_id;
-  if (!accountId) {
-    accountId = await payments(await restaurantCountry(restaurantId)).createConnectedAccount({ email, businessName, restaurantId });
-    check(await db().from('restaurant_payment_accounts').update({ stripe_account_id: accountId }).eq('restaurant_id', restaurantId));
+  const urls = { returnUrl: `${siteUrl}/restaurant?tab=payouts&stripe=return`, refreshUrl: `${siteUrl}/restaurant?tab=payouts&stripe=refresh` };
+  const newAccount = async () => {
+    const id = await pay.createConnectedAccount({ email, businessName, restaurantId });
+    check(await db().from('restaurant_payment_accounts').update({
+      stripe_account_id: id, charges_enabled: false, payouts_enabled: false, details_submitted: false, bank_summary: '', updated_at: new Date().toISOString(),
+    }).eq('restaurant_id', restaurantId));
+    return id;
+  };
+  try {
+    const accountId = acct.stripe_account_id ?? await newAccount();
+    try {
+      return await pay.onboardingLink(accountId, urls);
+    } catch (err) {
+      // The account isn't in this Stripe account (e.g. made in another sandbox, or before switching to live): start again.
+      if (!acct.stripe_account_id || !isMissingStripeAccount(err)) throw err;
+      return await pay.onboardingLink(await newAccount(), urls);
+    }
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    console.error(`Stripe onboarding for restaurant ${restaurantId} (${country}) failed:`, err);
+    throw new AppError(502, stripeSetupMessage(err));
   }
-  return payments(await restaurantCountry(restaurantId)).onboardingLink(accountId, {
-    returnUrl: `${siteUrl}/restaurant?tab=payouts&stripe=return`,
-    refreshUrl: `${siteUrl}/restaurant?tab=payouts&stripe=refresh`,
-  });
+}
+
+// Stripe says the connected account doesn't exist, or isn't one of this platform's.
+export function isMissingStripeAccount(err: unknown) {
+  const e = err as { code?: string; message?: string } | null;
+  return !!e && (e.code === 'resource_missing' || e.code === 'account_invalid'
+    || /no such account|does not have access to account|not connected to your platform/i.test(e.message ?? ''));
+}
+
+// What a restaurant sees when Stripe won't start payout setup, in plain words, with Stripe's own reason.
+export function stripeSetupMessage(err: unknown) {
+  const reason = String((err as { message?: string } | null)?.message ?? '').trim();
+  if (/signed up for connect|connect is not enabled|platform[- ]profile|responsibilities of managing losses/i.test(reason)) {
+    return 'Payout setup isn\'t available yet: ResDish is still finishing its Stripe Connect setup. Please try again later, or contact ResDish support.';
+  }
+  return `Stripe couldn't start your payout setup${reason ? `: ${reason}` : '.'} Please try again, or contact ResDish support.`;
 }

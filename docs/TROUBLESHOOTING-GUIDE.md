@@ -4,7 +4,7 @@ This guide covers everything on the ResDish platform: where each thing lives, ho
 
 > **Keep this guide current.** Whenever a feature, setting, service, email, file or fix is added or changed, update the matching section here **in the same commit**, and add a line to the [Change log](#21-change-log) at the bottom.
 
-**Last updated:** 2026-10-16
+**Last updated:** 2026-10-17
 
 ---
 
@@ -450,6 +450,7 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 
 - Videos: `public/videos/customer-tour.*` and `restaurant-tour.*` (mp4, webm, poster jpg, subtitles vtt). Shown on the home page, deals page ("How it works") and restaurant dashboard ("Watch the tour").
 - **Version tag:** `src/components/app/demo-video-version.json` adds `?v=…` to the video links so browsers fetch new versions. Update it whenever videos change.
+- **Service fee in the videos:** the recorder sets the demo data to a fixed **$1.99** per order before recording (`DEMO_SERVICE_FEE_CENTS` in `scripts/demo-video/record.mjs`, default 199).
 - **Pronunciation:** the narrator says "ResDish" as "Rez dish" (`pronounce` in `scripts/demo-video/narration.json`).
 - **Re-recording:** follow `scripts/demo-video/README.md` (narration text in `narration.json`, cartoon story in `story.html`, recording in `record.mjs`). It resets and seeds a local database first.
 
@@ -503,6 +504,8 @@ If renewals or no-show emails seem late, it's because Vercel's cron runs daily. 
 | Sales tax rate shows "state rate only, check it" | Exact lookup only for WA (or with Stripe Tax) | Admin → Restaurants → click the tax line to set the rate by hand |
 | Admin can't see some restaurants/customers | Admin is in the other country | Each admin sees only their country; change it in Admin → Team |
 | Kiosk link stopped working | A new link was generated | Restaurant → Kiosk tab → copy the current link |
+| Restaurant can't set up Stripe payouts ("Payout setup isn't available yet" or "Stripe couldn't start your payout setup: …") | Stripe Connect isn't turned on, or its platform profile isn't finished, in that country's Stripe account (sandbox or live) | In Stripe (US or Canada account, same mode as the keys): **Connect → Get started**, choose Express accounts, finish **Settings → Connect → Platform profile**. Vercel → Logs shows Stripe's exact message ("Stripe onboarding for restaurant … failed"). Code: `connectOnboardingLink` in `src/lib/orders.ts` |
+| Old demo restaurants show "MOCK BANK" / `acct_mock_…` | Practice payout accounts from test mode | Ignored once real Stripe keys are set; the restaurant connects a real account with **Continue Stripe setup** |
 | Payouts not arriving | Restaurant hasn't connected Stripe, or Stripe account incomplete | Restaurant → Payouts tab → finish Stripe setup; Admin → Payouts for manual payouts |
 | No "Order placed" email | Email not set up, or the hold never succeeded | Check the SMTP settings and Resend logs; the order's `placed_email_at` column shows if it was sent |
 | Drive to Restaurant opens the wrong place | Restaurant's address is wrong | Directions use the typed address (not the map pin): fix it in the restaurant's Profile tab |
@@ -541,6 +544,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-17 | Fix: Stripe payout setup shows Stripe's real reason instead of "Something went wrong", and starts a new Stripe account when the saved one isn't in this Stripe account; videos show a $1.99 fixed service fee | `src/lib/orders.ts`, `scripts/demo-video/record.mjs`, `public/videos/` |
 | 2026-10-16 | Logo: full mascot with its bags; green leaf as the dot of the "i", falling into place on the website; videos and documents updated | `scripts/make-logo.py`, `public/assets/`, `public/videos/`, `docs/business/`, `docs/production/` |
 | 2026-10-16 | **Renamed Bite Wise → ResDish** everywhere (site, emails, receipts, PDFs, legal documents v2026-10-24.1, videos, business documents) with the new mascot logo; receipts `RD-`, plan invoices `RD-SUB-` | all files; migration `20261024000100_resdish_name.sql`; logos `public/assets/`, `scripts/make-logo.py` |
 | 2026-10-13 | Fix: the new-order bell no longer rings when staff hand over an order | `src/components/restaurant/dashboard.tsx` |

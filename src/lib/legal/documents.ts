@@ -247,8 +247,8 @@ you to review and accept it before you continue using the Service. If you do not
   'These Terms are governed by the laws of the province or territory in which you live and the federal laws of Canada that apply there.')}</p>
 <p>14.2 Before filing a claim, you agree to contact us at <a href="mailto:${c.email}">${c.email}</a> and try to resolve the dispute
 informally for at least 30 days. Either party may bring an individual claim in small claims court if it qualifies. Otherwise, any
-dispute will be resolved in the courts of ${t(j, 'the state and county', 'the province or territory')} where you live, and you and Bite
-Wise consent to their jurisdiction. Nothing in this section takes away a right to sue in a particular court that the law gives you as a
+dispute will be resolved in the courts of ${t(j, 'the state and county', 'the province or territory')} where you live, and you and ResDish
+ consent to their jurisdiction. Nothing in this section takes away a right to sue in a particular court that the law gives you as a
 consumer.</p>
 
 <h2>15. General</h2>

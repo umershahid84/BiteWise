@@ -28,6 +28,8 @@ node scripts/demo-video/build.mjs     # → public/videos/*-tour.{mp4,webm,vtt,j
 labels and PIN pop-ups from `story-photo.html` drawn over the footage (the clips are converted to WebM first, since the
 recording browser can't play H.264). Remove the clips to go back to the illustrated scenes.
 
+The service fee shown in the videos is a fixed $1.99 per order: `record.mjs` sets it on the demo database before recording and puts the previous fee back afterwards (`DEMO_SERVICE_FEE_CENTS=…` to change it).
+
 `build.mjs` prints each video's length (the app just calls them short videos, so nothing needs updating). The `.vtt` files are optional subtitles (off by default in the player) with the same words as the voice-over. The bell in the restaurant tour is the dashboard's own order bell (`src/components/restaurant/bell.ts`), recreated in `voice.py`.
 
 The music's volume is `MUSIC_GAIN` in `build.mjs`; its tempo, chords, instruments and the whistled hook are at the top of `music.py`. The end screen's wording is `OUTRO` in `record.mjs`.
