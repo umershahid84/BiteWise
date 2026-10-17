@@ -519,7 +519,7 @@ export function isMissingStripeAccount(err: unknown) {
 export function stripeSetupMessage(err: unknown) {
   const reason = String((err as { message?: string } | null)?.message ?? '').trim();
   if (/signed up for connect|connect is not enabled|platform[- ]profile|responsibilities of managing losses/i.test(reason)) {
-    return 'Payout setup isn\'t available yet: ResDish is still finishing its Stripe Connect setup. Please try again later, or contact ResDish support.';
+    return `Payout setup isn't available yet: ResDish is still finishing its Stripe Connect setup. Please try again later, or contact ResDish support. (Stripe says: ${reason})`;
   }
   return `Stripe couldn't start your payout setup${reason ? `: ${reason}` : '.'} Please try again, or contact ResDish support.`;
 }

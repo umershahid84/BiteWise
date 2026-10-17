@@ -544,6 +544,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-17 | Stripe payout setup message ends with Stripe's own words ("Stripe says: …") | `src/lib/orders.ts` (`stripeSetupMessage`) |
 | 2026-10-17 | Fix: Stripe payout setup shows Stripe's real reason instead of "Something went wrong", and starts a new Stripe account when the saved one isn't in this Stripe account; videos show a $1.99 fixed service fee | `src/lib/orders.ts`, `scripts/demo-video/record.mjs`, `public/videos/` |
 | 2026-10-16 | Logo: full mascot with its bags; green leaf as the dot of the "i", falling into place on the website; videos and documents updated | `scripts/make-logo.py`, `public/assets/`, `public/videos/`, `docs/business/`, `docs/production/` |
 | 2026-10-16 | **Renamed Bite Wise → ResDish** everywhere (site, emails, receipts, PDFs, legal documents v2026-10-24.1, videos, business documents) with the new mascot logo; receipts `RD-`, plan invoices `RD-SUB-` | all files; migration `20261024000100_resdish_name.sql`; logos `public/assets/`, `scripts/make-logo.py` |

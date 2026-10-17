@@ -14,7 +14,7 @@ describe('Stripe payout setup errors', () => {
 
   it('explains when ResDish has not finished turning on Stripe Connect', () => {
     expect(stripeSetupMessage({ message: "You can only create new accounts if you've signed up for Connect, which you can learn how to do at https://stripe.com/docs/connect." }))
-      .toMatch(/still finishing its Stripe Connect setup/);
+      .toMatch(/still finishing its Stripe Connect setup\. .*\(Stripe says: You can only create new accounts if you've signed up for Connect/);
     expect(stripeSetupMessage({ message: 'Please review the responsibilities of managing losses for connected accounts at https://dashboard.stripe.com/settings/connect/platform-profile.' }))
       .toMatch(/still finishing its Stripe Connect setup/);
   });
