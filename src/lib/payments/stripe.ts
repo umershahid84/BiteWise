@@ -136,31 +136,60 @@ export function createStripeProvider(
 
     // ---- Stripe Connect (Express accounts: Stripe hosts onboarding and the payout dashboard)
 
+    // Restaurants' payout accounts use Stripe Accounts v2, as Stripe now requires for new platforms: a "recipient"
+    // that receives ResDish's transfers, with the Express dashboard, ResDish covering Stripe's fees and losses, and
+    // Stripe-hosted onboarding collecting the details. A Stripe account still set up for Accounts v1 gets a v1 account.
     async createConnectedAccount({ email, businessName, restaurantId }) {
-      const account = await stripe.accounts.create({
-        country: market.country,
-        email,
-        business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through ResDish' },
-        capabilities: { transfers: { requested: true } },
-        controller: {
-          stripe_dashboard: { type: 'express' },
-          fees: { payer: 'application' },
-          losses: { payments: 'application' },
-          requirement_collection: 'stripe',
-        },
-        metadata: { restaurant_id: String(restaurantId), app: 'resdish' },
-      });
-      return account.id;
+      const metadata = { restaurant_id: String(restaurantId), app: 'resdish' };
+      try {
+        const account = await stripe.v2.core.accounts.create({
+          contact_email: email,
+          display_name: businessName,
+          dashboard: 'express',
+          identity: { country: market.country.toLowerCase() },
+          configuration: { recipient: { capabilities: { stripe_balance: { stripe_transfers: { requested: true } } } } },
+          defaults: { currency: market.currency, responsibilities: { fees_collector: 'application_express', losses_collector: 'application' } },
+          metadata,
+        });
+        return account.id;
+      } catch (v2Error) {
+        try {
+          const account = await stripe.accounts.create({
+            country: market.country,
+            email,
+            business_profile: { name: businessName, mcc: '5812', product_description: 'Surplus restaurant food sold through ResDish' },
+            capabilities: { transfers: { requested: true } },
+            controller: {
+              stripe_dashboard: { type: 'express' },
+              fees: { payer: 'application' },
+              losses: { payments: 'application' },
+              requirement_collection: 'stripe',
+            },
+            metadata,
+          });
+          return account.id;
+        } catch {
+          throw v2Error; // Stripe's reason for the current way of making accounts
+        }
+      }
     },
 
     async onboardingLink(accountId, { returnUrl, refreshUrl }) {
-      const link = await stripe.accountLinks.create({
-        account: accountId,
-        type: 'account_onboarding',
-        return_url: returnUrl,
-        refresh_url: refreshUrl,
-      });
-      return link.url;
+      try {
+        const link = await stripe.v2.core.accountLinks.create({
+          account: accountId,
+          use_case: { type: 'account_onboarding', account_onboarding: { configurations: ['recipient'], return_url: returnUrl, refresh_url: refreshUrl } },
+        });
+        return link.url;
+      } catch (v2Error) {
+        // An account made with Accounts v1.
+        try {
+          const link = await stripe.accountLinks.create({ account: accountId, type: 'account_onboarding', return_url: returnUrl, refresh_url: refreshUrl });
+          return link.url;
+        } catch {
+          throw v2Error;
+        }
+      }
     },
 
     async dashboardLink(accountId) {
@@ -172,7 +201,6 @@ export function createStripeProvider(
     },
 
     async accountStatus(accountId): Promise<ConnectStatus> {
-      const account = await stripe.accounts.retrieve(accountId);
       let bankSummary = '';
       try {
         const ext = await stripe.accounts.listExternalAccounts(accountId, { limit: 1 });
@@ -182,6 +210,22 @@ export function createStripeProvider(
       } catch {
         // Not readable until onboarding is complete.
       }
+      // Accounts v2 (how restaurants' accounts are made now): can it receive transfers, and is anything left to fill in?
+      try {
+        const account = await stripe.v2.core.accounts.retrieve(accountId, { include: ['configuration.recipient', 'requirements'] });
+        const balance = account.configuration?.recipient?.capabilities?.stripe_balance;
+        if (balance) {
+          return {
+            chargesEnabled: balance.stripe_transfers?.status === 'active',
+            payoutsEnabled: balance.payouts?.status === 'active',
+            detailsSubmitted: !(account.requirements?.entries ?? []).some((e) => e.awaiting_action_from === 'user'),
+            bankSummary,
+          };
+        }
+      } catch {
+        // An account made with Accounts v1: read it the v1 way.
+      }
+      const account = await stripe.accounts.retrieve(accountId);
       return {
         chargesEnabled: account.capabilities?.transfers === 'active',
         payoutsEnabled: Boolean(account.payouts_enabled),

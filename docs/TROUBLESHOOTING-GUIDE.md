@@ -353,6 +353,7 @@ The customer sees the two taxes added together as **one "Sales tax" line**. Curr
 
 - **Which account is used:** the **restaurant's country**. US restaurant → US Stripe account, US dollars. Canadian restaurant → Canada Stripe account, Canadian dollars. Customers never choose.
 - **How a charge works:** at order time a **hold** is placed (manual capture). At pickup (PIN entered) the hold is captured; Stripe sends the food + its tax to the restaurant's connected account (destination charge) and keeps the fee + fee tax for ResDish (application fee).
+- **Accounts v2:** restaurants' Stripe accounts are created with Stripe **Accounts v2** (a "recipient" that receives ResDish's transfers, Express dashboard, ResDish covers Stripe fees and losses, Stripe-hosted onboarding). If a Stripe account still allows only v1, the app falls back to v1 automatically. Code: `createConnectedAccount` / `onboardingLink` / `accountStatus` in `src/lib/payments/stripe.ts`.
 - **Restaurants connect** their own Stripe account in Dashboard → **Payouts** (Stripe Express). Until then they're paid manually from Admin → Payouts.
 - **Test (sandbox) mode:** currently both accounts use Stripe **Sandbox** keys. Test cards: `4242 4242 4242 4242` (US Visa), `4000 0012 4000 0000` (Canadian Visa), `4000 0000 0000 0002` (declined); any future date, any CVC.
 - **Postal code on the card form:** for Canadian purchases the app shows its own **Postal code** box (Stripe's own box says "ZIP" for US cards).
@@ -544,6 +545,7 @@ Add a line for every change (newest first): date, what changed, and where.
 
 | Date | Change | Where |
 |---|---|---|
+| 2026-10-17 | Restaurant Stripe accounts use Stripe Accounts v2 (Stripe no longer allows v1 for new platforms) | `src/lib/payments/stripe.ts` |
 | 2026-10-17 | New domain **www.resdish.com**; support@resdish.com and no-reply@resdish.com (was bite-wise.org) | `src/lib/env.ts`, receipts, `supabase/templates/confirmation.html`, `.env.example`, business documents |
 | 2026-10-17 | Stripe payout setup message ends with Stripe's own words ("Stripe says: …") | `src/lib/orders.ts` (`stripeSetupMessage`) |
 | 2026-10-17 | Fix: Stripe payout setup shows Stripe's real reason instead of "Something went wrong", and starts a new Stripe account when the saved one isn't in this Stripe account; videos show a $1.99 fixed service fee | `src/lib/orders.ts`, `scripts/demo-video/record.mjs`, `public/videos/` |
